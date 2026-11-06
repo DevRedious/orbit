@@ -1,4 +1,5 @@
 import { useRef, useState, type ComponentProps } from 'react'
+import { useTranslation } from 'react-i18next'
 import { cn } from 'cn'
 import { Button } from '@/components/ui/button'
 import {
@@ -33,6 +34,7 @@ export function CoverBanner({
   /** A new cover (or null to remove it) and/or a new focal point. */
   onChange: (patch: { cover_url?: string | null; cover_position?: string | null }) => void
 }) {
+  const { t } = useTranslation('docs')
   const [repositioning, setRepositioning] = useState(false)
   const [sourceOpen, setSourceOpen] = useState(false)
   const [pos, setPos] = useState<CoverPos>(() => parseCoverPos(position))
@@ -66,7 +68,7 @@ export function CoverBanner({
       className="group/cover relative mx-[-24px] mt-[-32px] mb-6 h-[224px] shrink-0 overflow-hidden data-[repositioning]:cursor-grab data-[repositioning]:touch-none data-[repositioning]:select-none data-[repositioning]:outline-none data-[repositioning]:active:cursor-grabbing"
       data-repositioning={repositioning || undefined}
       tabIndex={repositioning ? 0 : undefined}
-      aria-label={repositioning ? 'Drag the image to reposition it (arrow keys to fine-tune)' : undefined}
+      aria-label={repositioning ? t('cover.repositionHint') : undefined}
       onPointerDown={(e) => {
         if (!repositioning) return
         if ((e.target as HTMLElement).closest('[data-cover-actions]')) return
@@ -120,9 +122,9 @@ export function CoverBanner({
         {repositioning ? (
           <>
             <CoverButton variant="default" onClick={saveFraming}>
-              Save position
+              {t('cover.savePosition')}
             </CoverButton>
-            <CoverButton onClick={cancelFraming}>Cancel</CoverButton>
+            <CoverButton onClick={cancelFraming}>{t('cancel')}</CoverButton>
           </>
         ) : (
           <>
@@ -133,10 +135,10 @@ export function CoverBanner({
                 boxRef.current?.focus()
               }}
             >
-              Reposition
+              {t('cover.reposition')}
             </CoverButton>
-            <CoverButton onClick={() => setSourceOpen((o) => !o)}>Change</CoverButton>
-            <CoverButton onClick={() => onChange({ cover_url: null, cover_position: null })}>Remove</CoverButton>
+            <CoverButton onClick={() => setSourceOpen((o) => !o)}>{t('cover.change')}</CoverButton>
+            <CoverButton onClick={() => onChange({ cover_url: null, cover_position: null })}>{t('cover.remove')}</CoverButton>
           </>
         )}
       </div>}
@@ -161,7 +163,7 @@ export function CoverBanner({
       {repositioning ? (
         <div className="pointer-events-none absolute inset-x-0 bottom-2 flex justify-center">
           <span className="rounded-full bg-background/85 px-3 py-1 text-xs text-foreground shadow-md backdrop-blur-[4px]">
-            Drag the image to reposition it (arrow keys to fine-tune)
+            {t('cover.repositionHint')}
           </span>
         </div>
       ) : null}

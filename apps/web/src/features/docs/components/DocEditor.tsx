@@ -1,11 +1,13 @@
 import { useCommand } from '@/shortcuts/useCommand'
 import { isPaymentRequired } from '@orbit/api/problem'
 import { lazy, Suspense, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState, type ReactNode, type Ref } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { ArrowLeft, ArrowSwapHorizontal, Check, Copy, Download, MoreH as Ellipsis, FolderMove, Grid, History, Lock, Star, Trash as Trash2, Unlock, People as Users } from 'reicon-react'
 import { cn } from 'cn'
+import { i18n } from '@/i18n'
 import { apiClient, UNAUTHORIZED_EVENT } from '@/api/client'
 import { queryKeys } from '@/api/queryKeys'
 import type { Page, PageKind, PageSummary, PageVersionSummary, Teamspace } from '@orbit/api/generated/types.gen'
@@ -54,7 +56,7 @@ import { PageAutosaver, type AutosaveState, type PagePatch } from '@/features/do
 import { revealCollabCursor } from '@/features/docs/collab/cursor'
 import { useCollaborators } from '@/features/docs/collab/presence'
 import { PresenceAvatars } from '@/features/docs/collab/PresenceAvatars'
-import { collabProblemAction, collabStatusLabel, type CollabProblem, type CollabSession, type CollabState } from '@orbit/editor/collab/session'
+import { collabProblemAction, type CollabProblem, type CollabSession, type CollabState } from '@orbit/editor/collab/session'
 import { useCollabSession } from '@/features/docs/collab/useCollabSession'
 import { useDocPageActions } from '@/features/docs/pageActions'
 import { downloadPageMarkdown, printPage } from '@/features/docs/pageExport'
@@ -153,10 +155,28 @@ const STATUS_DOT: Record<CollabState['status'], string> = {
   error: 'bg-destructive',
 }
 
+const STATUS_LABEL = {
+  live: 'collabStatus.live',
+  connecting: 'collabStatus.connecting',
+  reset: 'collabStatus.connecting',
+  offline: 'collabStatus.offline',
+  lost: 'collabStatus.lost',
+  error: 'collabStatus.error',
+} as const satisfies Record<CollabState['status'], string>
+
+const COMMENT_ERRORS = {
+  create: 'comments.createFailed',
+  reply: 'comments.replyFailed',
+  edit: 'comments.editFailed',
+  delete: 'comments.deleteFailed',
+  resolve: 'comments.updateFailed',
+} as const
+
 /** Banners for sync problems the user has to act on. */
 type SyncNotice = 'too-large' | 'protocol' | 'reconnect-failed' | null
 
 export function DocEditor({ workspaceId, page, pages, teamspaces, onRequestTrash, onRequestMove, onGone, controlRef, peek }: DocEditorProps) {
+  const { t } = useTranslation('docs')
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const createPage = useCreatePage(workspaceId)
@@ -241,10 +261,10 @@ export function DocEditor({ workspaceId, page, pages, teamspaces, onRequestTrash
   // Only the local awareness entry: the server stamps every peer's name and color (unique on the page) from their
   // session, so the color here is a placeholder. The id hides the user's own other tabs from the block markers.
   const collabUser = useMemo(
-    () => ({ id: me.data?.id, name: me.data?.display_name ?? 'Me', color: '#737373' }),
-    [me.data?.display_name, me.data?.id],
+    () => ({ id: me.data?.id, name: me.data?.display_name ?? t('editor.me'), color: '#737373' }),
+    [me.data?.display_name, me.data?.id, t],
   )
-  /** Bumped after a 4409 reset (or "Reload page" on a sync error): drops the local document and reconnects. */
+  /** Bumped after a 4409 reset (or "{t('conflict.reload')}" on a sync error): drops the local document and reconnects. */
   const [generation, setGeneration] = useState(0)
   const [notice, setNotice] = useState<SyncNotice>(null)
   /** The page went away while open (trashed, access removed): the editor turns read-only until we leave. */
@@ -331,8 +351,8 @@ export function DocEditor({ workspaceId, page, pages, teamspaces, onRequestTrash
     saver.dispose()
     // Our own "Move to trash" already navigates and toasts.
     if (expectGone.current > 0) return
-    const name = titleRef.current.trim() || 'Untitled'
-    toast.info(problem === 'gone' ? `“${name}” was moved to the trash.` : `You no longer have access to “${name}”.`)
+    const name = titleRef.current.trim() || t('untitled')
+    toast.info(problem === 'gone' ? t('editor.goneTrashed', { name }) : t('editor.goneForbidden', { name }))
     // Drop it from the tree now so /docs does not land on it again; the refetch brings the real state.
     queryClient.setQueryData(queryKeys.pages.tree(workspaceId), (tree: PageSummary[] | undefined) => tree && removeSubtree(tree, pageId))
     void queryClient.invalidateQueries({ queryKey: queryKeys.pages.tree(workspaceId) })
@@ -375,7 +395,7 @@ export function DocEditor({ workspaceId, page, pages, teamspaces, onRequestTrash
         void reopen()
         break
       case 'rate-limited':
-        toast.warning('Too many changes at once. Syncing again in a few seconds.', { id: `collab-rate-${pageId}` })
+        toast.warning(t('editor.rateLimited'), { id: `collab-rate-${pageId}` })
         break
       case 'notice':
         setNotice(problem === 'too-large' ? 'too-large' : 'protocol')
@@ -439,9 +459,9 @@ export function DocEditor({ workspaceId, page, pages, teamspaces, onRequestTrash
       // Nothing shows this editor's status after unmount, so report a failed final save here.
       void saver.flush().then(() => {
         if (!saver.hasUnsavedChanges()) return
-        const name = titleRef.current.trim() || 'Untitled'
-        toast.error(`Your last edits to “${name}” were not saved.`, {
-          action: { label: 'Open', onClick: () => navigateRef.current(`/docs/${pageId}`) },
+        const name = titleRef.current.trim() || t('untitled')
+        toast.error(t('editor.lastEditsLost', { name }), {
+          action: { label: t('open'), onClick: () => navigateRef.current(`/docs/${pageId}`) },
         })
       })
     }
@@ -507,8 +527,8 @@ export function DocEditor({ workspaceId, page, pages, teamspaces, onRequestTrash
     setPageLock.mutate(
       { pageId, locked: next },
       {
-        onSuccess: () => toast.success(next ? 'Page locked. Nobody can edit it until it is unlocked.' : 'Page unlocked.'),
-        onError: () => toast.error(next ? 'Could not lock the page.' : 'Could not unlock the page.'),
+        onSuccess: () => toast.success(next ? t('lock.locked') : t('lock.unlocked')),
+        onError: () => toast.error(next ? t('lock.lockFailed') : t('lock.unlockFailed')),
       },
     )
   }
@@ -520,7 +540,7 @@ export function DocEditor({ workspaceId, page, pages, teamspaces, onRequestTrash
       reconcilePage(queryClient, workspaceId, fresh)
       applyServerPage(fresh)
     } catch {
-      toast.error('Could not load the latest version of this page.')
+      toast.error(t('editor.reloadFailed'))
     }
   }
 
@@ -537,7 +557,7 @@ export function DocEditor({ workspaceId, page, pages, teamspaces, onRequestTrash
   const restoreFromHistory = async (version: PageVersionSummary): Promise<boolean> => {
     await saver.flush()
     if (saver.hasUnsavedChanges() || saver.state.status === 'conflict' || saver.state.status === 'error') {
-      toast.error('Your latest edits are not saved yet. Resolve that before restoring a version.')
+      toast.error(t('history.unsavedEdits'))
       return false
     }
     try {
@@ -546,14 +566,14 @@ export function DocEditor({ workspaceId, page, pages, teamspaces, onRequestTrash
       saver.discard(restored.version)
       applyServerPage(restored)
       setHistoryOpen(false)
-      toast.success(`Restored the version from ${dayLabel(version.created_at).toLowerCase()}, ${timeOfDay(version.created_at)}.`)
+      toast.success(t('history.restored', { day: dayLabel(version.created_at).toLowerCase(), time: timeOfDay(version.created_at) }))
       return true
     } catch (error) {
       if (isPageVersionConflict(error)) {
-        toast.error('This page changed in the meantime. Try again.')
+        toast.error(t('history.restoreConflict'))
         void queryClient.invalidateQueries({ queryKey: queryKeys.pages.detail(workspaceId, pageId) })
       } else {
-        toast.error('Could not restore this version.')
+        toast.error(t('history.restoreFailed'))
       }
       return false
     }
@@ -583,11 +603,11 @@ export function DocEditor({ workspaceId, page, pages, teamspaces, onRequestTrash
         const created = await createSubpage(kind === 'database' ? { parent_id: pageId, kind } : { parent_id: pageId })
         return created.id
       } catch (error) {
-        if (!isPaymentRequired(error)) toast.error(kind === 'database' ? 'Could not create the database. Try again.' : 'Could not create the sub-page. Try again.')
+        if (!isPaymentRequired(error)) toast.error(kind === 'database' ? t('createDatabaseFailed') : t('editor.subpageFailed'))
         throw error
       }
     },
-    [createSubpage, pageId],
+    [createSubpage, pageId, t],
   )
 
   /** Editor image/file uploads: errors are toasted, then rethrown so BlockNote drops the empty block. */
@@ -682,28 +702,28 @@ export function DocEditor({ workspaceId, page, pages, teamspaces, onRequestTrash
   // Content sync is the headline; failed or conflicting title/icon/cover saves take over the label.
   const statusLabel =
     status === 'error'
-      ? 'Save failed'
+      ? t('status.saveFailed')
       : status === 'conflict'
-        ? 'Conflict'
+        ? t('status.conflict')
         : syncStatus === 'live' && status === 'saving'
-          ? 'Saving…'
-          : collabStatusLabel({ ...collab.state, status: syncStatus })
+          ? t('status.saving')
+          : t(STATUS_LABEL[syncStatus])
   // A healthy sync needs no label. "Live" only repeated the edit time next to it.
-  const showStatus = statusLabel !== 'Live'
+  const showStatus = !(syncStatus === 'live' && status !== 'error' && status !== 'conflict' && status !== 'saving')
   const statusTitle =
     syncStatus === 'offline'
-      ? 'Your edits are kept in this tab and sync when the connection is back.'
+      ? t('status.offlineHint')
       : undefined
-  const displayTitle = title.trim() ? title : 'Untitled'
+  const displayTitle = title.trim() ? title : t('untitled')
   const editedBy = lastEdited.edit.userId === selfId ? 'you' : lastEdited.edit.name.trim() || 'someone'
   const editedAt = new Date(lastEdited.edit.at).toISOString()
   const favorite = isFavorite(favoritesQuery.data, pageId)
   const setFavorite = (next: boolean) =>
     toggleFavorite.mutate(
       { pageId, favorite: next, page: { title, icon, kind: page.kind, database_id: page.database_id } },
-      { onError: () => toast.error(next ? 'Could not add the page to favorites.' : 'Could not remove the page from favorites.') },
+      { onError: () => toast.error(next ? t('favorites.addFailed') : t('favorites.removeFailed')) },
     )
-  const favoriteLabel = favorite ? 'Remove from favorites' : 'Add to favorites'
+  const favoriteLabel = favorite ? t('pageMenu.removeFavorite') : t('pageMenu.addFavorite')
   const mentions = {
     members: membersQuery.data ?? null,
     candidates: pageMentionCandidates(membersQuery.data ?? [], byId.get(pageId) ?? page, selfId),
@@ -730,10 +750,10 @@ export function DocEditor({ workspaceId, page, pages, teamspaces, onRequestTrash
         <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground" data-lock-badge="">
           <span className="flex min-w-0 items-center gap-1.5 rounded-full bg-muted px-2 py-0.5">
             <Lock className="size-3 shrink-0" aria-hidden="true" />
-            <span className="truncate">{page.locked_by ? `Locked by ${page.locked_by.id === selfId ? 'you' : page.locked_by.display_name}` : 'Locked'}</span>
+            <span className="truncate">{page.locked_by ? (page.locked_by.id === selfId ? t('lock.byYou') : t('lock.by', { name: page.locked_by.display_name })) : t('lock.badge')}</span>
           </span>
           <Button type="button" variant="ghost" size="xs" disabled={setPageLock.isPending} onClick={() => toggleLock(false)}>
-            Unlock
+            {t('lock.unlock')}
           </Button>
         </div>
       ) : null}
@@ -747,7 +767,7 @@ export function DocEditor({ workspaceId, page, pages, teamspaces, onRequestTrash
                   variant="ghost"
                   className="h-auto cursor-pointer rounded-xl border-0 p-0.5 text-[3.75rem] leading-none font-normal drop-shadow-[0_1px_2px_rgb(0_0_0/0.3)] hover:bg-foreground/[0.02] disabled:opacity-100 dark:hover:bg-foreground/[0.02]"
                   disabled={readOnly}
-                  aria-label="Change icon"
+                  aria-label={t('editor.changeIcon')}
                 />
               }
             >
@@ -775,7 +795,7 @@ export function DocEditor({ workspaceId, page, pages, teamspaces, onRequestTrash
               <PopoverTrigger
                 render={<Button type="button" variant="ghost" size="sm" className="text-muted-foreground/70 hover:text-foreground" />}
               >
-                😀 Add icon
+                😀 {t('editor.addIcon')}
               </PopoverTrigger>
               <PopoverContent align="start" className="w-auto gap-0 p-0">
                 <EmojiPicker
@@ -795,7 +815,7 @@ export function DocEditor({ workspaceId, page, pages, teamspaces, onRequestTrash
               className="text-muted-foreground/70 hover:text-foreground"
               onClick={() => setCoverPanelOpen((open) => !open)}
             >
-              🖼️ Add cover
+              🖼️ {t('editor.addCover')}
             </Button>
           ) : null}
         </div>
@@ -817,8 +837,8 @@ export function DocEditor({ workspaceId, page, pages, teamspaces, onRequestTrash
         readOnly={readOnly}
         autoFocus={peek?.focusTitle}
         maxLength={500}
-        placeholder="Untitled"
-        aria-label="Page title"
+        placeholder={t('untitled')}
+        aria-label={t('editor.titleLabel')}
         onChange={(e) => changeTitle(e.target.value)}
         onBlur={() => void saver.flush()}
         onKeyDown={(e) => {
@@ -844,12 +864,12 @@ export function DocEditor({ workspaceId, page, pages, teamspaces, onRequestTrash
                 variant="ghost"
                 size="icon-sm"
                 className="hidden text-muted-foreground/70 max-[899px]:inline-flex"
-                aria-label="Back to docs"
+                aria-label={t('backToDocs')}
                 onClick={() => navigate('/docs')}
               >
                 <ArrowLeft className="size-4" />
               </Button>
-              <nav className="flex min-w-0 items-center gap-1.5 overflow-hidden text-[0.8125rem] text-muted-foreground/70" aria-label="Page path">
+              <nav className="flex min-w-0 items-center gap-1.5 overflow-hidden text-[0.8125rem] text-muted-foreground/70" aria-label={t('editor.path')}>
                 <span className="flex min-w-0 shrink-0 items-center gap-1.5 max-[899px]:hidden" data-space-crumb={space}>
                   <span className="flex max-w-40 min-w-0 items-center gap-1">
                     {space === PRIVATE_SPACE ? <Lock className="size-3.5 shrink-0" aria-hidden="true" /> : null}
@@ -897,20 +917,20 @@ export function DocEditor({ workspaceId, page, pages, teamspaces, onRequestTrash
                 {statusLabel}
                 {status === 'error' ? (
                   <Button type="button" variant="ghost" size="xs" onClick={() => void saver.flush()}>
-                    Retry
+                    {t('retry')}
                   </Button>
                 ) : null}
               </>
             ) : null}
           </span>
           {isDatabase ? null : (
-            <Tip label="Comments" side="bottom">
+            <Tip label={t('comments.title')} side="bottom">
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
                 className={cn('gap-1 px-1.5 text-muted-foreground/70', commentsOpen && 'bg-muted text-foreground')}
-                aria-label={counts.open > 0 ? `Comments (${counts.open} open)` : 'Comments'}
+                aria-label={counts.open > 0 ? t('comments.toggleOpen', { count: counts.open }) : t('comments.title')}
                 aria-pressed={commentsOpen}
                 data-comments-toggle=""
                 onClick={() => setCommentsOpen((open) => !open)}
@@ -943,9 +963,9 @@ export function DocEditor({ workspaceId, page, pages, teamspaces, onRequestTrash
                 </Tip>
               )}
               <DropdownMenu>
-                <Tip label="Page options" side="bottom">
+                <Tip label={t('pageMenu.options')} side="bottom">
                   <DropdownMenuTrigger
-                    render={<Button type="button" variant="ghost" size="icon-sm" className="text-muted-foreground/70" aria-label="Page options" />}
+                    render={<Button type="button" variant="ghost" size="icon-sm" className="text-muted-foreground/70" aria-label={t('pageMenu.options')} />}
                   >
                     <Ellipsis className="size-4" />
                   </DropdownMenuTrigger>
@@ -954,7 +974,7 @@ export function DocEditor({ workspaceId, page, pages, teamspaces, onRequestTrash
                   {onRequestMove && teamspaces ? (
                     <>
                       <DropdownMenuGroup>
-                        <DropdownMenuLabel>Move to</DropdownMenuLabel>
+                        <DropdownMenuLabel>{t('pageMenu.moveTo')}</DropdownMenuLabel>
                         {spaceTargets.map((target) => (
                           <DropdownMenuItem
                             key={target}
@@ -963,7 +983,7 @@ export function DocEditor({ workspaceId, page, pages, teamspaces, onRequestTrash
                           >
                             {target === PRIVATE_SPACE ? <Lock className="size-[14px]" /> : <Users className="size-[14px]" />}
                             <span className="min-w-0 flex-1 truncate">{spaceLabel(target, teamspaces)}</span>
-                            {target === space ? <Check className="size-[14px] text-muted-foreground" aria-label="Current space" /> : null}
+                            {target === space ? <Check className="size-[14px] text-muted-foreground" aria-label={t('pageMenu.currentSpace')} /> : null}
                           </DropdownMenuItem>
                         ))}
                         <DropdownMenuItem onClick={() => setMoveOpen(true)}>
@@ -984,17 +1004,17 @@ export function DocEditor({ workspaceId, page, pages, teamspaces, onRequestTrash
                   {isDatabase ? null : (
                     <DropdownMenuCheckboxItem checked={fullWidth} onCheckedChange={toggleFullWidth}>
                       <ArrowSwapHorizontal className="size-[14px]" />
-                      Full width
+                      {t('pageMenu.fullWidth')}
                     </DropdownMenuCheckboxItem>
                   )}
                   <DropdownMenuItem disabled={setPageLock.isPending} onClick={() => toggleLock(!locked)}>
                     {locked ? <Unlock className="size-[14px]" /> : <Lock className="size-[14px]" />}
-                    {locked ? 'Unlock page' : 'Lock page'}
+                    {locked ? t('pageMenu.unlock') : t('pageMenu.lock')}
                   </DropdownMenuItem>
                   {isDatabase ? null : (
                     <DropdownMenuItem onClick={() => setHistoryOpen(true)}>
                       <History className="size-[14px]" />
-                      Version history
+                      {t('history.title')}
                     </DropdownMenuItem>
                   )}
                   {isDatabase ? null : (
@@ -1006,19 +1026,19 @@ export function DocEditor({ workspaceId, page, pages, teamspaces, onRequestTrash
                   {pageActions ? (
                     <DropdownMenuItem onClick={() => pageActions.duplicate(pageId, false)}>
                       <Copy className="size-[14px]" />
-                      Duplicate
+                      {t('pageMenu.duplicate')}
                     </DropdownMenuItem>
                   ) : null}
                   {pageActions && hasChildren ? (
                     <DropdownMenuItem onClick={() => pageActions.duplicate(pageId, true)}>
                       <Copy className="size-[14px]" />
-                      Duplicate with sub-pages
+                      {t('pageMenu.duplicateWithChildren')}
                     </DropdownMenuItem>
                   ) : null}
                   <DropdownMenuSub>
                     <DropdownMenuSubTrigger>
                       <Download className="size-[14px]" />
-                      Export
+                      {t('pageMenu.export')}
                     </DropdownMenuSubTrigger>
                     <DropdownMenuSubContent className="min-w-44">
                       <DropdownMenuItem
@@ -1030,7 +1050,7 @@ export function DocEditor({ workspaceId, page, pages, teamspaces, onRequestTrash
                         <DropdownMenuItem
                           onClick={() => void downloadPageMarkdown({ workspaceId, pageId, title: displayTitle, includeChildren: true })}
                         >
-                          Markdown with sub-pages
+                          {t('pageMenu.markdownWithChildren')}
                         </DropdownMenuItem>
                       ) : null}
                       <DropdownMenuItem onClick={() => printPage(displayTitle)}>
@@ -1040,10 +1060,10 @@ export function DocEditor({ workspaceId, page, pages, teamspaces, onRequestTrash
                   </DropdownMenuSub>
                   <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onRequestTrash(pageId)}>
                     <Trash2 className="size-[14px]" />
-                    Move to trash
+                    {t('pageMenu.moveToTrash')}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <div className="px-1.5 py-1 text-xs leading-5 text-muted-foreground" title={new Date(lastEdited.edit.at).toLocaleString()}>
+                  <div className="px-1.5 py-1 text-xs leading-5 text-muted-foreground" title={new Date(lastEdited.edit.at).toLocaleString(i18n.language)}>
                     <p className="truncate" data-last-edited="">
                       Last edited by {editedBy}
                     </p>
@@ -1061,12 +1081,12 @@ export function DocEditor({ workspaceId, page, pages, teamspaces, onRequestTrash
             role="alert"
             className="flex shrink-0 flex-wrap items-center gap-2 border-b border-border bg-destructive/10 px-3 py-2 text-[0.8125rem] text-foreground"
           >
-            <span className="min-w-0 flex-1">The title, icon or cover was changed somewhere else. Your change is not saved.</span>
+            <span className="min-w-0 flex-1">{t('conflict.message')}</span>
             <Button type="button" variant="outline" size="sm" onClick={() => void reloadFromServer()}>
-              Reload page
+              {t('conflict.reload')}
             </Button>
             <Button type="button" variant="destructive" size="sm" onClick={overwrite}>
-              Overwrite
+              {t('conflict.overwrite')}
             </Button>
           </div>
         ) : null}
@@ -1077,11 +1097,7 @@ export function DocEditor({ workspaceId, page, pages, teamspaces, onRequestTrash
             className="flex shrink-0 flex-wrap items-center gap-2 border-b border-border bg-destructive/10 px-3 py-2 text-[0.8125rem] text-foreground"
           >
             <span className="min-w-0 flex-1">
-              {notice === 'too-large'
-                ? 'Your latest change is too large to sync. Reload the page to continue from the saved version.'
-                : notice === 'protocol'
-                  ? 'This page cannot sync with this version of Orbit. Reload the app.'
-                  : 'Could not reconnect to this page.'}
+              {notice === 'too-large' ? t('notice.tooLarge') : notice === 'protocol' ? t('notice.protocol') : t('notice.reconnectFailed')}
             </span>
             <Button
               type="button"
@@ -1092,7 +1108,7 @@ export function DocEditor({ workspaceId, page, pages, teamspaces, onRequestTrash
                 else void reopen()
               }}
             >
-              {notice === 'reconnect-failed' ? 'Retry' : notice === 'protocol' ? 'Reload app' : 'Reload page'}
+              {notice === 'reconnect-failed' ? t('retry') : notice === 'protocol' ? t('notice.reloadApp') : t('conflict.reload')}
             </Button>
           </div>
         ) : null}
@@ -1144,17 +1160,7 @@ export function DocEditor({ workspaceId, page, pages, teamspaces, onRequestTrash
                         showThreadId,
                         onThreadShown: () => setShowThreadId(null),
                         onError: (action) =>
-                          toast.error(
-                            action === 'create'
-                              ? 'Could not add the comment.'
-                              : action === 'reply'
-                                ? 'Could not send the reply.'
-                                : action === 'edit'
-                                  ? 'Could not save the comment.'
-                                  : action === 'delete'
-                                    ? 'Could not delete the comment.'
-                                    : 'Could not update the thread.',
-                          ),
+                          toast.error(t(COMMENT_ERRORS[action])),
                       }}
                       mentions={mentions}
                       className="-mx-[54px] min-h-40 max-[899px]:mx-0"

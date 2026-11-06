@@ -1,5 +1,6 @@
 import { useMemo, useSyncExternalStore } from 'react'
 import type { Awareness } from 'y-protocols/awareness'
+import { i18n } from '@/i18n'
 
 /** Someone else on the page, as the server stamped them into awareness (`user: { id, name, color }`). */
 export interface Collaborator {
@@ -46,7 +47,7 @@ export function collaboratorsOf(
     }
     seen.set(user.id, {
       id: user.id,
-      name: typeof user.name === 'string' && user.name.trim() ? user.name : 'Someone',
+      name: typeof user.name === 'string' && user.name.trim() ? user.name : i18n.t('docs:presence.someone'),
       color: typeof user.color === 'string' ? user.color : '#737373',
       editing,
     })

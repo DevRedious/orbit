@@ -1,12 +1,12 @@
 import { useCommand } from '@/shortcuts/useCommand'
 import '@blocknote/shadcn/style.css'
 
-import { use, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState, useSyncExternalStore, type KeyboardEvent, type MouseEvent, type Ref } from 'react'
+import { use, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties, type KeyboardEvent, type MouseEvent, type Ref } from 'react'
 import { createPortal } from 'react-dom'
+import { useTranslation } from 'react-i18next'
 import { QueryClientContext, type QueryClient } from '@tanstack/react-query'
 import { SuggestionMenu } from '@blocknote/core'
 import { CommentsExtension } from '@blocknote/core/comments'
-import { en } from '@blocknote/core/locales'
 import { withCollaboration } from '@blocknote/core/yjs'
 import {
   ComponentsContext,
@@ -26,6 +26,7 @@ import type { Attachment } from '@/lib/attachmentLib'
 import { appNavigate, internalPath } from '@/lib/navigateBridge'
 import { useTheme } from '@/lib/themeContext'
 import { cn } from 'cn'
+import { i18n } from '@/i18n'
 import { collabBlockPresence } from '../collab/blockPresence'
 import { renderCollabCursor } from '../collab/cursor'
 import { ImageZoomButton } from './ImageZoomButton'
@@ -53,7 +54,7 @@ import { commentsApi, threadsQueryOptions } from '../comments/api'
 import { commentComponents } from '../comments/components'
 import { commentEditorSchema, MentionCandidatesContext, MentionNamesContext, type MentionCandidate } from '../comments/mentions'
 import { CommentMembersContext } from '../comments/mentionContext'
-import { COMMENT_PLACEHOLDERS } from '../comments/dictionary'
+import { blockNoteDictionary, commentPlaceholders } from '../comments/dictionary'
 import { COMMENT_POPUP_ATTR, FloatingThreadCard, NewCommentCard } from '../comments/ThreadCard'
 import { ThreadList } from '../comments/ThreadList'
 import { NoCommentsThreadStore, OrbitThreadStore, type OrbitThreadStoreOptions } from '../comments/threadStore'
@@ -100,12 +101,24 @@ export interface PageEditorComments {
 }
 
 
-/** "Comment" in the formatting toolbar (BlockNote says "Add comment"); Orbit's comment field placeholders. */
-const dictionary = {
-  ...en,
-  formatting_toolbar: { ...en.formatting_toolbar, comment: { tooltip: 'Comment' } },
-  placeholders: { ...en.placeholders, ...COMMENT_PLACEHOLDERS },
+/**
+ * BlockNote's strings in the UI language, with "Comment" in the formatting toolbar (BlockNote says "Add comment") and
+ * Orbit's comment field placeholders. Read when the editor is created; a language change remounts it.
+ */
+function pageEditorDictionary() {
+  const dictionary = blockNoteDictionary()
+  return {
+    ...dictionary,
+    formatting_toolbar: { ...dictionary.formatting_toolbar, comment: { tooltip: i18n.t('docs:comments.comment') } },
+    placeholders: { ...dictionary.placeholders, ...commentPlaceholders() },
+  }
 }
+
+const FIELD_PLACEHOLDER_KEYS = {
+  description: 'editor.placeholders.description',
+  comment: 'editor.placeholders.comment',
+  reply: 'editor.placeholders.reply',
+} as const
 
 /** The floating thread ignores presses in popups opened from it (their menus portal outside the card). */
 const floatingThreadOptions = {
@@ -113,8 +126,6 @@ const floatingThreadOptions = {
     outsidePress: (event: globalThis.MouseEvent) => !(event.target instanceof Element && event.target.closest(`[${COMMENT_POPUP_ATTR}]`)),
   },
 }
-
-const FORMER_MEMBER = 'Former member'
 
 /**
  * `page`: a docs page (sub-page cards, page files, comments). `task`: a task description or comment — no page
@@ -215,6 +226,7 @@ function PageEditorInner({
   ref,
 }: PageEditorProps) {
   const { theme } = useTheme()
+  const { t } = useTranslation('docs')
   // Optional: read-only previews render without a query client (and without comments).
   const queryClient = use(QueryClientContext)
   const [latest] = useState(() => new Latest(comments))
@@ -303,7 +315,7 @@ function PageEditorInner({
     extensions: [selectBlockExtension(), isolatedDragsExtension(), marginSelectExtension([...MARGIN_SELECT_TYPES])],
     dropCursor: isolatedDropCursor,
     domAttributes: ariaLabel ? { editor: { 'aria-label': ariaLabel } } : undefined,
-    dictionary,
+    dictionary: pageEditorDictionary(),
   }
   const commentsExtension = CommentsExtension({
     threadStore,
@@ -402,6 +414,16 @@ function PageEditorInner({
     }),
     [editor, fileScope],
   )
+
+  // Empty-block hints are static CSS (see below); their text comes through custom properties so it follows the language.
+  const placeholderStyle = {
+    '--placeholder-default': JSON.stringify(t('editor.placeholders.default')),
+    '--placeholder-heading': JSON.stringify(t('editor.placeholders.heading')),
+    '--placeholder-toggle': JSON.stringify(t('editor.placeholders.toggle')),
+    '--placeholder-list': JSON.stringify(t('editor.placeholders.list')),
+    '--placeholder-callout': JSON.stringify(t('editor.placeholders.callout')),
+    ...(placeholder ? { '--placeholder-field': JSON.stringify(t(FIELD_PLACEHOLDER_KEYS[placeholder])) } : {}),
+  } as CSSProperties
 
   const context = useMemo<PageEditorContextValue>(
     () => ({ resolvePage, onOpenPage: onOpenPage ?? (() => {}), databaseHost: databaseHost ?? null }),
@@ -541,15 +563,16 @@ function PageEditorInner({
           editable={mountEditable}
           theme={theme}
           data-slot="page-editor"
+          style={placeholderStyle}
           className={cn(
             // Static placeholders: BlockNote injects its own through a runtime <style>, which the production CSP
             // (`style-src 'self'`) blocks. The generic hint sits in :where() so the block-type ones win over it.
-            `[&>.bn-editor[contenteditable=true]_.bn-block-content:where([data-is-empty-and-focused]):has(.ProseMirror-trailingBreak:only-child)]:after:content-["Enter_text_or_type_'/'_for_commands"]!`,
-            "[&>.bn-editor[contenteditable=true]_.bn-block-content[data-content-type=heading]:has(.ProseMirror-trailingBreak:only-child)]:after:content-['Heading']!",
-            "[&>.bn-editor[contenteditable=true]_.bn-block-content[data-content-type=toggleListItem]:has(.ProseMirror-trailingBreak:only-child)]:after:content-['Toggle']!",
-            "[&>.bn-editor[contenteditable=true]_.bn-block-content:is([data-content-type=bulletListItem],[data-content-type=numberedListItem],[data-content-type=checkListItem]):has(.ProseMirror-trailingBreak:only-child)]:after:content-['List']!",
+            '[&>.bn-editor[contenteditable=true]_.bn-block-content:where([data-is-empty-and-focused]):has(.ProseMirror-trailingBreak:only-child)]:after:content-(--placeholder-default)!',
+            '[&>.bn-editor[contenteditable=true]_.bn-block-content[data-content-type=heading]:has(.ProseMirror-trailingBreak:only-child)]:after:content-(--placeholder-heading)!',
+            '[&>.bn-editor[contenteditable=true]_.bn-block-content[data-content-type=toggleListItem]:has(.ProseMirror-trailingBreak:only-child)]:after:content-(--placeholder-toggle)!',
+            '[&>.bn-editor[contenteditable=true]_.bn-block-content:is([data-content-type=bulletListItem],[data-content-type=numberedListItem],[data-content-type=checkListItem]):has(.ProseMirror-trailingBreak:only-child)]:after:content-(--placeholder-list)!',
             // The callout's placeholder sits next to the emoji (BlockNote's would follow the whole row).
-            "[&>.bn-editor[contenteditable=true]_.bn-block-content[data-content-type=callout]:has(.ProseMirror-trailingBreak:only-child)]:after:content-['Callout']!",
+            '[&>.bn-editor[contenteditable=true]_.bn-block-content[data-content-type=callout]:has(.ProseMirror-trailingBreak:only-child)]:after:content-(--placeholder-callout)!',
             '[&>.bn-editor[contenteditable=true]_.bn-block-content[data-content-type=callout]:has(.ProseMirror-trailingBreak:only-child)]:after:absolute [&>.bn-editor[contenteditable=true]_.bn-block-content[data-content-type=callout]:has(.ProseMirror-trailingBreak:only-child)]:after:top-px [&>.bn-editor[contenteditable=true]_.bn-block-content[data-content-type=callout]:has(.ProseMirror-trailingBreak:only-child)]:after:left-8',
             // Headings scale with their text: the app's global `h1 { leading-7 }` is a fixed 28px, too short for these
             // headings, so the text ran into the next block. Sizes live in index.css.
@@ -594,12 +617,8 @@ function PageEditorInner({
             // Task fields: their hint while the whole document is empty.
             placeholder &&
               '[&>.bn-editor[contenteditable=true]_.bn-block-content[data-is-only-empty-block]:has(.ProseMirror-trailingBreak:only-child)]:after:text-muted-foreground! [&>.bn-editor[contenteditable=true]_.bn-block-content[data-is-only-empty-block]:has(.ProseMirror-trailingBreak:only-child)]:after:not-italic!',
-            placeholder === 'description' &&
-              "[&>.bn-editor[contenteditable=true]_.bn-block-content[data-is-only-empty-block]:has(.ProseMirror-trailingBreak:only-child)]:after:content-['Add_description…']!",
-            placeholder === 'comment' &&
-              "[&>.bn-editor[contenteditable=true]_.bn-block-content[data-is-only-empty-block]:has(.ProseMirror-trailingBreak:only-child)]:after:content-['Leave_a_comment…_Use_@_to_mention']!",
-            placeholder === 'reply' &&
-              "[&>.bn-editor[contenteditable=true]_.bn-block-content[data-is-only-empty-block]:has(.ProseMirror-trailingBreak:only-child)]:after:content-['Leave_a_reply…']!",
+            placeholder &&
+              '[&>.bn-editor[contenteditable=true]_.bn-block-content[data-is-only-empty-block]:has(.ProseMirror-trailingBreak:only-child)]:after:content-(--placeholder-field)!',
             className,
           )}
           sideMenu={false}
@@ -729,7 +748,7 @@ function userResolver(membersLoaded: Promise<void>, latest: Latest) {
   return async (userIds: string[]) => {
     await membersLoaded
     const members = new Map((latest.current()?.members ?? []).map((member) => [member.id, member]))
-    return userIds.map((id) => ({ id, username: members.get(id)?.name ?? FORMER_MEMBER, avatarUrl: '' }))
+    return userIds.map((id) => ({ id, username: members.get(id)?.name ?? i18n.t('docs:formerMember'), avatarUrl: '' }))
   }
 }
 

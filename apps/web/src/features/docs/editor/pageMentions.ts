@@ -1,6 +1,7 @@
 // @mentions in the page body: who the "@" picker offers and how a chip is labelled. Kept free of BlockNote imports
 // (DocEditor in the main chunk uses it; the editor chunk loads lazily).
 import { createContext } from 'react'
+import { i18n } from '@/i18n'
 
 /** A member the picker can offer (a workspace member as `useMembers` returns them). */
 export interface PageMentionMember {
@@ -24,9 +25,6 @@ export interface PageMentionOptions {
   /** A private page: only its owner can see it, so only they are offered. */
   privatePage: boolean
 }
-
-export const PRIVATE_PAGE_HINT = 'Only you can see this private page'
-export const UNKNOWN_USER = 'Unknown user'
 
 /**
  * The members who can see the page: every active member for a teamspace page, only the owner (the signed-in user)
@@ -62,8 +60,8 @@ export function filterPageMentionCandidates<T extends PageMentionMember>(candida
  * in read-only previews without one); "Unknown user" once the member is gone.
  */
 export function mentionLabel(userId: string, storedName: string, members: ReadonlyMap<string, string> | null): string {
-  if (members) return members.get(userId) ?? UNKNOWN_USER
-  return storedName.trim() || UNKNOWN_USER
+  if (members) return members.get(userId) ?? i18n.t('docs:mentions.unknownUser')
+  return storedName.trim() || i18n.t('docs:mentions.unknownUser')
 }
 
 /** Current member names by user id; `null` while unknown (chips then show their stored name). */

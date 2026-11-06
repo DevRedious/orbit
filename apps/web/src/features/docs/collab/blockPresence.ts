@@ -5,6 +5,7 @@ import { Decoration, DecorationSet } from '@tiptap/pm/view'
 import { relativePositionToAbsolutePosition, yCursorPluginKey, ySyncPluginKey } from 'y-prosemirror'
 import type { Awareness } from 'y-protocols/awareness'
 import * as Y from 'yjs'
+import { i18n } from '@/i18n'
 import { inkOn } from './cursor'
 import { initials } from './presence'
 
@@ -43,7 +44,7 @@ function presenceDecorations(state: EditorState, awareness: Awareness, self: str
     const block = blockAt(state, Math.min(head, state.doc.content.size))
     if (block === null) return
     const users = blocks.get(block) ?? []
-    if (!users.some((other) => other.id === user.id)) users.push({ id: user.id, name: user.name || 'Someone', color: user.color || '#737373' })
+    if (!users.some((other) => other.id === user.id)) users.push({ id: user.id, name: user.name || i18n.t('docs:presence.someone'), color: user.color || '#737373' })
     blocks.set(block, users)
   })
   const decorations = [...blocks].map(([pos, users]) =>

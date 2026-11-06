@@ -3,6 +3,7 @@ import { apiClient, type createApiClient } from '@/api/client'
 import { createTeamspace, deleteTeamspace, listTeamspaces, moveTeamspace, updateTeamspace } from '@orbit/api/generated/sdk.gen'
 import type { CreateTeamspaceBody, Teamspace } from '@orbit/api/generated/types.gen'
 import { ApiProblem } from '@orbit/api/problem'
+import { i18n } from '@/i18n'
 import { queryKeys } from '@/api/queryKeys'
 
 type ApiClient = ReturnType<typeof createApiClient>
@@ -10,13 +11,13 @@ type ApiClient = ReturnType<typeof createApiClient>
 /** A user-facing sentence for a failed teamspace delete. */
 export function teamspaceDeleteError(error: unknown): string {
   if (error instanceof ApiProblem) {
-    if (error.code === 'teamspace_not_empty') return 'Move or delete its pages before deleting this teamspace.'
-    if (error.code === 'last_teamspace') return 'A workspace keeps at least one teamspace.'
-    if (error.status === 403) return 'Only workspace owners and admins can delete teamspaces.'
-    if (error.status === 404) return 'This teamspace no longer exists.'
-    if (error.status === 409) return 'This teamspace changed. Try again.'
+    if (error.code === 'teamspace_not_empty') return i18n.t('docs:teamspaceDeleteError.notEmpty')
+    if (error.code === 'last_teamspace') return i18n.t('docs:teamspaceDeleteError.lastTeamspace')
+    if (error.status === 403) return i18n.t('docs:teamspaceDeleteError.forbidden')
+    if (error.status === 404) return i18n.t('docs:teamspaceDeleteError.notFound')
+    if (error.status === 409) return i18n.t('docs:teamspaceDeleteError.conflict')
   }
-  return 'Could not delete the teamspace.'
+  return i18n.t('docs:teamspaceDeleteError.generic')
 }
 
 function sortTeamspaces(teamspaces: Teamspace[]): Teamspace[] {

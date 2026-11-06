@@ -1,6 +1,7 @@
 import { useCommand } from '@/shortcuts/useCommand'
 import { isPaymentRequired } from '@orbit/api/problem'
 import { useEffect, useRef, useState, type ComponentProps, type DragEvent, type FormEvent, type ReactElement, type ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { NavLink, useNavigate } from 'react-router'
 import { toast } from 'sonner'
 import {
@@ -107,6 +108,7 @@ export function DocTree({
   canDeleteTeamspaces,
   onTrash,
 }: DocTreeProps) {
+  const { t } = useTranslation('docs')
   const navigate = useNavigate()
   const inAppSidebar = useInAppSidebar()
   const teamspacesQuery = useTeamspaces(workspaceId)
@@ -233,7 +235,7 @@ export function DocTree({
         navigate(`/docs/${page.id}`)
       },
       onError: (error) => {
-        if (!isPaymentRequired(error)) toast.error(kind === 'database' ? 'Could not create the database. Try again.' : 'Could not create the page. Try again.')
+        if (!isPaymentRequired(error)) toast.error(kind === 'database' ? t('createDatabaseFailed') : t('createPageFailed'))
       },
     })
   }
@@ -247,8 +249,8 @@ export function DocTree({
       {
         onSuccess: () => {
           const database = pages.find((page) => page.id === move.parent_id && page.kind === 'database')
-          if (database) toast.success(`Moved to “${pageTitle(database)}” as a row`)
-          else if (from !== to) toast.success(`Moved to ${spaceLabel(to, teamspaces)}`)
+          if (database) toast.success(t('movedToDatabase', { title: pageTitle(database) }))
+          else if (from !== to) toast.success(t('movedTo', { space: spaceLabel(to, teamspaces) }))
         },
         onError: (error) => {
           if (!isPageVersionConflict(error)) toast.error(movePageErrorMessage(error))
@@ -311,7 +313,7 @@ export function DocTree({
     onToggle: (page, favorite) =>
       toggleFavorite.mutate(
         { pageId: page.id, favorite, page },
-        { onError: () => toast.error(favorite ? 'Could not add the page to favorites.' : 'Could not remove the page from favorites.') },
+        { onError: () => toast.error(favorite ? t('favorites.addFailed') : t('favorites.removeFailed')) },
       ),
   }
 
@@ -338,7 +340,7 @@ export function DocTree({
       const position =
         favoriteDragId && (zone === 'before' || zone === 'after') ? favoriteDropIndex(favoriteIds, favoriteDragId, targetId, zone) : null
       if (favoriteDragId && position !== null) {
-        moveFavorite.mutate({ pageId: favoriteDragId, position }, { onError: () => toast.error('Could not reorder favorites.') })
+        moveFavorite.mutate({ pageId: favoriteDragId, position }, { onError: () => toast.error(t('favorites.reorderFailed')) })
       }
       endFavoriteDrag()
     },
@@ -399,7 +401,7 @@ export function DocTree({
           data-empty-space={space}
           {...spaceDropProps(space)}
         >
-          No pages inside
+          {t('tree.noPagesInside')}
         </div>
       )
     }
@@ -431,16 +433,16 @@ export function DocTree({
 
   const requestDelete = async (teamspace: Teamspace) => {
     const confirmed = await confirmAction({
-      title: `Delete “${teamspace.name}”?`,
-      description: 'Only an empty teamspace can be deleted. Pages in its trash are deleted with it.',
-      confirmLabel: 'Delete teamspace',
+      title: t('teamspace.deleteTitle', { name: teamspace.name }),
+      description: t('teamspace.deleteDescription'),
+      confirmLabel: t('teamspace.delete'),
       danger: true,
     })
     if (!confirmed) return
     deleteTeamspace.mutate(
       { teamspaceId: teamspace.id, version: teamspace.version },
       {
-        onSuccess: () => toast.success(`Deleted “${teamspace.name}”`),
+        onSuccess: () => toast.success(t('teamspace.deleted', { name: teamspace.name })),
         onError: (error) => toast.error(teamspaceDeleteError(error)),
       },
     )
@@ -452,7 +454,7 @@ export function DocTree({
     if (!name || name === teamspace.name) return
     updateTeamspace.mutate(
       { teamspaceId: teamspace.id, version: teamspace.version, name },
-      { onError: () => toast.error('Could not rename the teamspace.') },
+      { onError: () => toast.error(t('teamspace.renameFailed')) },
     )
   }
 
@@ -461,7 +463,7 @@ export function DocTree({
     if (icon === teamspace.icon) return
     updateTeamspace.mutate(
       { teamspaceId: teamspace.id, version: teamspace.version, icon },
-      { onError: () => toast.error('Could not change the teamspace icon.') },
+      { onError: () => toast.error(t('teamspace.iconFailed')) },
     )
   }
 
@@ -470,7 +472,7 @@ export function DocTree({
     if (moveTeamspace.isPending) return
     moveTeamspace.mutate(
       { teamspaceId: teamspace.id, version: teamspace.version, position },
-      { onError: () => toast.error('Could not reorder the teamspaces.') },
+      { onError: () => toast.error(t('teamspace.reorderFailed')) },
     )
   }
 
@@ -533,7 +535,7 @@ export function DocTree({
   const failed = isError || teamspacesQuery.isError
   const optionsMenu = (trigger: ReactElement) => (
     <DropdownMenu>
-      <Tip label="Documents options" side="bottom">
+      <Tip label={t('tree.options')} side="bottom">
         <DropdownMenuTrigger render={trigger}>
           <Ellipsis className="size-4" />
         </DropdownMenuTrigger>
@@ -541,7 +543,7 @@ export function DocTree({
       <DropdownMenuContent align="end" className="w-auto min-w-44">
         <DropdownMenuItem onClick={() => navigate('/docs/import')}>
           <Import className="size-[14px]" />
-          Import from Notion
+          {t('notionImport.title')}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => navigate('/docs/import/obsidian')}>
           <Import className="size-[14px]" />
@@ -559,21 +561,21 @@ export function DocTree({
     <InAppSidebar>
     <section className={cn('flex min-h-0 min-w-0 flex-col', inAppSidebar ? 'flex-1' : 'h-full w-[260px] shrink-0 border-r border-border bg-background max-[899px]:w-full max-[899px]:border-r-0 max-[899px]:group-data-[view=doc]/docs:hidden')}>
       {inAppSidebar ? (
-        <SidebarListHeader label="Pages">
-          {optionsMenu(<Button type="button" variant="ghost" size="icon-xs" aria-label="Documents options" />)}
-          <Tip label="New page" side="bottom">
-            <Button type="button" variant="ghost" size="icon-xs" aria-label="New page" disabled={createPage.isPending} onClick={() => handleCreate(null)}>
+        <SidebarListHeader label={t('tree.pages')}>
+          {optionsMenu(<Button type="button" variant="ghost" size="icon-xs" aria-label={t('tree.options')} />)}
+          <Tip label={t('tree.newPage')} side="bottom">
+            <Button type="button" variant="ghost" size="icon-xs" aria-label={t('tree.newPage')} disabled={createPage.isPending} onClick={() => handleCreate(null)}>
               <Plus />
             </Button>
           </Tip>
         </SidebarListHeader>
       ) : (
         <PaneHeader className="max-[899px]:min-h-11 max-[899px]:px-2 max-[899px]:py-1.5">
-          <PaneTitle>Documents</PaneTitle>
+          <PaneTitle>{t('tree.title')}</PaneTitle>
           <span className="flex-1" />
-          {optionsMenu(<Button type="button" variant="ghost" size="icon-sm" aria-label="Documents options" />)}
-          <Tip label="New page" side="bottom">
-            <Button type="button" size="icon" aria-label="New page" disabled={createPage.isPending} onClick={() => handleCreate(null)}>
+          {optionsMenu(<Button type="button" variant="ghost" size="icon-sm" aria-label={t('tree.options')} />)}
+          <Tip label={t('tree.newPage')} side="bottom">
+            <Button type="button" size="icon" aria-label={t('tree.newPage')} disabled={createPage.isPending} onClick={() => handleCreate(null)}>
               <Plus className="size-4" />
             </Button>
           </Tip>
@@ -589,8 +591,8 @@ export function DocTree({
             <EmptyState
               icon={FileText}
               size="sm"
-              title="Pages unavailable"
-              description="The server could not load the page tree."
+              title={t('tree.unavailable')}
+              description={t('tree.unavailableHint')}
               action={
                 <Button
                   type="button"
@@ -600,17 +602,17 @@ export function DocTree({
                     if (teamspacesQuery.isError) void teamspacesQuery.refetch()
                   }}
                 >
-                  Retry
+                  {t('retry')}
                 </Button>
               }
             />
           </div>
         ) : (
-          <nav className="flex flex-col gap-px p-2" role="tree" aria-label="Pages">
+          <nav className="flex flex-col gap-px p-2" role="tree" aria-label={t('tree.pages')}>
             {favoriteEntries.length > 0 ? (
-              <div className="mb-3 flex flex-col gap-px" role="group" aria-label="Favorites">
+              <div className="mb-3 flex flex-col gap-px" role="group" aria-label={t('favorites.title')}>
                 <SectionLabel
-                  label="Favorites"
+                  label={t('favorites.title')}
                   icon={<Star className="size-3.5" />}
                   section={FAVORITES_SECTION}
                   expanded={favoritesOpen}
@@ -642,9 +644,9 @@ export function DocTree({
               </div>
             ) : null}
             <SectionLabel
-              label="Teamspaces"
+              label={t('teamspace.sectionTitle')}
               action={
-                <TreeIconButton tip="New teamspace" aria-label="New teamspace" onClick={() => setCreateOpen(true)}>
+                <TreeIconButton tip={t('teamspace.new')} aria-label={t('teamspace.new')} onClick={() => setCreateOpen(true)}>
                   <Plus className="size-[13px]" />
                 </TreeIconButton>
               }
@@ -692,9 +694,9 @@ export function DocTree({
                         {teamspace.is_default && teamspaces.length > 1 ? (
                           <span
                             className="shrink-0 rounded-sm bg-muted px-1 text-[0.625rem] leading-4 font-medium text-muted-foreground"
-                            title="New pages go to this teamspace by default. Move another teamspace to the top to change it."
+                            title={t('teamspace.defaultHint')}
                           >
-                            Default
+                            {t('teamspace.default')}
                           </span>
                         ) : null}
                         <TeamspaceProject project={projects.find((project) => project.id === teamspace.project_id)} />
@@ -711,23 +713,23 @@ export function DocTree({
                         onMove={(offset) => submitTeamspaceMove(teamspace, index + offset)}
                         onDelete={() => void requestDelete(teamspace)}
                       />
-                      <TreeCreateMenu tip="Add page" label={`Add page to ${teamspace.name}`} onCreate={(kind) => handleCreate(null, space, kind)} />
+                      <TreeCreateMenu tip={t('teamspace.addPageTip')} label={t('teamspace.addPage', { name: teamspace.name })} onCreate={(kind) => handleCreate(null, space, kind)} />
                     </TreeRowActions>
                   </SpaceRow>
                   <SpacePages open={open}>{renderPages(space, 1)}</SpacePages>
                 </div>
               )
             })}
-            <div className="mt-3 flex flex-col gap-px" role="group" aria-label="Private">
+            <div className="mt-3 flex flex-col gap-px" role="group" aria-label={t('space.private')}>
               <SectionLabel
-                label="Private"
+                label={t('space.private')}
                 icon={<Lock className="size-3.5" />}
                 space={PRIVATE_SPACE}
                 expanded={!collapsed.has(PRIVATE_SPACE)}
                 onToggle={() => setSpaceCollapsed(PRIVATE_SPACE, !collapsed.has(PRIVATE_SPACE))}
                 dropProps={spaceDropProps(PRIVATE_SPACE)}
                 action={
-                  <TreeCreateMenu tip="Add private page" label="Add private page" onCreate={(kind) => handleCreate(null, PRIVATE_SPACE, kind)} />
+                  <TreeCreateMenu tip={t('tree.addPrivatePage')} label={t('tree.addPrivatePage')} onCreate={(kind) => handleCreate(null, PRIVATE_SPACE, kind)} />
                 }
               />
               <SpacePages open={!collapsed.has(PRIVATE_SPACE)}>{renderPages(PRIVATE_SPACE, 0)}</SpacePages>
@@ -744,7 +746,7 @@ export function DocTree({
           )}
         >
           <Trash2 className="size-[15px] shrink-0" />
-          Trash
+          {t('trash.title')}
         </NavLink>
       </div>
       {iconPickerTeamspace ? (
@@ -753,7 +755,7 @@ export function DocTree({
             align="start"
             anchor={() => headerRefs.current.get(iconPickerTeamspace.id) ?? null}
             className="w-auto gap-0 rounded-xl border border-border bg-popover p-0 text-foreground shadow-xl ring-0"
-            aria-label={`Icon for ${iconPickerTeamspace.name}`}
+            aria-label={t('teamspace.iconFor', { name: iconPickerTeamspace.name })}
           >
             <EmojiPicker
               onPick={(emoji) => changeIcon(iconPickerTeamspace, emoji)}
@@ -774,7 +776,7 @@ export function DocTree({
                   setCreateOpen(false)
                   setSpaceCollapsed(teamspaceSpace(teamspace.id), false)
                 },
-                onError: () => toast.error('Could not create the teamspace.'),
+                onError: () => toast.error(t('teamspace.createFailed')),
               },
             )
           }
@@ -907,12 +909,13 @@ function TeamspaceMenu({
   onMove: (offset: -1 | 1) => void
   onDelete: () => void
 }) {
+  const { t } = useTranslation('docs')
   // Rename and Change icon move focus into the input/picker; the closing menu must not pull it back to the trigger.
   const keepFocus = useRef(false)
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        render={<TreeIconButton tip="Options" aria-label={`${teamspace.name} options`} />}
+        render={<TreeIconButton tip={t('teamspace.optionsTip')} aria-label={t('teamspace.options', { name: teamspace.name })} />}
       >
         <Ellipsis className="size-[13px]" />
       </DropdownMenuTrigger>
@@ -932,7 +935,7 @@ function TeamspaceMenu({
           }}
         >
           <Pencil className="size-[14px]" />
-          Rename
+          {t('teamspace.rename')}
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={() => {
@@ -941,20 +944,20 @@ function TeamspaceMenu({
           }}
         >
           <Smile className="size-[14px]" />
-          Change icon
+          {t('teamspace.changeIcon')}
         </DropdownMenuItem>
         <DropdownMenuItem disabled={!canMoveUp} onClick={() => onMove(-1)}>
           <ArrowUp className="size-[14px]" />
-          Move up
+          {t('teamspace.moveUp')}
         </DropdownMenuItem>
         <DropdownMenuItem disabled={!canMoveDown} onClick={() => onMove(1)}>
           <ArrowDown className="size-[14px]" />
-          Move down
+          {t('teamspace.moveDown')}
         </DropdownMenuItem>
         {canDelete ? (
           <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={onDelete}>
             <Trash2 className="size-[14px]" />
-            Delete teamspace
+            {t('teamspace.delete')}
           </DropdownMenuItem>
         ) : null}
       </DropdownMenuContent>
@@ -963,6 +966,7 @@ function TeamspaceMenu({
 }
 
 function RenameInput({ value, onCommit, onCancel }: { value: string; onCommit: (value: string) => void; onCancel: () => void }) {
+  const { t } = useTranslation('docs')
   const done = useRef(false)
   const finish = (commit: boolean, next: string) => {
     if (done.current) return
@@ -975,7 +979,7 @@ function RenameInput({ value, onCommit, onCancel }: { value: string; onCommit: (
       autoFocus
       defaultValue={value}
       maxLength={100}
-      aria-label="Teamspace name"
+      aria-label={t('teamspace.name')}
       className="h-6 min-w-0 flex-1 rounded-sm px-1.5 py-0 text-[0.8125rem] md:text-[0.8125rem]"
       onFocus={(e) => e.currentTarget.select()}
       onClick={(e) => e.stopPropagation()}
@@ -990,6 +994,7 @@ function RenameInput({ value, onCommit, onCancel }: { value: string; onCommit: (
 }
 
 function CreateTeamspaceDialog({ pending, onClose, onCreate }: { pending: boolean; onClose: () => void; onCreate: (name: string) => void }) {
+  const { t } = useTranslation('docs')
   const [name, setName] = useState('')
   const submit = (e: FormEvent) => {
     e.preventDefault()
@@ -1001,16 +1006,16 @@ function CreateTeamspaceDialog({ pending, onClose, onCreate }: { pending: boolea
       <DialogContent>
         <form className="grid gap-4" onSubmit={submit}>
           <DialogHeader>
-            <DialogTitle>New teamspace</DialogTitle>
-            <DialogDescription>Everyone in this workspace can see and edit its pages.</DialogDescription>
+            <DialogTitle>{t('teamspace.new')}</DialogTitle>
+            <DialogDescription>{t('teamspace.newHint')}</DialogDescription>
           </DialogHeader>
-          <Input autoFocus value={name} maxLength={100} placeholder="Teamspace name" aria-label="Teamspace name" onChange={(e) => setName(e.target.value)} />
+          <Input autoFocus value={name} maxLength={100} placeholder={t('teamspace.name')} aria-label={t('teamspace.name')} onChange={(e) => setName(e.target.value)} />
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
+              {t('cancel')}
             </Button>
             <Button type="submit" disabled={!name.trim() || pending}>
-              Create teamspace
+              {t('teamspace.create')}
             </Button>
           </DialogFooter>
         </form>

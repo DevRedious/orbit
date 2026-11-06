@@ -2,7 +2,8 @@
 import type { Transaction } from '@tiptap/pm/state'
 import type { DefaultReactSuggestionItem } from '@blocknote/react'
 import { UserAvatar } from '@/components/common/UserAvatar'
-import { filterPageMentionCandidates, PRIVATE_PAGE_HINT, type PageMentionMember, type PageMentionOptions } from './pageMentions'
+import { i18n } from '@/i18n'
+import { filterPageMentionCandidates, type PageMentionMember, type PageMentionOptions } from './pageMentions'
 import type { PageEditorInstance } from '@orbit/editor/schema'
 
 /** Picker entries for `query`; a private page's entries sit under the "only you" hint. */
@@ -15,7 +16,7 @@ export function pageMentionItems(
     title: member.name,
     subtext: member.handle ?? member.email,
     icon: <UserAvatar user={{ name: member.name, color: member.color ?? 'var(--muted-foreground)', avatarUrl: member.avatarUrl }} size={24} />,
-    group: options.privatePage ? PRIVATE_PAGE_HINT : undefined,
+    group: options.privatePage ? i18n.t('docs:mentions.privatePageHint') : undefined,
     onItemClick: () => insert(member),
   }))
 }

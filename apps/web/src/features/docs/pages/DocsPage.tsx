@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ComponentProps, type ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { isPaymentRequired } from '@orbit/api/problem'
+import { useTranslation } from 'react-i18next'
 import { databaseErrorMessage } from '@orbit/database/errors'
 import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router'
 import { toast } from 'sonner'
@@ -50,6 +51,7 @@ function landsOnFirstPage() {
 }
 
 export function DocsPage({ view = 'page' }: { view?: 'page' | 'trash' | 'import' | 'obsidian-import' | 'csv-import' | 'form' }) {
+  const { t } = useTranslation('docs')
   const { pageId, importId, viewId } = useParams()
   const navigate = useNavigate()
   const location = useLocation()
@@ -94,7 +96,7 @@ export function DocsPage({ view = 'page' }: { view?: 'page' | 'trash' | 'import'
       {
         onSuccess: (created) => navigate(`/docs/${created.id}`),
         onError: (error) => {
-          if (!isPaymentRequired(error)) toast.error('Could not create the page. Try again.')
+          if (!isPaymentRequired(error)) toast.error(t('createPageFailed'))
         },
       },
     )
@@ -110,12 +112,9 @@ export function DocsPage({ view = 'page' }: { view?: 'page' | 'trash' | 'import'
       return
     }
     const confirmed = await confirmAction({
-      title: `Move “${pageTitle(target)}” to the trash?`,
-      description:
-        descendants.length > 0
-          ? `Its ${descendants.length} sub-page${descendants.length === 1 ? '' : 's'} move with it. You can restore them from Trash.`
-          : 'You can restore it from Trash.',
-      confirmLabel: 'Move to trash',
+      title: t('trashConfirm.title', { title: pageTitle(target) }),
+      description: descendants.length > 0 ? t('trashConfirm.withChildren', { count: descendants.length }) : t('trashConfirm.description'),
+      confirmLabel: t('pageMenu.moveToTrash'),
       danger: true,
     })
     if (!confirmed) return
@@ -140,11 +139,11 @@ export function DocsPage({ view = 'page' }: { view?: 'page' | 'trash' | 'import'
             markGone(activeIdRef.current!)
             navigate(target.parent_id ? `/docs/${target.parent_id}` : '/docs', { replace: true })
           }
-          toast.success('Moved to trash')
+          toast.success(t('trashConfirm.moved'))
         },
         onError: (error) => {
           undoExpectGone?.()
-          if (!isPageVersionConflict(error)) toast.error('Could not move the page to the trash.')
+          if (!isPageVersionConflict(error)) toast.error(t('trashConfirm.failed'))
         },
       },
     )
@@ -176,10 +175,10 @@ export function DocsPage({ view = 'page' }: { view?: 'page' | 'trash' | 'import'
       {
         onSuccess: (copy) => {
           navigate(`/docs/${copy.id}`)
-          toast.success(`Duplicated “${pageTitle(target)}”`)
+          toast.success(t('duplicated', { title: pageTitle(target) }))
         },
         onError: (error) => {
-          if (!isPaymentRequired(error)) toast.error(databaseErrorMessage(error, 'Could not duplicate the page.'))
+          if (!isPaymentRequired(error)) toast.error(databaseErrorMessage(error, t('duplicateFailed')))
         },
       },
     )
@@ -217,16 +216,16 @@ export function DocsPage({ view = 'page' }: { view?: 'page' | 'trash' | 'import'
         ) : (
           <div className="flex flex-1 flex-col p-6">
             {first ? (
-              <EmptyState icon={FileText} title="Select a page" description="Choose a page from the list or create a new one." />
+              <EmptyState icon={FileText} title={t('landing.selectPage')} description={t('landing.selectPageHint')} />
             ) : (
               <EmptyState
                 icon={FileText}
-                title="Create your first page"
-                description="New pages go to your team's default teamspace. Private pages are only visible to you."
+                title={t('landing.firstPage')}
+                description={t('landing.firstPageHint')}
                 action={
                   <Button type="button" disabled={createPage.isPending} onClick={createFirstPage}>
                     <Plus className="size-4" />
-                    Create page
+                    {t('landing.createPage')}
                   </Button>
                 }
               />
@@ -257,17 +256,17 @@ export function DocsPage({ view = 'page' }: { view?: 'page' | 'trash' | 'import'
         <div className="flex flex-1 flex-col p-6">
           <EmptyState
             icon={FileText}
-            title={missing ? 'Page not found' : 'Page unavailable'}
-            description={missing ? 'This page does not exist, or you do not have access to it.' : 'The server could not load this page.'}
+            title={missing ? t('pageError.notFound') : t('pageError.unavailable')}
+            description={missing ? t('pageError.notFoundHint') : t('pageError.unavailableHint')}
             action={
               <div className="flex gap-2">
                 {missing ? null : (
                   <Button type="button" variant="outline" onClick={() => void page.refetch()}>
-                    Retry
+                    {t('retry')}
                   </Button>
                 )}
                 <Link className={buttonVariants({ variant: 'outline' })} to="/docs">
-                  Back to Docs
+                  {t('pageError.backToDocs')}
                 </Link>
               </div>
             }

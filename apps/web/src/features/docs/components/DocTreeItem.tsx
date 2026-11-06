@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { ChevronRight, Copy, MoreH as Ellipsis, DocumentText as FileText, Grid, Star, Trash as Trash2 } from 'reicon-react'
 import type { PageKind, PageSummary } from '@orbit/api/generated/types.gen'
 import { Button } from '@/components/ui/button'
@@ -75,6 +76,7 @@ export function DocTreeItem({
   section,
   hint,
 }: DocTreeItemProps) {
+  const { t } = useTranslation('docs')
   const isDatabase = page.kind === 'database'
   // A database's rows list in the database, not in the tree.
   const children = isDatabase ? [] : childrenOf(pages, page.id)
@@ -138,7 +140,7 @@ export function DocTreeItem({
             size="icon-xs"
             className="size-5 text-muted-foreground/70 [&>svg]:transition-transform [&>svg]:duration-[120ms] data-[expanded=true]:[&>svg]:rotate-90"
             data-expanded={expanded}
-            aria-label={expanded ? 'Collapse' : 'Expand'}
+            aria-label={expanded ? t('tree.collapse') : t('tree.expand')}
             onClick={(e) => {
               e.stopPropagation()
               onToggle(page.id)
@@ -158,37 +160,37 @@ export function DocTreeItem({
         </span>
         <TreeRowActions>
           <DropdownMenu>
-            <DropdownMenuTrigger render={<TreeIconButton tip="Page options" aria-label="Page options" />}>
+            <DropdownMenuTrigger render={<TreeIconButton tip={t('pageMenu.options')} aria-label={t('pageMenu.options')} />}>
               <Ellipsis className="size-[13px]" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-auto min-w-36">
               {favorites ? (
                 <DropdownMenuItem onClick={() => favorites.onToggle(page, !favorite)}>
                   <Star className="size-[14px]" weight={favorite ? 'Filled' : 'Outline'} />
-                  {favorite ? 'Remove from favorites' : 'Add to favorites'}
+                  {favorite ? t('pageMenu.removeFavorite') : t('pageMenu.addFavorite')}
                 </DropdownMenuItem>
               ) : null}
               {actions ? (
                 <DropdownMenuItem onClick={() => actions.duplicate(page.id, false)}>
                   <Copy className="size-[14px]" />
-                  Duplicate
+                  {t('pageMenu.duplicate')}
                 </DropdownMenuItem>
               ) : null}
               {actions && children.length > 0 ? (
                 <DropdownMenuItem onClick={() => actions.duplicate(page.id, true)}>
                   <Copy className="size-[14px]" />
-                  Duplicate with sub-pages
+                  {t('pageMenu.duplicateWithChildren')}
                 </DropdownMenuItem>
               ) : null}
               {/* Not variant="destructive": the preset menu popup recolors those items to the accent color. */}
               <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onTrash(page.id)}>
                 <Trash2 className="size-[14px]" />
-                Move to trash
+                {t('pageMenu.moveToTrash')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
           {/* The server refuses pages under a database: its rows are created in the database. */}
-          {isDatabase ? null : <TreeCreateMenu tip="Add child page" label="Add child page" onCreate={(kind) => onCreateChild(page.id, kind)} />}
+          {isDatabase ? null : <TreeCreateMenu tip={t('tree.addChild')} label={t('tree.addChild')} onCreate={(kind) => onCreateChild(page.id, kind)} />}
         </TreeRowActions>
       </div>
       {expanded

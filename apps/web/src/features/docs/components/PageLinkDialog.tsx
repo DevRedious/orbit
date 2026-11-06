@@ -2,6 +2,7 @@
 // Built on the shadcn Command (cmdk): it owns the highlight, arrow-key navigation and Enter.
 // Filtering stays ours (`shouldFilter={false}`) so the substring match is unchanged.
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { DocumentText as FileText, Grid } from 'reicon-react'
 import type { PageSummary } from '@orbit/api/generated/types.gen'
 import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
@@ -9,10 +10,11 @@ import { Emoji } from '@/components/common/Emoji'
 import { Modal } from '@/components/common/Modal'
 import { ancestorsOf, pageTitle } from '@/features/docs/pageTree'
 
+/** Catalog keys of the dialog's texts, per kind. */
 const TEXT = {
-  page: { title: 'Link a page', placeholder: 'Search pages…', empty: 'No pages found' },
-  database: { title: 'Link a database', placeholder: 'Search databases…', empty: 'No databases found' },
-}
+  page: { title: 'pageLinkDialog.title', placeholder: 'pageLinkDialog.search', empty: 'pageLinkDialog.empty' },
+  database: { title: 'pageLinkDialog.databaseTitle', placeholder: 'pageLinkDialog.databaseSearch', empty: 'pageLinkDialog.databaseEmpty' },
+} as const
 
 export function PageLinkDialog({
   pages,
@@ -29,6 +31,7 @@ export function PageLinkDialog({
   onPick: (page: PageSummary) => void
   onClose: () => void
 }) {
+  const { t } = useTranslation('docs')
   const [query, setQuery] = useState('')
 
   const results = useMemo(() => {
@@ -39,11 +42,11 @@ export function PageLinkDialog({
   }, [pages, excludeId, query])
 
   return (
-    <Modal title={TEXT[kind].title} onClose={onClose}>
-      <Command shouldFilter={false} label={TEXT[kind].title} className="gap-2 bg-transparent p-0">
-        <CommandInput autoFocus placeholder={TEXT[kind].placeholder} value={query} onValueChange={setQuery} />
+    <Modal title={t(TEXT[kind].title)} onClose={onClose}>
+      <Command shouldFilter={false} label={t(TEXT[kind].title)} className="gap-2 bg-transparent p-0">
+        <CommandInput autoFocus placeholder={t(TEXT[kind].placeholder)} value={query} onValueChange={setQuery} />
         <CommandList className="max-h-[320px]">
-          <CommandEmpty className="px-3 py-7 text-[0.8125rem] text-muted-foreground/70">{TEXT[kind].empty}</CommandEmpty>
+          <CommandEmpty className="px-3 py-7 text-[0.8125rem] text-muted-foreground/70">{t(TEXT[kind].empty)}</CommandEmpty>
           {results.map((page) => {
             const parent = ancestorsOf(pages, page.id).at(-1)
             return (

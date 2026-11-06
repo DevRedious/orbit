@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { databaseErrorMessage } from '@orbit/database/errors'
 import { toast } from 'sonner'
@@ -23,8 +24,6 @@ import { useTeamspaces } from '@/features/docs/api/teamspaces'
 import { PRIVATE_SPACE, pageTitle, spaceKey, spaceLabel } from '@/features/docs/pageTree'
 import { loadFailed } from '@/lib/connection'
 
-const plural = (count: number) => `${count} page${count === 1 ? '' : 's'}`
-
 /** Trashed pages whose title contains the query, ignoring case; all of them for a blank query. */
 function filterTrash(pages: readonly TrashedPage[], query: string): TrashedPage[] {
   const needle = query.trim().toLocaleLowerCase()
@@ -36,6 +35,7 @@ function filterTrash(pages: readonly TrashedPage[], query: string): TrashedPage[
  * cover the pages the server marks `can_purge` for the caller. A row opens the page's read-only preview.
  */
 export function PageTrashPane({ workspaceId }: { workspaceId: string }) {
+  const { t } = useTranslation('docs')
   const navigate = useNavigate()
   const trash = usePageTrash(workspaceId)
   const restore = useRestorePage(workspaceId)
@@ -49,18 +49,18 @@ export function PageTrashPane({ workspaceId }: { workspaceId: string }) {
 
   const requestPurge = async (page: TrashedPage) => {
     const confirmed = await confirmAction({
-      title: `Delete “${pageTitle(page)}” forever?`,
-      description: 'The page, the sub-pages trashed with it and their files are deleted permanently. This can’t be undone.',
-      confirmLabel: 'Delete forever',
+      title: t('trash.purgeTitle', { title: pageTitle(page) }),
+      description: t('trash.purgeDescription'),
+      confirmLabel: t('trash.deleteForever'),
       danger: true,
     })
     if (!confirmed) return
     purge.mutate(
       { pageId: page.id, version: page.version },
       {
-        onSuccess: () => toast.success(`Deleted “${pageTitle(page)}” forever`),
+        onSuccess: () => toast.success(t('trash.purged', { title: pageTitle(page) })),
         onError: (error) => {
-          if (!isPageVersionConflict(error)) toast.error('Could not delete the page.')
+          if (!isPageVersionConflict(error)) toast.error(t('trash.purgeFailed'))
         },
       },
     )
@@ -70,17 +70,16 @@ export function PageTrashPane({ workspaceId }: { workspaceId: string }) {
     const count = purgeable.length
     const kept = (trash.data?.length ?? 0) - count
     const confirmed = await confirmAction({
-      title: 'Empty trash?',
-      description:
-        `${plural(count)} and the sub-pages trashed with them will be deleted forever. This can’t be undone.` +
-        (kept > 0 ? ` ${plural(kept)} in teamspaces stay: only workspace owners and admins can delete those.` : ''),
-      confirmLabel: 'Empty trash',
+      title: t('trash.emptyTitle'),
+      // Two whole sentences, each with its own count.
+      description: [t('trash.emptyDescription', { count }), kept > 0 ? t('trash.emptyKept', { count: kept }) : null].filter(Boolean).join(' '),
+      confirmLabel: t('trash.empty'),
       danger: true,
     })
     if (!confirmed) return
     emptyTrash.mutate(undefined, {
-      onSuccess: ({ purged }) => toast.success(`Deleted ${plural(purged)} forever`),
-      onError: () => toast.error('Could not empty the trash.'),
+      onSuccess: ({ purged }) => toast.success(t('trash.emptied', { count: purged })),
+      onError: () => toast.error(t('trash.emptyFailed')),
     })
   }
 
@@ -90,11 +89,11 @@ export function PageTrashPane({ workspaceId }: { workspaceId: string }) {
       <div className="flex flex-1 flex-col p-6">
         <EmptyState
           icon={Trash2}
-          title="Trash unavailable"
-          description="The server could not load deleted pages."
+          title={t('trash.unavailable')}
+          description={t('trash.unavailableHint')}
           action={
             <Button type="button" variant="outline" onClick={() => void trash.refetch()}>
-              Retry
+              {t('retry')}
             </Button>
           }
         />
@@ -109,7 +108,7 @@ export function PageTrashPane({ workspaceId }: { workspaceId: string }) {
   } else if (trash.data.length === 0) {
     body = (
       <div className="flex flex-1 flex-col p-6">
-        <EmptyState icon={Trash2} title="Trash is empty" description="Pages you move to the trash appear here until restored." />
+        <EmptyState icon={Trash2} title={t('trash.isEmpty')} description={t('trash.isEmptyHint')} />
       </div>
     )
   } else if (shown.length === 0) {
@@ -138,7 +137,7 @@ export function PageTrashPane({ workspaceId }: { workspaceId: string }) {
               {spaceKey(page) === PRIVATE_SPACE ? <Lock className="size-3 shrink-0" aria-hidden="true" /> : null}
               <span className="truncate">{spaceLabel(spaceKey(page), teamspaces.data)}</span>
             </span>
-            <span className="shrink-0 text-xs text-muted-foreground/70 max-[899px]:hidden">Deleted {relativeTime(page.deleted_at)}</span>
+            <span className="shrink-0 text-xs text-muted-foreground/70 max-[899px]:hidden">{t('trash.deletedAt', { time: relativeTime(page.deleted_at) })}</span>
             <Button
               type="button"
               variant="outline"
@@ -149,19 +148,19 @@ export function PageTrashPane({ workspaceId }: { workspaceId: string }) {
                   { pageId: page.id, version: page.version },
                   {
                     onSuccess: (restored) => {
-                      toast.success(`Restored “${pageTitle(restored)}”`, {
-                        action: { label: 'Open', onClick: () => navigate(`/docs/${restored.id}`) },
+                      toast.success(t('trash.restored', { title: pageTitle(restored) }), {
+                        action: { label: t('open'), onClick: () => navigate(`/docs/${restored.id}`) },
                       })
                     },
                     onError: (error) => {
-                      if (!isPageVersionConflict(error)) toast.error(databaseErrorMessage(error, 'Could not restore the page.'))
+                      if (!isPageVersionConflict(error)) toast.error(databaseErrorMessage(error, t('trash.restoreFailed')))
                     },
                   },
                 )
               }
             >
               <RotateCcw className="size-3.5" />
-              Restore
+              {t('trash.restore')}
             </Button>
             {page.can_purge ? (
               <Button
@@ -170,11 +169,11 @@ export function PageTrashPane({ workspaceId }: { workspaceId: string }) {
                 size="sm"
                 className="text-destructive hover:text-destructive"
                 disabled={busy}
-                aria-label={`Delete “${pageTitle(page)}” forever`}
+                aria-label={t('trash.purgeLabel', { title: pageTitle(page) })}
                 onClick={() => void requestPurge(page)}
               >
                 <Trash2 className="size-3.5" />
-                <span className="max-[899px]:hidden">Delete forever</span>
+                <span className="max-[899px]:hidden">{t('trash.deleteForever')}</span>
               </Button>
             ) : null}
           </div>
@@ -191,17 +190,17 @@ export function PageTrashPane({ workspaceId }: { workspaceId: string }) {
           variant="ghost"
           size="icon-sm"
           className="hidden text-muted-foreground/70 max-[899px]:inline-flex"
-          aria-label="Back to docs"
+          aria-label={t('backToDocs')}
           onClick={() => navigate('/docs')}
         >
           <ArrowLeft className="size-4" />
         </Button>
-        <PaneTitle className="min-w-0 flex-1">Trash</PaneTitle>
+        <PaneTitle className="min-w-0 flex-1">{t('trash.title')}</PaneTitle>
         {trash.data?.length ? (
           <Input
             type="search"
-            aria-label="Search the trash"
-            placeholder="Search pages…"
+            aria-label={t('trash.search')}
+            placeholder={t('trash.searchPlaceholder')}
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             className="h-8 w-52 max-[899px]:w-36"
@@ -216,7 +215,7 @@ export function PageTrashPane({ workspaceId }: { workspaceId: string }) {
             disabled={busy}
             onClick={() => void requestEmpty()}
           >
-            Empty trash
+            {t('trash.empty')}
           </Button>
         ) : null}
       </div>

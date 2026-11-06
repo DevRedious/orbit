@@ -1,5 +1,6 @@
 // Pure helpers over the flat page tree (`GET /pages` → PageSummary[]). No React or API imports.
 import type { PageSummary, Teamspace } from '@orbit/api/generated/types.gen'
+import { i18n } from '@/i18n'
 
 export type DropZone = 'before' | 'after' | 'inside'
 
@@ -42,8 +43,8 @@ export function spaceRequest(space: SpaceKey): { teamspace_id: string } | { priv
 /** "Private", the teamspace's name, or "Teamspace" while the list is unknown. */
 export function spaceLabel(space: SpaceKey, teamspaces: readonly Pick<Teamspace, 'id' | 'name'>[] | undefined): string {
   const teamspaceId = spaceTeamspaceId(space)
-  if (teamspaceId === null) return 'Private'
-  return teamspaces?.find((teamspace) => teamspace.id === teamspaceId)?.name ?? 'Teamspace'
+  if (teamspaceId === null) return i18n.t('docs:space.private')
+  return teamspaces?.find((teamspace) => teamspace.id === teamspaceId)?.name ?? i18n.t('docs:space.teamspace')
 }
 
 /** Where new root pages go by default: the teamspace flagged `is_default`, else the first by position. */
@@ -54,7 +55,7 @@ export function defaultTeamspace<T extends Pick<Teamspace, 'id' | 'is_default' |
 
 /** Empty titles read as "Untitled" everywhere (tree, breadcrumbs, links, search). */
 export function pageTitle(page: { title: string } | null | undefined): string {
-  return page?.title.trim() ? page.title : 'Untitled'
+  return page?.title.trim() ? page.title : i18n.t('docs:untitled')
 }
 
 function byPosition(a: TreePage, b: TreePage): number {

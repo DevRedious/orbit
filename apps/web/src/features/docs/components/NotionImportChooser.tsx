@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Database, DocumentText as FileText, Warning } from 'reicon-react'
 import type { NotionImport, NotionImportNode, NotionImportTree, PageSummary, Teamspace } from '@orbit/api/generated/types.gen'
 import { Button } from '@/components/ui/button'
@@ -19,6 +20,7 @@ interface Props {
 
 /** Step 3: pick pages (tri-state tree), a destination, and start the import. */
 export function NotionImportChooser({ workspaceId, item, tree, teamspaces, pages }: Props) {
+  const { t } = useTranslation('docs')
   const index = useMemo(() => buildImportTree(tree.nodes, (node) => [node.notion_id, node.parent_id]), [tree.nodes])
   const [selected, setSelected] = useState<ReadonlySet<string>>(() => selectAll(index))
   const destination = useImportDestination(teamspaces, pages)
@@ -42,13 +44,13 @@ export function NotionImportChooser({ workspaceId, item, tree, teamspaces, pages
           {tree.truncated ? (
             <p className="flex items-start gap-2">
               <Warning className="mt-px size-3.5 shrink-0 text-amber-600" />
-              This token can see more than 5,000 pages. Only the first 5,000 are listed; import the rest in a later import.
+              {t('notionImport.truncated')}
             </p>
           ) : null}
           {tree.incomplete ? (
             <p className="flex items-start gap-2">
               <Warning className="mt-px size-3.5 shrink-0 text-amber-600" />
-              Notion returned an incomplete list. Some pages may be missing; scan again later to find them.
+              {t('notionImport.incomplete')}
             </p>
           ) : null}
         </div>
@@ -57,13 +59,13 @@ export function NotionImportChooser({ workspaceId, item, tree, teamspaces, pages
         tree={index}
         selected={selected}
         onSelectedChange={setSelected}
-        label="Notion pages"
-        empty="This token cannot see any pages. In Notion, share pages with the connection (or use a personal access token) and scan again."
+        label={t('notionImport.treeLabel')}
+        empty={t('notionImport.noPages')}
         icon={(node: NotionImportNode) =>
           node.icon ? (
             <Emoji value={node.icon} />
           ) : node.kind === 'database' ? (
-            <Database className="size-[15px]" aria-label="Database" />
+            <Database className="size-[15px]" aria-label={t('notionImport.database')} />
           ) : (
             <FileText className="size-[15px]" />
           )
@@ -79,7 +81,7 @@ export function NotionImportChooser({ workspaceId, item, tree, teamspaces, pages
             </p>
           ) : null}
           <Button type="button" className="tabular-nums" disabled={count === 0 || start.isPending} onClick={submit}>
-            Import {count} {count === 1 ? 'page' : 'pages'}
+            {t('notionImport.importCount', { count })}
           </Button>
         </div>
       </div>

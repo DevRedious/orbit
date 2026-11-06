@@ -5,6 +5,7 @@
 // `selection.paths`), so a checked node always means "this node and everything under it". The selected set is
 // therefore kept closed under descendants: checking a node adds its subtree, unchecking a node removes its subtree
 // and its ancestors (they no longer include everything).
+import { i18n } from '@/i18n'
 
 /** What the selection logic reads from a scanned node; `identify` gives its id and parent id. */
 export interface ImportNode {
@@ -149,7 +150,7 @@ export interface VisibleRow<T extends ImportNode = ImportNode> {
 }
 
 export function nodeTitle(node: ImportNode): string {
-  return node.title.trim() ? node.title : 'Untitled'
+  return node.title.trim() ? node.title : i18n.t('docs:untitled')
 }
 
 /**

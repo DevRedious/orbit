@@ -2,6 +2,7 @@ import type { CodeBlockOptions } from '@orbit/editor/codeHighlight'
 import { CODE_LANGUAGES, languageId, MERMAID_LANGUAGE } from '@orbit/editor/codeLanguages'
 import { useState, useSyncExternalStore } from 'react'
 import { createRoot } from 'react-dom/client'
+import { useTranslation } from 'react-i18next'
 import { codeTokenVariants } from '@/components/common/codeToken'
 import { CopyCodeButton } from '@/components/common/CopyCodeButton'
 import { MermaidDiagram } from '@/components/common/MermaidDiagram'
@@ -48,6 +49,7 @@ let editNext: string | undefined
  * view), the tabs of a `mermaid` block, and the copy button.
  */
 function CodeTools({ editor, id, language, children }: { editor: CodeBlockEditor; id: string; language: string; children?: React.ReactNode }) {
+  const { t } = useTranslation('docs')
   return (
     <div className="absolute top-2 right-2 flex items-center gap-1">
       {editor.isEditable ? (
@@ -63,7 +65,7 @@ function CodeTools({ editor, id, language, children }: { editor: CodeBlockEditor
         >
           <SelectTrigger
             size="sm"
-            aria-label="Language"
+            aria-label={t('codeBlock.language')}
             className="w-auto bg-background/90 text-xs transition-opacity duration-150 focus-visible:opacity-100 data-popup-open:opacity-100 hover-fine:opacity-0 hover-fine:group-hover:opacity-100 dark:bg-background/90"
           >
             <SelectValue />
@@ -89,6 +91,7 @@ function CodeTools({ editor, id, language, children }: { editor: CodeBlockEditor
  * starts in "Edit".
  */
 function MermaidBlock({ editor, id }: { editor: CodeBlockEditor; id: string }) {
+  const { t } = useTranslation('docs')
   const text = useSyncExternalStore(
     (onChange) => editor.onChange(onChange),
     () => blockText(editor, id),
@@ -111,10 +114,10 @@ function MermaidBlock({ editor, id }: { editor: CodeBlockEditor; id: string }) {
           >
             <TabsList className="group-data-horizontal/tabs:h-7">
               <TabsTrigger value="edit" className="px-2 text-[11px]">
-                Edit
+                {t('codeBlock.edit')}
               </TabsTrigger>
               <TabsTrigger value="view" className="px-2 text-[11px]">
-                View
+                {t('codeBlock.view')}
               </TabsTrigger>
             </TabsList>
           </Tabs>

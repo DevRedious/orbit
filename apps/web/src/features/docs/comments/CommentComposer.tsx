@@ -6,6 +6,7 @@ import { useEffect, useState, type KeyboardEvent } from 'react'
 import { SuggestionMenu, type BlockNoteEditor } from '@blocknote/core'
 import { CommentEditorSubmitExtension } from '@blocknote/core/comments'
 import { useEditorState } from '@blocknote/react'
+import { useTranslation } from 'react-i18next'
 import { AtSign } from 'reicon-react'
 import { cn } from 'cn'
 import { Button } from '@/components/ui/button'
@@ -39,6 +40,7 @@ export function CommentComposer({
   label: string
   className?: string
 }) {
+  const { t } = useTranslation('docs')
   const submitTitle = useShortcutTitle('detail.sendComment', submitLabel)
   const isEmpty = useEditorState({ editor, selector: ({ editor }) => editor.isEmpty })
   const [busy, setBusy] = useState(false)
@@ -96,7 +98,7 @@ export function CommentComposer({
                   variant="ghost"
                   size="icon-xs"
                   className="size-7 text-muted-foreground"
-                  aria-label="Mention someone"
+                  aria-label={t('comments.mention')}
                   onMouseDown={(event) => event.preventDefault()}
                   onClick={openMentionPicker}
                 />
@@ -104,13 +106,13 @@ export function CommentComposer({
             >
               <AtSign className="size-4" />
             </TooltipTrigger>
-            <TooltipContent>Mention someone</TooltipContent>
+            <TooltipContent>{t('comments.mention')}</TooltipContent>
           </Tooltip>
         ) : null}
         <span className="flex-1" />
         {onCancel ? (
           <Button type="button" variant="ghost" size="sm" className="text-muted-foreground" onClick={onCancel}>
-            Cancel
+            {t('cancel')}
           </Button>
         ) : null}
         <Tip label={submitTitle}>

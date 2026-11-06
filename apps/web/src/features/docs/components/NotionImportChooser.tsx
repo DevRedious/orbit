@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ChevronRight, Database, DocumentText as FileText, Search4 as Search, Warning } from 'reicon-react'
 import type { NotionImport, NotionImportDestinationBody, NotionImportTree, PageSummary, Teamspace } from '@orbit/api/generated/types.gen'
 import { Button } from '@/components/ui/button'
@@ -48,6 +49,7 @@ function spacePages(pages: readonly PageSummary[], space: SpaceKey): { page: Pag
 
 /** Step 3: pick pages (tri-state tree), a destination, and start the import. */
 export function NotionImportChooser({ workspaceId, item, tree, teamspaces, pages }: Props) {
+  const { t } = useTranslation('docs')
   const index = useMemo(() => buildImportTree(tree.nodes), [tree.nodes])
   const [selected, setSelected] = useState<ReadonlySet<string>>(() => selectAll(index))
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(() => new Set())
@@ -63,11 +65,11 @@ export function NotionImportChooser({ workspaceId, item, tree, teamspaces, pages
   const destinationSpace: SpaceKey = space ?? (fallbackTeamspace ? teamspaceSpace(fallbackTeamspace.id) : PRIVATE_SPACE)
   const spaceItems = [
     ...(teamspaces ?? []).map((teamspace) => ({ value: teamspaceSpace(teamspace.id) as string, label: teamspace.name })),
-    { value: PRIVATE_SPACE as string, label: 'Private' },
+    { value: PRIVATE_SPACE as string, label: t('space.private') },
   ]
   const parentOptions = useMemo(() => spacePages(pages ?? [], destinationSpace), [pages, destinationSpace])
   const parentItems = [
-    { value: TOP_LEVEL, label: 'Top level' },
+    { value: TOP_LEVEL, label: t('notionImport.topLevel') },
     ...parentOptions.map(({ page }) => ({ value: page.id, label: pageTitle(page) })),
   ]
   // A page that moved away (or was trashed) is no longer a valid choice.
@@ -97,13 +99,13 @@ export function NotionImportChooser({ workspaceId, item, tree, teamspaces, pages
           {tree.truncated ? (
             <p className="flex items-start gap-2">
               <Warning className="mt-px size-3.5 shrink-0 text-amber-600" />
-              This token can see more than 5,000 pages. Only the first 5,000 are listed; import the rest in a later import.
+              {t('notionImport.truncated')}
             </p>
           ) : null}
           {tree.incomplete ? (
             <p className="flex items-start gap-2">
               <Warning className="mt-px size-3.5 shrink-0 text-amber-600" />
-              Notion returned an incomplete list. Some pages may be missing; scan again later to find them.
+              {t('notionImport.incomplete')}
             </p>
           ) : null}
         </div>
@@ -116,31 +118,30 @@ export function NotionImportChooser({ workspaceId, item, tree, teamspaces, pages
           <InputGroupInput
             type="search"
             className="text-xs"
-            placeholder="Filter pages"
-            aria-label="Filter pages"
+            placeholder={t('notionImport.filter')}
+            aria-label={t('notionImport.filter')}
             value={query}
             onChange={(event) => setQuery(event.target.value)}
           />
         </InputGroup>
         <span className="flex-1" />
         <span className="text-xs text-muted-foreground tabular-nums" data-testid="selected-count">
-          {count} {count === 1 ? 'page' : 'pages'} selected
+          {t('notionImport.selectedCount', { count })}
         </span>
         <Button type="button" variant="ghost" size="sm" onClick={() => setSelected(selectAll(index))}>
-          Select all
+          {t('notionImport.selectAll')}
         </Button>
         <Button type="button" variant="ghost" size="sm" onClick={() => setSelected(new Set())}>
-          Clear
+          {t('notionImport.clear')}
         </Button>
       </div>
-      <div className="min-h-0 flex-1 overflow-y-auto p-2" role="tree" aria-label="Notion pages" aria-multiselectable="true">
+      <div className="min-h-0 flex-1 overflow-y-auto p-2" role="tree" aria-label={t('notionImport.treeLabel')} aria-multiselectable="true">
         {empty ? (
           <p className="p-4 text-sm text-muted-foreground">
-            This token cannot see any pages. In Notion, share pages with the connection (or use a personal access token) and
-            scan again.
+            {t('notionImport.noPages')}
           </p>
         ) : rows.length === 0 ? (
-          <p className="p-4 text-sm text-muted-foreground">No pages match “{query.trim()}”.</p>
+          <p className="p-4 text-sm text-muted-foreground">{t('notionImport.noMatch', { query: query.trim() })}</p>
         ) : (
           rows.slice(0, MAX_ROWS).map((row) => {
             const id = row.node.notion_id
@@ -163,7 +164,7 @@ export function NotionImportChooser({ workspaceId, item, tree, teamspaces, pages
                     size="icon-xs"
                     className="size-5 shrink-0 text-muted-foreground/70 [&>svg]:transition-transform data-[expanded=true]:[&>svg]:rotate-90"
                     data-expanded={row.expanded}
-                    aria-label={`${row.expanded ? 'Collapse' : 'Expand'} ${title}`}
+                    aria-label={row.expanded ? t('notionImport.collapseRow', { title }) : t('notionImport.expandRow', { title })}
                     onClick={() => toggleExpanded(id)}
                   >
                     <ChevronRight className="size-3" />
@@ -172,7 +173,7 @@ export function NotionImportChooser({ workspaceId, item, tree, teamspaces, pages
                   <span className="inline-flex size-5 shrink-0" aria-hidden="true" />
                 )}
                 <Checkbox
-                  aria-label={`Select ${title}`}
+                  aria-label={t('notionImport.selectRow', { title })}
                   checked={state === 'checked'}
                   indeterminate={state === 'indeterminate'}
                   onCheckedChange={() => setSelected((current) => toggleNode(index, current, id))}
@@ -181,7 +182,7 @@ export function NotionImportChooser({ workspaceId, item, tree, teamspaces, pages
                   {row.node.icon ? (
                     <Emoji value={row.node.icon} />
                   ) : row.node.kind === 'database' ? (
-                    <Database className="size-[15px]" aria-label="Database" />
+                    <Database className="size-[15px]" aria-label={t('notionImport.database')} />
                   ) : (
                     <FileText className="size-[15px]" />
                   )}
@@ -196,7 +197,7 @@ export function NotionImportChooser({ workspaceId, item, tree, teamspaces, pages
                   {title}
                 </button>
                 {row.node.child_count > 0 ? (
-                  <span className="shrink-0 text-xs text-muted-foreground/70" title={`${row.node.child_count} sub-pages`}>
+                  <span className="shrink-0 text-xs text-muted-foreground/70" title={t('notionImport.subpageCount', { count: row.node.child_count })}>
                     {row.node.child_count}
                   </span>
                 ) : null}
@@ -206,14 +207,14 @@ export function NotionImportChooser({ workspaceId, item, tree, teamspaces, pages
         )}
         {rows.length > MAX_ROWS ? (
           <p className="p-3 text-xs text-muted-foreground">
-            Showing the first {MAX_ROWS} of {rows.length} rows. Filter to narrow the list.
+            {t('notionImport.rowLimit', { shown: MAX_ROWS, total: rows.length })}
           </p>
         ) : null}
       </div>
       <div className="flex flex-wrap items-end gap-3 border-t border-border px-3 py-3">
         <div className="grid gap-1.5">
           <Label htmlFor="notion-import-space" className="text-xs text-muted-foreground">
-            Import into
+            {t('notionImport.importInto')}
           </Label>
           <Select
             items={spaceItems}
@@ -224,7 +225,7 @@ export function NotionImportChooser({ workspaceId, item, tree, teamspaces, pages
               setParentId(TOP_LEVEL)
             }}
           >
-            <SelectTrigger id="notion-import-space" className="w-48" aria-label="Import into">
+            <SelectTrigger id="notion-import-space" className="w-48" aria-label={t('notionImport.importInto')}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -238,14 +239,14 @@ export function NotionImportChooser({ workspaceId, item, tree, teamspaces, pages
         </div>
         <div className="grid gap-1.5">
           <Label htmlFor="notion-import-parent" className="text-xs text-muted-foreground">
-            Inside page
+            {t('notionImport.insidePage')}
           </Label>
           <Select items={parentItems} value={parent} onValueChange={(value) => setParentId(value ?? TOP_LEVEL)}>
-            <SelectTrigger id="notion-import-parent" className="w-56" aria-label="Inside page">
+            <SelectTrigger id="notion-import-parent" className="w-56" aria-label={t('notionImport.insidePage')}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value={TOP_LEVEL}>Top level</SelectItem>
+              <SelectItem value={TOP_LEVEL}>{t('notionImport.topLevel')}</SelectItem>
               {parentOptions.map(({ page, depth }) => (
                 <SelectItem key={page.id} value={page.id} style={{ paddingLeft: 8 + depth * 12 }}>
                   {pageTitle(page)}
@@ -262,7 +263,7 @@ export function NotionImportChooser({ workspaceId, item, tree, teamspaces, pages
             </p>
           ) : null}
           <Button type="button" className="tabular-nums" disabled={count === 0 || start.isPending} onClick={submit}>
-            Import {count} {count === 1 ? 'page' : 'pages'}
+            {t('notionImport.importCount', { count })}
           </Button>
         </div>
       </div>

@@ -2,6 +2,7 @@ import { toast } from 'sonner'
 import { apiClient, type createApiClient } from '@/api/client'
 import { exportPage } from '@orbit/api/generated/sdk.gen'
 import { ApiProblem } from '@orbit/api/problem'
+import { i18n } from '@/i18n'
 
 type ApiClient = ReturnType<typeof createApiClient>
 
@@ -51,9 +52,9 @@ export function saveBlob(blob: Blob, fileName: string, doc: Document = document)
 function exportErrorMessage(error: unknown, name: string): string {
   if (error instanceof ApiProblem) {
     if (error.status === 413) return error.detail
-    if (error.status === 404) return `“${name}” is no longer available.`
+    if (error.status === 404) return i18n.t('docs:pageExport.gone', { name })
   }
-  return `Could not export “${name}”. Try again.`
+  return i18n.t('docs:pageExport.failed', { name })
 }
 
 interface ExportOptions {
@@ -78,9 +79,9 @@ export async function downloadPageMarkdown({
   client = apiClient,
   save = saveBlob,
 }: ExportOptions): Promise<boolean> {
-  const name = title.trim() || 'Untitled'
+  const name = title.trim() || i18n.t('docs:untitled')
   const toastId = `page-export-${pageId}`
-  toast.loading(includeChildren ? `Exporting “${name}” with sub-pages…` : `Exporting “${name}”…`, { id: toastId })
+  toast.loading(includeChildren ? i18n.t('docs:pageExport.exportingWithChildren', { name }) : i18n.t('docs:pageExport.exporting', { name }), { id: toastId })
   try {
     const { data, response } = await exportPage({
       client,
@@ -91,7 +92,7 @@ export async function downloadPageMarkdown({
     })
     if (!(data instanceof Blob)) throw new Error('Export response was empty.')
     save(data, dispositionFileName(response.headers.get('content-disposition'), `${name}.zip`))
-    toast.success(`Exported “${name}”.`, { id: toastId })
+    toast.success(i18n.t('docs:pageExport.exported', { name }), { id: toastId })
     return true
   } catch (error) {
     toast.error(exportErrorMessage(error, name), { id: toastId })
@@ -116,7 +117,7 @@ export function printPage(title: string, win: Window = window): void {
     win.removeEventListener('afterprint', restore)
   }
   root.setAttribute(PRINT_ATTR, '')
-  win.document.title = title.trim() || 'Untitled'
+  win.document.title = title.trim() || i18n.t('docs:untitled')
   win.addEventListener('afterprint', restore)
   try {
     win.print()

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { ChevronRight, Copy, MoreH as Ellipsis, DocumentText as FileText, Add as Plus, Star, Trash as Trash2 } from 'reicon-react'
 import type { PageSummary } from '@orbit/api/generated/types.gen'
 import { Button } from '@/components/ui/button'
@@ -69,6 +70,7 @@ export function DocTreeItem({
   reorderOnly = false,
   section,
 }: DocTreeItemProps) {
+  const { t } = useTranslation('docs')
   const children = childrenOf(pages, page.id)
   const expanded = isExpanded(page.id)
   const favorite = favorites?.isFavorite(page.id) ?? false
@@ -128,7 +130,7 @@ export function DocTreeItem({
             size="icon-xs"
             className="size-5 text-muted-foreground/70 [&>svg]:transition-transform [&>svg]:duration-[120ms] data-[expanded=true]:[&>svg]:rotate-90"
             data-expanded={expanded}
-            aria-label={expanded ? 'Collapse' : 'Expand'}
+            aria-label={expanded ? t('tree.collapse') : t('tree.expand')}
             onClick={(e) => {
               e.stopPropagation()
               onToggle(page.id)
@@ -145,36 +147,36 @@ export function DocTreeItem({
         <span className="min-w-0 flex-1 truncate">{pageTitle(page)}</span>
         <TreeRowActions>
           <DropdownMenu>
-            <DropdownMenuTrigger render={<TreeIconButton tip="Page options" aria-label="Page options" />}>
+            <DropdownMenuTrigger render={<TreeIconButton tip={t('pageMenu.options')} aria-label={t('pageMenu.options')} />}>
               <Ellipsis className="size-[13px]" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-auto min-w-36">
               {favorites ? (
                 <DropdownMenuItem onClick={() => favorites.onToggle(page.id, !favorite)}>
                   <Star className="size-[14px]" weight={favorite ? 'Filled' : 'Outline'} />
-                  {favorite ? 'Remove from favorites' : 'Add to favorites'}
+                  {favorite ? t('pageMenu.removeFavorite') : t('pageMenu.addFavorite')}
                 </DropdownMenuItem>
               ) : null}
               {actions ? (
                 <DropdownMenuItem onClick={() => actions.duplicate(page.id, false)}>
                   <Copy className="size-[14px]" />
-                  Duplicate
+                  {t('pageMenu.duplicate')}
                 </DropdownMenuItem>
               ) : null}
               {actions && children.length > 0 ? (
                 <DropdownMenuItem onClick={() => actions.duplicate(page.id, true)}>
                   <Copy className="size-[14px]" />
-                  Duplicate with sub-pages
+                  {t('pageMenu.duplicateWithChildren')}
                 </DropdownMenuItem>
               ) : null}
               {/* Not variant="destructive": the preset menu popup recolors those items to the accent color. */}
               <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onTrash(page.id)}>
                 <Trash2 className="size-[14px]" />
-                Move to trash
+                {t('pageMenu.moveToTrash')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <TreeIconButton tip="Add child page" aria-label="Add child page" onClick={() => onCreateChild(page.id)}>
+          <TreeIconButton tip={t('tree.addChild')} aria-label={t('tree.addChild')} onClick={() => onCreateChild(page.id)}>
             <Plus className="size-[13px]" />
           </TreeIconButton>
         </TreeRowActions>

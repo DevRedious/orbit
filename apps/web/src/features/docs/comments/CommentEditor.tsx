@@ -1,6 +1,7 @@
 // BlockNote's shadcn comment editor plus an "@" suggestion menu for mentions (installed through the components
 // context, see `PageEditor`). Composer, replies and edits all use it; read-only comments render mentions too.
-import { use, forwardRef } from 'react'
+import { use, forwardRef, type CSSProperties } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   FormattingToolbar,
   FormattingToolbarController,
@@ -19,6 +20,12 @@ function CommentFormattingToolbar() {
   return <FormattingToolbar blockTypeSelectItems={[]}>{items}</FormattingToolbar>
 }
 
+const PLACEHOLDER_KEYS = {
+  new: 'comments.placeholderNew',
+  reply: 'comments.placeholderReply',
+  edit: 'comments.placeholderEdit',
+} as const
+
 type CommentEditorProps = ComponentProps['Comments']['Editor'] & {
   /** A composer field (2 to 8 lines, then it scrolls) with the placeholder for this kind; omitted: a plain body. */
   kind?: 'new' | 'reply' | 'edit'
@@ -29,6 +36,9 @@ export const CommentEditor = forwardRef<HTMLDivElement, CommentEditorProps>(func
   const context = useBlockNoteContext()
   const candidates = use(MentionCandidatesContext)
   const commentEditor = editor as unknown as CommentEditorInstance
+  const { t } = useTranslation('docs')
+  // The field's hint goes through a custom property: the class stays static for Tailwind, the text follows the language.
+  const placeholder = kind ? ({ '--comment-placeholder': JSON.stringify(t(PLACEHOLDER_KEYS[kind])) } as CSSProperties) : undefined
   return (
     <ThemedBlockNoteView
       autoFocus={autoFocus}
@@ -45,14 +55,11 @@ export const CommentEditor = forwardRef<HTMLDivElement, CommentEditorProps>(func
           '[&_.bn-editor]:box-border [&_.bn-editor]:max-h-44 [&_.bn-editor]:min-h-14 [&_.bn-editor]:overflow-y-auto [&_.bn-editor]:px-2.5! [&_.bn-editor]:py-2!',
         kind &&
           '[&_.bn-editor[contenteditable=true]_.bn-block-content[data-is-only-empty-block]:has(.ProseMirror-trailingBreak:only-child)]:after:text-muted-foreground! [&_.bn-editor[contenteditable=true]_.bn-block-content[data-is-only-empty-block]:has(.ProseMirror-trailingBreak:only-child)]:after:not-italic!',
-        kind === 'new' &&
-          "[&_.bn-editor[contenteditable=true]_.bn-block-content[data-is-only-empty-block]:has(.ProseMirror-trailingBreak:only-child)]:after:content-['Add_a_comment…_Use_@_to_mention']!",
-        kind === 'reply' &&
-          "[&_.bn-editor[contenteditable=true]_.bn-block-content[data-is-only-empty-block]:has(.ProseMirror-trailingBreak:only-child)]:after:content-['Reply…']!",
-        kind === 'edit' &&
-          "[&_.bn-editor[contenteditable=true]_.bn-block-content[data-is-only-empty-block]:has(.ProseMirror-trailingBreak:only-child)]:after:content-['Edit_comment…']!",
+        kind &&
+          '[&_.bn-editor[contenteditable=true]_.bn-block-content[data-is-only-empty-block]:has(.ProseMirror-trailingBreak:only-child)]:after:content-(--comment-placeholder)!',
         className,
       )}
+      style={placeholder}
       theme={context?.colorSchemePreference}
       editor={editor}
       sideMenu={false}

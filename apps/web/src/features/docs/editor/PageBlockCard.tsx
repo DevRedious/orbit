@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { ArrowRight, DocumentText } from 'reicon-react'
 import { cn } from 'cn'
 import { Emoji } from '@/components/common/Emoji'
@@ -5,6 +6,7 @@ import { pageBlockState, usePageEditorContext } from './pageEditorContext'
 
 /** Card body of the custom `page` block: links to another page, greyed out when the target is trashed or missing. */
 export function PageBlockCard({ pageId }: { pageId: string }) {
+  const { t } = useTranslation('docs')
   const { resolvePage, onOpenPage } = usePageEditorContext()
   const state = pageBlockState(pageId, resolvePage)
   const disabled = state.kind !== 'ok'
@@ -42,10 +44,10 @@ export function PageBlockCard({ pageId }: { pageId: string }) {
           state.kind === 'missing' && 'no-underline',
         )}
       >
-        {state.kind === 'missing' ? 'Missing page' : state.title}
+        {state.kind === 'missing' ? t('pageBlock.missing') : state.title}
       </span>
       {state.kind === 'trashed' ? (
-        <span className="shrink-0 text-xs font-normal text-muted-foreground">Page in trash</span>
+        <span className="shrink-0 text-xs font-normal text-muted-foreground">{t('pageBlock.trashed')}</span>
       ) : null}
       {state.kind === 'ok' ? (
         <ArrowRight className="ml-auto size-[15px] shrink-0 text-muted-foreground/70 opacity-0 group-hover/pagecard:opacity-100 group-focus-visible/pagecard:opacity-100" />
@@ -56,9 +58,10 @@ export function PageBlockCard({ pageId }: { pageId: string }) {
 
 /** Clipboard / external HTML for a `page` block: the target title as plain text. */
 export function PageBlockExternalHTML({ pageId }: { pageId: string }) {
+  const { t } = useTranslation('docs')
   const { resolvePage } = usePageEditorContext()
   const state = pageBlockState(pageId, resolvePage)
-  return <p data-page-id={pageId}>{state.kind === 'missing' ? 'Missing page' : state.title}</p>
+  return <p data-page-id={pageId}>{state.kind === 'missing' ? t('pageBlock.missing') : state.title}</p>
 }
 
 type PageBlockViewProps = { block: { props: { pageId: string } } }

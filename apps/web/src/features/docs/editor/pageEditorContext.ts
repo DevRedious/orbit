@@ -1,4 +1,5 @@
 import { createContext, useContext } from 'react'
+import { i18n } from '@/i18n'
 
 /** What a `page` block needs to know about its target page. `null` = the page does not exist (or is not loaded). */
 export interface PageRef {
@@ -32,6 +33,6 @@ export type PageBlockState =
 export function pageBlockState(pageId: string, resolvePage: PageEditorContextValue['resolvePage']): PageBlockState {
   const page = pageId ? resolvePage(pageId) : null
   if (!page) return { kind: 'missing' }
-  const title = page.title.trim() || 'Untitled'
+  const title = page.title.trim() || i18n.t('docs:untitled')
   return page.trashed ? { kind: 'trashed', title, icon: page.icon } : { kind: 'ok', title, icon: page.icon }
 }

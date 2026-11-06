@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { History, Refresh as RotateCcw, Xmark as X } from 'reicon-react'
 import { cn } from 'cn'
 import type { PageVersionSummary } from '@orbit/api/generated/types.gen'
@@ -39,11 +40,11 @@ interface PageHistoryPaneProps {
   onClose: () => void
 }
 
-const KIND_LABEL: Record<PageVersionSummary['kind'], string | null> = {
+const KIND_LABEL = {
   auto: null,
-  restore: 'Before a restore',
-  import: 'Imported from Notion',
-}
+  restore: 'history.kindRestore',
+  import: 'history.kindImport',
+} as const satisfies Record<PageVersionSummary['kind'], string | null>
 
 const noop = () => {}
 const noSubpage = () => Promise.reject(new Error('Read-only preview'))
@@ -66,6 +67,7 @@ function groupByDay(versions: PageVersionSummary[]): { label: string; items: Pag
  * read-only preview of the selected one and "Restore this version". Arrow keys move through the list; Escape closes.
  */
 export function PageHistoryPane({ workspaceId, pageId, readCurrent, resolvePage, onOpenPage, onRestore, onClose }: PageHistoryPaneProps) {
+  const { t } = useTranslation('docs')
   const versions = usePageVersions(workspaceId, pageId)
   const items = useMemo(() => versions.data ?? [], [versions.data])
   const [picked, setPicked] = useState<string | null>(null)
@@ -108,11 +110,11 @@ export function PageHistoryPane({ workspaceId, pageId, readCurrent, resolvePage,
 
   const requestRestore = async () => {
     if (!selected) return
-    const when = `${dayLabel(selected.created_at)}, ${timeOfDay(selected.created_at)}`
+    const when = t('history.when', { day: dayLabel(selected.created_at), time: timeOfDay(selected.created_at) })
     const confirmed = await confirmAction({
-      title: 'Restore this version?',
-      description: `The page’s title, icon and content go back to how they were (${when}). The current state stays in the history.`,
-      confirmLabel: 'Restore',
+      title: t('history.restoreTitle'),
+      description: t('history.restoreDescription', { when }),
+      confirmLabel: t('history.restore'),
     })
     if (!confirmed) return
     setRestoring(true)
@@ -139,16 +141,16 @@ export function PageHistoryPane({ workspaceId, pageId, readCurrent, resolvePage,
   } else if (versions.isError) {
     body = (
       <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-sm text-muted-foreground">
-        Could not load the version history.
+        {t('history.loadFailed')}
         <Button type="button" variant="outline" size="sm" onClick={() => void versions.refetch()}>
-          Retry
+          {t('retry')}
         </Button>
       </div>
     )
   } else if (items.length === 0) {
     body = (
       <div className="flex flex-1 flex-col p-6">
-        <EmptyState icon={History} title="No versions yet" description="Versions appear after you edit this page." />
+        <EmptyState icon={History} title={t('history.empty')} description={t('history.emptyHint')} />
       </div>
     )
   } else {
@@ -157,14 +159,14 @@ export function PageHistoryPane({ workspaceId, pageId, readCurrent, resolvePage,
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           <div className="flex h-11 shrink-0 items-center gap-2 border-b border-border px-4">
             <span className="min-w-0 flex-1 truncate text-[13px] text-muted-foreground" data-testid="history-preview-label">
-              {selected ? `${dayLabel(selected.created_at)}, ${timeOfDay(selected.created_at)}` : 'Current version'}
+              {selected ? t('history.when', { day: dayLabel(selected.created_at), time: timeOfDay(selected.created_at) }) : t('history.current')}
             </span>
             <Button type="button" size="sm" disabled={!selected || !detail.data || restoring} onClick={() => void requestRestore()}>
               {restoring ? <Spinner /> : <RotateCcw className="size-3.5" />}
-              Restore this version
+              {t('history.restoreThis')}
             </Button>
           </div>
-          <div className="min-h-0 flex-1 overflow-y-auto px-6 pt-6 pb-16 max-[899px]:px-3" aria-label="Version preview" role="region">
+          <div className="min-h-0 flex-1 overflow-y-auto px-6 pt-6 pb-16 max-[899px]:px-3" aria-label={t('history.preview')} role="region">
             {preview ? (
               <div className="mx-auto max-w-[680px]">
                 {preview.icon ? (
@@ -172,7 +174,7 @@ export function PageHistoryPane({ workspaceId, pageId, readCurrent, resolvePage,
                     <Emoji value={preview.icon} />
                   </div>
                 ) : null}
-                <h2 className="mb-4 text-[26px] leading-tight font-bold text-foreground">{preview.title.trim() ? preview.title : 'Untitled'}</h2>
+                <h2 className="mb-4 text-[26px] leading-tight font-bold text-foreground">{preview.title.trim() ? preview.title : t('untitled')}</h2>
                 <Suspense
                   fallback={
                     <div className="flex justify-center py-10">
@@ -194,7 +196,7 @@ export function PageHistoryPane({ workspaceId, pageId, readCurrent, resolvePage,
                 </Suspense>
               </div>
             ) : detail.isError ? (
-              <p className="py-10 text-center text-sm text-muted-foreground">Could not load this version.</p>
+              <p className="py-10 text-center text-sm text-muted-foreground">{t('history.versionFailed')}</p>
             ) : (
               <div className="flex justify-center py-10">
                 <Spinner className="text-muted-foreground" />
@@ -205,11 +207,11 @@ export function PageHistoryPane({ workspaceId, pageId, readCurrent, resolvePage,
         <div
           ref={listRef}
           role="listbox"
-          aria-label="Versions"
+          aria-label={t('history.versions')}
           className="flex w-60 shrink-0 flex-col overflow-y-auto border-l border-border p-2 max-[899px]:max-h-[40%] max-[899px]:w-full max-[899px]:border-b max-[899px]:border-l-0"
           onKeyDown={onListKeyDown}
         >
-          <VersionOption id={CURRENT} selected={selectedId === CURRENT} onSelect={setPicked} title="Current version" />
+          <VersionOption id={CURRENT} selected={selectedId === CURRENT} onSelect={setPicked} title={t('history.current')} />
           {groups.map((group) => (
             <div key={group.label} role="group" aria-label={group.label} className="mt-2 flex flex-col">
               <div className="px-2 pt-1 pb-1 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">{group.label}</div>
@@ -220,9 +222,9 @@ export function PageHistoryPane({ workspaceId, pageId, readCurrent, resolvePage,
                   selected={selectedId === version.id}
                   onSelect={setPicked}
                   title={timeOfDay(version.created_at)}
-                  author={version.created_by?.display_name ?? 'Former member'}
+                  author={version.created_by?.display_name ?? t('formerMember')}
                   authorId={version.created_by?.id}
-                  note={KIND_LABEL[version.kind]}
+                  note={KIND_LABEL[version.kind] ? t(KIND_LABEL[version.kind]!) : null}
                 />
               ))}
             </div>
@@ -237,7 +239,7 @@ export function PageHistoryPane({ workspaceId, pageId, readCurrent, resolvePage,
               onClick={() => void versions.fetchNextPage()}
             >
               {versions.isFetchingNextPage ? <Spinner /> : null}
-              Load older versions
+              {t('history.loadOlder')}
             </Button>
           ) : null}
         </div>
@@ -247,7 +249,7 @@ export function PageHistoryPane({ workspaceId, pageId, readCurrent, resolvePage,
 
   return (
     <aside
-      aria-label="Version history"
+      aria-label={t('history.title')}
       className="flex h-full min-h-0 w-[min(720px,50%)] shrink-0 animate-in flex-col border-l border-border bg-background duration-150 ease-out fade-in max-[899px]:fixed max-[899px]:inset-0 max-[899px]:z-40 max-[899px]:w-full max-[899px]:border-l-0 max-[899px]:duration-200 max-[899px]:slide-in-from-bottom-2 motion-reduce:animate-none"
       onKeyDown={(event) => {
         if (event.key === 'Escape') {
@@ -258,9 +260,9 @@ export function PageHistoryPane({ workspaceId, pageId, readCurrent, resolvePage,
     >
       <div className="flex h-12 shrink-0 items-center gap-2 border-b border-border px-3">
         <History className="size-4 text-muted-foreground" aria-hidden="true" />
-        <h2 className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground">Version history</h2>
-        <Tip label="Close" side="bottom">
-          <Button type="button" variant="ghost" size="icon-sm" className="text-muted-foreground/70" aria-label="Close version history" onClick={onClose}>
+        <h2 className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground">{t('history.title')}</h2>
+        <Tip label={t('history.closeTip')} side="bottom">
+          <Button type="button" variant="ghost" size="icon-sm" className="text-muted-foreground/70" aria-label={t('history.close')} onClick={onClose}>
             <X className="size-4" />
           </Button>
         </Tip>

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { Avatar, AvatarFallback, AvatarGroup, AvatarGroupCount, AvatarImage } from '@/components/ui/avatar'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { ProfileTrigger } from '@/components/common/ProfileTrigger'
@@ -43,12 +44,13 @@ export function PresenceAvatars({
   /** Scrolls to the person's caret. */
   onReveal?: (person: Collaborator) => void
 }) {
+  const { t } = useTranslation('docs')
   if (people.length === 0) return null
   const shown = people.slice(0, max)
   const rest = people.slice(max)
   const names = people.map((person) => person.name).join(', ')
   return (
-    <AvatarGroup role="group" aria-label={`Also here: ${names}`} data-testid="presence" className="shrink-0 -space-x-1 px-0.5">
+    <AvatarGroup role="group" aria-label={t('presence.alsoHere', { names })} data-testid="presence" className="shrink-0 -space-x-1 px-0.5">
       {shown.map((person) => (
         <Tooltip key={person.id}>
           <TooltipTrigger
@@ -57,7 +59,7 @@ export function PresenceAvatars({
                 userId={person.id}
                 name={person.name}
                 kind="avatar"
-                action={person.editing && onReveal ? { label: 'Go to cursor', run: () => onReveal(person) } : undefined}
+                action={person.editing && onReveal ? { label: t('presence.goToCursor'), run: () => onReveal(person) } : undefined}
               />
             }
           >
@@ -65,7 +67,7 @@ export function PresenceAvatars({
           </TooltipTrigger>
           <TooltipContent>
             <span className="font-medium">{person.name}</span>
-            <span className="text-background/60">{person.editing ? 'Editing' : 'Viewing'}</span>
+            <span className="text-background/60">{person.editing ? t('presence.editing') : t('presence.viewing')}</span>
           </TooltipContent>
         </Tooltip>
       ))}
@@ -75,7 +77,7 @@ export function PresenceAvatars({
             render={
               <AvatarGroupCount
                 className="size-6 text-[10px] font-semibold"
-                aria-label={`${rest.length} more: ${rest.map((person) => person.name).join(', ')}`}
+                aria-label={t('presence.more', { count: rest.length, names: rest.map((person) => person.name).join(', ') })}
                 tabIndex={0}
               />
             }

@@ -11,11 +11,12 @@ import {
   mentionLabel,
   pageMentionCandidates,
   PageMentionNamesContext,
-  PRIVATE_PAGE_HINT,
-  UNKNOWN_USER,
   type PageMentionMember,
 } from './pageMentions'
 import { pageEditorSchema } from './schema'
+
+const PRIVATE_PAGE_HINT = 'Only you can see this private page'
+const UNKNOWN_USER = 'Unknown user'
 
 beforeAll(() => {
   const meta = document.createElement('meta')

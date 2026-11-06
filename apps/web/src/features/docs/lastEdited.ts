@@ -3,6 +3,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { Page } from '@orbit/api/generated/types.gen'
 import type { CollabConnection } from '@orbit/editor/collab/session'
+import { i18n } from '@/i18n'
 
 export interface LastEdit {
   userId: string
@@ -15,23 +16,21 @@ const MINUTE = 60_000
 const HOUR = 60 * MINUTE
 const DAY = 24 * HOUR
 
-function plural(count: number, unit: string): string {
-  return `${count} ${unit}${count === 1 ? '' : 's'} ago`
-}
-
 /** "just now", "5 minutes ago", "2 hours ago", "3 days ago", or "on Sep 5" for older edits. */
 export function relativeEditTime(at: number, now: number): string {
   const diff = Math.max(0, now - at)
-  if (diff < MINUTE) return 'just now'
-  if (diff < HOUR) return plural(Math.floor(diff / MINUTE), 'minute')
-  if (diff < DAY) return plural(Math.floor(diff / HOUR), 'hour')
-  if (diff < 7 * DAY) return plural(Math.floor(diff / DAY), 'day')
-  return `on ${new Date(at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`
+  if (diff < MINUTE) return i18n.t('docs:lastEdited.justNow')
+  if (diff < HOUR) return i18n.t('docs:lastEdited.minutesAgo', { count: Math.floor(diff / MINUTE) })
+  if (diff < DAY) return i18n.t('docs:lastEdited.hoursAgo', { count: Math.floor(diff / HOUR) })
+  if (diff < 7 * DAY) return i18n.t('docs:lastEdited.daysAgo', { count: Math.floor(diff / DAY) })
+  return i18n.t('docs:lastEdited.onDate', { date: new Date(at).toLocaleDateString(i18n.language, { month: 'short', day: 'numeric' }) })
 }
 
 export function lastEditedLabel(edit: LastEdit, selfId: string | null, now: number): string {
-  const who = edit.userId === selfId ? 'you' : edit.name.trim() || 'someone'
-  return `Edited ${relativeEditTime(edit.at, now)} by ${who}`
+  const time = relativeEditTime(edit.at, now)
+  if (edit.userId === selfId) return i18n.t('docs:lastEdited.byYou', { time })
+  const name = edit.name.trim()
+  return name ? i18n.t('docs:lastEdited.byName', { time, name }) : i18n.t('docs:lastEdited.bySomeone', { time })
 }
 
 export function serverLastEdit(page: Page): LastEdit {

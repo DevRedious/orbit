@@ -1,5 +1,6 @@
 import { CALLOUT_DEFAULT_EMOJI } from '@orbit/editor/schema'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Emoji } from '@/components/common/Emoji'
 import { EmojiPicker } from '@/components/common/EmojiPicker'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -22,6 +23,7 @@ interface CalloutViewProps {
  * text sits on the right. The rounded box, colors and nested children are styled from PageEditor's wrapper.
  */
 export function CalloutView({ block, editor, contentRef }: CalloutViewProps) {
+  const { t } = useTranslation('docs')
   const [open, setOpen] = useState(false)
   const emoji = block.props.emoji || CALLOUT_DEFAULT_EMOJI
 
@@ -41,7 +43,7 @@ export function CalloutView({ block, editor, contentRef }: CalloutViewProps) {
               type="button"
               contentEditable={false}
               className="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-[4px] text-[18px] leading-none transition-colors duration-150 ease-out select-none hover:bg-foreground/8 focus-visible:outline-2 focus-visible:outline-ring/50 in-[.bn-editor[contenteditable=false]]:pointer-events-none in-[.bn-editor[contenteditable=false]]:cursor-default"
-              aria-label="Change callout icon"
+              aria-label={t('editor.changeCalloutIcon')}
               onMouseDown={(event) => {
                 // Keep ProseMirror from turning the click into a selection change or a drag start.
                 event.stopPropagation()

@@ -1,8 +1,10 @@
 import { describe, expect, mock, test } from 'bun:test'
 import { BlockNoteEditor } from '@blocknote/core'
-import { getPageSlashMenuItems, getTaskSlashMenuItems, mergeSlashItems, PAGE_ITEMS_GROUP, preferTitleMatches } from './slashMenu'
+import { getPageSlashMenuItems, getTaskSlashMenuItems, mergeSlashItems, preferTitleMatches } from './slashMenu'
 import { FILE_BLOCK_TYPES, REMOVED_BLOCK_TYPES } from '@orbit/editor/schema'
 import { EDITOR_BLOCK_TYPES, pageEditorSchema, taskEditorSchema } from './schema'
+
+const BASIC_BLOCKS = 'Basic blocks'
 
 function editor() {
   return BlockNoteEditor.create({ schema: pageEditorSchema })
@@ -11,12 +13,12 @@ function editor() {
 describe('mergeSlashItems', () => {
   test('puts custom items at the start of the group run so the group label is printed once', () => {
     const defaults = [{ id: 'h1', group: 'Headings' }, { id: 'p', group: 'Basic blocks' }, { id: 'q', group: 'Basic blocks' }, { id: 't', group: 'Advanced' }]
-    const merged = mergeSlashItems(defaults, [{ id: 'sub', group: 'Basic blocks' }])
+    const merged = mergeSlashItems(defaults, [{ id: 'sub', group: 'Basic blocks' }], 'Basic blocks')
     expect(merged.map((item) => item.id)).toEqual(['h1', 'sub', 'p', 'q', 't'])
   })
 
   test('prepends when the group is missing', () => {
-    expect(mergeSlashItems([{ id: 'a', group: 'Other' }], [{ id: 'sub', group: 'Basic blocks' }]).map((item) => item.id)).toEqual(['sub', 'a'])
+    expect(mergeSlashItems([{ id: 'a', group: 'Other' }], [{ id: 'sub', group: 'Basic blocks' }], 'Basic blocks').map((item) => item.id)).toEqual(['sub', 'a'])
   })
 })
 
@@ -81,9 +83,9 @@ describe('getPageSlashMenuItems', () => {
     for (const title of ['Video', 'Audio']) expect(titles).not.toContain(title)
 
     const groupRuns = items.map((item) => item.group).filter((group, index, all) => group !== all[index - 1])
-    expect(groupRuns.filter((group) => group === PAGE_ITEMS_GROUP)).toHaveLength(1)
+    expect(groupRuns.filter((group) => group === BASIC_BLOCKS)).toHaveLength(1)
     const subpage = items.find((item) => item.title === 'Sub-page')
-    expect(subpage?.group).toBe(PAGE_ITEMS_GROUP)
+    expect(subpage?.group).toBe(BASIC_BLOCKS)
     expect(subpage?.icon).toBeDefined()
   })
 
@@ -103,7 +105,7 @@ describe('getPageSlashMenuItems', () => {
     const items = getPageSlashMenuItems(e, actions, '')
     const titles = items.map((item) => item.title)
     expect(titles.indexOf('Callout')).toBe(titles.indexOf('Quote') + 1)
-    expect(items.find((item) => item.title === 'Callout')?.group).toBe(PAGE_ITEMS_GROUP)
+    expect(items.find((item) => item.title === 'Callout')?.group).toBe(BASIC_BLOCKS)
     for (const alias of ['callout', 'note', 'tip', 'warning', 'info']) {
       expect(getPageSlashMenuItems(e, actions, alias).map((item) => item.title)).toContain('Callout')
     }

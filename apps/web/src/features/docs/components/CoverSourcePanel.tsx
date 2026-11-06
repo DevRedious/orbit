@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Spinner } from '@/components/ui/spinner'
@@ -18,6 +19,7 @@ export function CoverSourcePanel({
   onPicked: (url: string) => void
   onUpload?: (file: File) => Promise<string>
 }) {
+  const { t } = useTranslation('docs')
   const [url, setUrl] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
@@ -26,7 +28,7 @@ export function CoverSourcePanel({
   const submit = () => {
     const valid = validCoverUrl(url)
     if (!valid) {
-      setError('Enter an http(s) image URL.')
+      setError(t('cover.invalidUrl'))
       return
     }
     setError(null)
@@ -41,7 +43,7 @@ export function CoverSourcePanel({
       const uploaded = await onUpload(file)
       onPicked(uploaded)
     } catch (uploadError) {
-      setError(uploadError instanceof Error && uploadError.message ? uploadError.message : 'Could not upload the image.')
+      setError(uploadError instanceof Error && uploadError.message ? uploadError.message : t('cover.uploadFailed'))
     } finally {
       setUploading(false)
       if (fileInput.current) fileInput.current.value = ''
@@ -57,22 +59,22 @@ export function CoverSourcePanel({
             type="file"
             accept={COVER_IMAGE_TYPES}
             className="hidden"
-            aria-label="Cover image file"
+            aria-label={t('cover.fileLabel')}
             onChange={(e) => void upload(e.target.files?.[0])}
           />
           <Button type="button" variant="outline" disabled={uploading} onClick={() => fileInput.current?.click()}>
             {uploading ? <Spinner /> : null}
-            {uploading ? 'Uploading…' : 'Upload image'}
+            {uploading ? t('cover.uploading') : t('cover.upload')}
           </Button>
-          <p className="text-center text-xs text-muted-foreground">or paste a link</p>
+          <p className="text-center text-xs text-muted-foreground">{t('cover.orPasteLink')}</p>
         </>
       ) : null}
       <div className="flex gap-2">
         <Input
           className="min-w-0 flex-1"
           value={url}
-          placeholder="https://… image URL"
-          aria-label="Image URL"
+          placeholder={t('cover.urlPlaceholder')}
+          aria-label={t('cover.urlLabel')}
           aria-invalid={error ? true : undefined}
           autoFocus
           disabled={uploading}
@@ -88,7 +90,7 @@ export function CoverSourcePanel({
           }}
         />
         <Button type="button" variant="outline" disabled={!url.trim() || uploading} onClick={submit}>
-          Use
+          {t('cover.use')}
         </Button>
       </div>
       {error ? <p className="text-xs text-destructive">{error}</p> : null}

@@ -20,6 +20,7 @@ import { ApiProblem } from '@orbit/api/problem'
 import { queryKeys } from '@/api/queryKeys'
 import { shrinkUpload } from '@/lib/shrinkUpload'
 import { confirmAction } from '@/components/common/confirmAction'
+import { i18n } from '@/i18n'
 import { isTaskVersionConflict } from '@/features/tasks/api/conflicts'
 import { applyMove, descendantsOf, removeSubtree, type MoveTarget } from '../pageTree'
 
@@ -37,7 +38,7 @@ export function isPageVersionConflict(error: unknown): error is ApiProblem {
 
 /** The toast for a failed move: the server's reason when it forbids the move, else a generic one. */
 export function movePageErrorMessage(error: unknown): string {
-  return error instanceof ApiProblem && error.status === 403 ? error.detail : 'Could not move the page.'
+  return error instanceof ApiProblem && error.status === 403 ? error.detail : i18n.t('docs:moveFailed')
 }
 
 export function isPageNotFound(error: unknown): boolean {
@@ -116,11 +117,11 @@ export async function uploadPageFileRequest(client: ApiClient, workspaceId: stri
 export function pageUploadErrorMessage(error: unknown): string {
   if (error instanceof ApiProblem) {
     if (error.code === 'storage_quota_exceeded') return error.detail
-    if (error.status === 413) return 'The file is too large to upload.'
-    if (error.status === 404) return 'This page is no longer available.'
-    if (error.status === 422) return 'The file name is not valid.'
+    if (error.status === 413) return i18n.t('docs:pageUploadError.tooLarge')
+    if (error.status === 404) return i18n.t('docs:pageUploadError.notFound')
+    if (error.status === 422) return i18n.t('docs:pageUploadError.invalidName')
   }
-  return 'Could not upload the file. Try again.'
+  return i18n.t('docs:pageUploadError.generic')
 }
 
 export function pageTreeQueryOptions(workspaceId: string, client: ApiClient = apiClient) {
@@ -172,7 +173,7 @@ export function usePageSearch(workspaceId: string, query: string) {
 async function promptForConflict(error: Error, refresh: () => void) {
   if (
     isPageVersionConflict(error) &&
-    (await confirmAction({ title: 'Refresh pages?', description: 'This page changed on the server. Refresh it now?', confirmLabel: 'Refresh' }))
+    (await confirmAction({ title: i18n.t('docs:pageConflict.title'), description: i18n.t('docs:pageConflict.description'), confirmLabel: i18n.t('docs:pageConflict.confirm') }))
   ) {
     refresh()
   }

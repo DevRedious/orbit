@@ -5,6 +5,7 @@ import { memo, use, useRef, useState, type KeyboardEvent, type MouseEvent } from
 import { CommentEditorSubmitExtension, CommentsExtension, type CommentData, type ThreadData } from '@blocknote/core/comments'
 import { useBlockNoteEditor, useCreateBlockNote, useExtension, type FloatingComposer, type ThreadProps } from '@blocknote/react'
 import type { ComponentProps } from 'react'
+import { Trans, useTranslation } from 'react-i18next'
 import { CheckCircle, Edit, MoreH, RotateLeft, Trash } from 'reicon-react'
 import { cn } from 'cn'
 import { Button } from '@/components/ui/button'
@@ -12,31 +13,34 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { Tip } from '@/components/common/Tip'
 import { UserAvatar } from '@/components/common/UserAvatar'
+import { i18n } from '@/i18n'
 import { fullDate, relativeTime } from '@/lib/format'
 import { CommentComposer, type AnyCommentEditor } from './CommentComposer'
 import { CommentEditor } from './CommentEditor'
-import { COMMENT_PLACEHOLDERS, commentEditorDictionary } from './dictionary'
+import { commentEditorDictionary } from './dictionary'
 import { CommentMembersContext } from './mentionContext'
 import { commentEditorSchema } from './mentions'
 import type { OrbitThreadMetadata } from './threadStore'
 import { ProfileTrigger } from '@/components/common/ProfileTrigger'
 
-export const FORMER_MEMBER = 'Former member'
-
 /** Popups opened from a card (menus) carry this, so the floating thread does not treat clicks there as "outside". */
 export const COMMENT_POPUP_ATTR = 'data-comment-popup'
 
+const WEEK = 7 * 24 * 60 * 60_000
+
 /** "just now", "5m ago", "3d ago", then a short date. */
 function commentTime(date: Date): string {
+  const diff = Date.now() - date.getTime()
+  if (diff < 60_000) return i18n.t('docs:comments.justNow')
   const label = relativeTime(date.toISOString())
-  if (label === 'now') return 'just now'
-  return /^\d+[mhd]$/.test(label) ? `${label} ago` : label
+  return diff < WEEK ? i18n.t('docs:comments.timeAgo', { time: label }) : label
 }
 
 function useMember(userId: string | undefined) {
   const members = use(CommentMembersContext)
+  const { t } = useTranslation('docs')
   const member = userId ? members.get(userId) : undefined
-  return { name: member?.name ?? FORMER_MEMBER, member }
+  return { name: member?.name ?? t('formerMember'), member }
 }
 
 function MemberAvatar({ userId, size }: { userId: string; size: number }) {
@@ -71,6 +75,7 @@ export interface ThreadCardProps {
 }
 
 export const ThreadCard = memo(function ThreadCard({ thread, selected = false, orphaned = false, variant, replyEditor, onSelect }: ThreadCardProps) {
+  const { t } = useTranslation('docs')
   const comments = useExtension(CommentsExtension)
   const store = comments.threadStore
   const quote = (thread.metadata as OrbitThreadMetadata | undefined)?.quote?.trim() ?? ''
@@ -100,7 +105,7 @@ export const ThreadCard = memo(function ThreadCard({ thread, selected = false, o
         variant === 'panel' && onSelect && 'cursor-pointer hover:border-foreground/20',
         variant === 'panel' && selected && 'border-primary/50 ring-1 ring-primary/20 hover:border-primary/50',
       )}
-      aria-label={quote ? `Comment thread on “${quote}”` : 'Comment thread'}
+      aria-label={quote ? t('comments.threadOn', { quote }) : t('comments.thread')}
       tabIndex={variant === 'panel' ? 0 : undefined}
       data-thread-card=""
       data-thread-id={thread.id}
@@ -114,7 +119,7 @@ export const ThreadCard = memo(function ThreadCard({ thread, selected = false, o
         <div className={cn('min-w-0 flex-1', thread.resolved && 'opacity-70')}>
           {orphaned ? (
             <span className="mb-1 inline-flex h-[18px] items-center rounded bg-muted px-1.5 text-[11px] font-medium text-muted-foreground" data-thread-orphaned="">
-              Text removed
+              {t('comments.textRemoved')}
             </span>
           ) : null}
           {quote ? (
@@ -139,14 +144,14 @@ export const ThreadCard = memo(function ThreadCard({ thread, selected = false, o
                   variant="ghost"
                   size="icon-xs"
                   className={cn('-my-0.5 size-7 text-muted-foreground', thread.resolved ? 'hover:text-foreground' : 'hover:text-emerald-600 dark:hover:text-emerald-400')}
-                  aria-label={thread.resolved ? 'Reopen' : 'Resolve'}
+                  aria-label={thread.resolved ? t('comments.reopen') : t('comments.resolve')}
                   onClick={toggleResolved}
                 />
               }
             >
               {thread.resolved ? <RotateLeft className="size-4" /> : <CheckCircle className="size-4" />}
             </TooltipTrigger>
-            <TooltipContent>{thread.resolved ? 'Reopen' : 'Resolve'}</TooltipContent>
+            <TooltipContent>{thread.resolved ? t('comments.reopen') : t('comments.resolve')}</TooltipContent>
           </Tooltip>
         ) : null}
       </header>
@@ -154,7 +159,7 @@ export const ThreadCard = memo(function ThreadCard({ thread, selected = false, o
         {thread.comments.map((comment) =>
           comment.deletedAt ? (
             <p key={comment.id} className="pl-8 text-xs text-muted-foreground italic">
-              Comment deleted
+              {t('comments.deleted')}
             </p>
           ) : (
             // Remount on remote edits: the row's editor reads the body once.
@@ -166,7 +171,7 @@ export const ThreadCard = memo(function ThreadCard({ thread, selected = false, o
         <p className="flex items-center gap-1.5 text-xs text-muted-foreground" data-thread-resolved="">
           <CheckCircle className="size-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
           <span className="min-w-0 truncate">
-            Resolved by <span className="font-medium text-foreground">{resolvedByName}</span>
+            <Trans t={t} i18nKey="comments.resolvedBy" values={{ name: resolvedByName }} components={{ name: <span className="font-medium text-foreground" /> }} />
           </span>
           <span aria-hidden="true">·</span>
           <time className="shrink-0" dateTime={thread.resolvedUpdatedAt.toISOString()} title={fullDate(thread.resolvedUpdatedAt.toISOString())}>
@@ -182,13 +187,14 @@ export const ThreadCard = memo(function ThreadCard({ thread, selected = false, o
 function CommentRow({ thread, comment }: { thread: ThreadData; comment: CommentData }) {
   const comments = useExtension(CommentsExtension)
   const store = comments.threadStore
+  const { t } = useTranslation('docs')
   const { name, member } = useMember(comment.userId)
   const [editing, setEditing] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const editor = useCreateBlockNote({
     initialContent: comment.body,
     trailingBlock: false,
-    dictionary: commentEditorDictionary(COMMENT_PLACEHOLDERS.edit_comment),
+    dictionary: commentEditorDictionary(t('comments.placeholderEdit')),
     schema: comments.commentEditorSchema ?? commentEditorSchema,
     extensions: [
       CommentEditorSubmitExtension({
@@ -218,12 +224,12 @@ function CommentRow({ thread, comment }: { thread: ThreadData; comment: CommentD
           </ProfileTrigger>
           <time className="shrink-0 text-xs text-muted-foreground" dateTime={comment.createdAt.toISOString()} title={fullDate(comment.createdAt.toISOString())}>
             {commentTime(comment.createdAt)}
-            {edited ? ' · edited' : ''}
+            {edited ? t('comments.editedSuffix') : ''}
           </time>
           <span className="flex-1" />
           {(canEdit || canDelete) && !editing ? (
             <DropdownMenu modal={false} open={menuOpen} onOpenChange={setMenuOpen}>
-              <Tip label="Comment actions">
+              <Tip label={t('comments.actions')}>
                 <DropdownMenuTrigger
                   render={
                     <Button
@@ -234,7 +240,7 @@ function CommentRow({ thread, comment }: { thread: ThreadData; comment: CommentD
                         'text-muted-foreground opacity-0 group-hover/comment:opacity-100 group-focus-within/comment:opacity-100 focus-visible:opacity-100 max-[899px]:opacity-100',
                         menuOpen && 'opacity-100',
                       )}
-                      aria-label="Comment actions"
+                      aria-label={t('comments.actions')}
                     />
                   }
                 >
@@ -245,12 +251,12 @@ function CommentRow({ thread, comment }: { thread: ThreadData; comment: CommentD
                 <DropdownMenuContent align="end" className="w-36" {...{ [COMMENT_POPUP_ATTR]: '' }}>
                   {canEdit ? (
                     <DropdownMenuItem onClick={() => setEditing(true)}>
-                      <Edit /> Edit
+                      <Edit /> {t('comments.edit')}
                     </DropdownMenuItem>
                   ) : null}
                   {canDelete ? (
                     <DropdownMenuItem variant="destructive" onClick={quietly(() => store.deleteComment({ threadId: thread.id, commentId: comment.id }))}>
-                      <Trash /> Delete
+                      <Trash /> {t('comments.delete')}
                     </DropdownMenuItem>
                   ) : null}
                 </DropdownMenuContent>
@@ -259,7 +265,7 @@ function CommentRow({ thread, comment }: { thread: ThreadData; comment: CommentD
           ) : null}
         </div>
         {editing ? (
-          <CommentComposer editor={editor} kind="edit" submitLabel="Save" label="Edit comment" onCancel={cancelEdit} autoFocus className="mt-1" />
+          <CommentComposer editor={editor} kind="edit" submitLabel={t('comments.save')} label={t('comments.editLabel')} onCancel={cancelEdit} autoFocus className="mt-1" />
         ) : (
           <CommentEditor editor={editor} editable={false} />
         )}
@@ -270,6 +276,7 @@ function CommentRow({ thread, comment }: { thread: ThreadData; comment: CommentD
 
 /** "Reply…" as a one-line field; the real composer mounts on focus and folds back when left empty. */
 function ReplyArea({ threadId, editor }: { threadId: string; editor?: AnyCommentEditor }) {
+  const { t } = useTranslation('docs')
   const [open, setOpen] = useState(false)
   if (!open) {
     return (
@@ -280,7 +287,7 @@ function ReplyArea({ threadId, editor }: { threadId: string; editor?: AnyComment
         onClick={() => setOpen(true)}
         onFocus={() => setOpen(true)}
       >
-        {COMMENT_PLACEHOLDERS.comment_reply}
+        {t('comments.placeholderReply')}
       </button>
     )
   }
@@ -292,10 +299,11 @@ function ReplyArea({ threadId, editor }: { threadId: string; editor?: AnyComment
 }
 
 function OwnReplyComposer({ threadId, onClose }: { threadId: string; onClose: () => void }) {
+  const { t } = useTranslation('docs')
   const comments = useExtension(CommentsExtension)
   const editor = useCreateBlockNote({
     trailingBlock: false,
-    dictionary: commentEditorDictionary(COMMENT_PLACEHOLDERS.comment_reply),
+    dictionary: commentEditorDictionary(t('comments.placeholderReply')),
     schema: comments.commentEditorSchema ?? commentEditorSchema,
     extensions: [
       CommentEditorSubmitExtension({
@@ -311,6 +319,7 @@ function OwnReplyComposer({ threadId, onClose }: { threadId: string; onClose: ()
 }
 
 function ReplyComposer({ editor, onClose }: { editor: AnyCommentEditor; onClose: () => void }) {
+  const { t } = useTranslation('docs')
   const ref = useRef<HTMLDivElement>(null)
   const cancel = () => {
     editor.removeBlocks(editor.document)
@@ -329,7 +338,7 @@ function ReplyComposer({ editor, onClose }: { editor: AnyCommentEditor; onClose:
         }, 0)
       }}
     >
-      <CommentComposer editor={editor} kind="reply" submitLabel="Reply" label="Reply" onCancel={cancel} autoFocus />
+      <CommentComposer editor={editor} kind="reply" submitLabel={t('comments.reply')} label={t('comments.reply')} onCancel={cancel} autoFocus />
     </div>
   )
 }
@@ -341,6 +350,7 @@ export function FloatingThreadCard({ thread, newCommentEditor }: ThreadProps) {
 
 /** The floating card for a new thread on the selected text. */
 export function NewCommentCard({ newCommentEditor }: ComponentProps<typeof FloatingComposer>) {
+  const { t } = useTranslation('docs')
   const editor = useBlockNoteEditor()
   const comments = useExtension(CommentsExtension)
   const cancel = () => {
@@ -349,7 +359,7 @@ export function NewCommentCard({ newCommentEditor }: ComponentProps<typeof Float
   }
   return (
     <div className="w-[360px] max-w-[calc(100vw-24px)] rounded-lg border border-border bg-popover p-3 text-popover-foreground shadow-lg" data-new-comment="">
-      <CommentComposer editor={newCommentEditor} kind="new" submitLabel="Comment" label="New comment" onCancel={cancel} autoFocus />
+      <CommentComposer editor={newCommentEditor} kind="new" submitLabel={t('comments.comment')} label={t('comments.newLabel')} onCancel={cancel} autoFocus />
     </div>
   )
 }

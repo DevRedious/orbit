@@ -10,6 +10,7 @@ import type {
   NotionImportTree,
 } from '@orbit/api/generated/types.gen'
 import { ApiProblem } from '@orbit/api/problem'
+import { i18n } from '@/i18n'
 import { queryKeys } from '@/api/queryKeys'
 
 type ApiClient = ReturnType<typeof createApiClient>
@@ -27,15 +28,9 @@ export function isFinalImport(status: NotionImportStatus | undefined): boolean {
   return status === 'completed' || status === 'failed' || status === 'cancelled' || status === 'expired'
 }
 
-export const NOTION_IMPORT_STATUS_LABELS: Record<NotionImportStatus, string> = {
-  scanning: 'Scanning',
-  ready: 'Ready to import',
-  queued: 'Queued',
-  importing: 'Importing',
-  completed: 'Completed',
-  failed: 'Failed',
-  cancelled: 'Cancelled',
-  expired: 'Expired',
+/** The badge text of an import status, in the UI language. */
+export function notionImportStatusLabel(status: NotionImportStatus): string {
+  return i18n.t(`docs:notionImport.status.${status}`)
 }
 
 /** A user-facing sentence for a failed Notion import request. */
@@ -43,27 +38,27 @@ export function notionImportErrorMessage(error: unknown): string {
   if (error instanceof ApiProblem) {
     switch (error.code) {
       case 'notion_token_invalid':
-        return 'Notion rejected this token. Check that you copied the whole token and that it was not revoked.'
+        return i18n.t('docs:notionImport.errors.tokenInvalid')
       case 'app_key_missing':
-        return 'Orbit is not ready to import from Notion yet. Ask the Orbit administrator to set the app key.'
+        return i18n.t('docs:notionImport.errors.appKeyMissing')
       case 'import_in_progress':
-        return 'You already have an import running. Wait for it to finish or cancel it.'
+        return i18n.t('docs:notionImport.errors.inProgress')
       case 'notion_unavailable':
-        return 'Notion could not be reached. Try again in a moment.'
+        return i18n.t('docs:notionImport.errors.unavailable')
       case 'notion_import_too_large':
-        return 'An import can contain at most 5,000 pages. Select fewer pages.'
+        return i18n.t('docs:notionImport.errors.tooLarge')
       case 'notion_import_state_conflict':
-        return 'This import changed in the meantime (it may have expired or been cancelled).'
+        return i18n.t('docs:notionImport.errors.stateConflict')
       case 'notion_import_not_found':
-        return 'This import no longer exists.'
+        return i18n.t('docs:notionImport.errors.notFound')
       case 'page_not_found':
-        return 'The destination page no longer exists. Choose another one.'
+        return i18n.t('docs:notionImport.errors.pageNotFound')
       case 'teamspace_not_found':
-        return 'The destination teamspace no longer exists. Choose another one.'
+        return i18n.t('docs:notionImport.errors.teamspaceNotFound')
     }
-    if (error.status === 422) return 'The request was not valid. Check your input and try again.'
+    if (error.status === 422) return i18n.t('docs:notionImport.errors.invalid')
   }
-  return 'Something went wrong. Try again.'
+  return i18n.t('docs:notionImport.errors.generic')
 }
 
 export function isImportInProgress(error: unknown): boolean {

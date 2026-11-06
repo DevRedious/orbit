@@ -4,9 +4,15 @@ import { DocumentText, Hierarchy, LampOn, Link2 } from 'reicon-react'
 import { MERMAID_LANGUAGE } from '@orbit/editor/codeLanguages'
 import { CALLOUT_DEFAULT_BACKGROUND } from '@orbit/editor/schema'
 import type { PageEditorInstance } from '@orbit/editor/schema'
+import { i18n } from '@/i18n'
 
-/** Group the custom page items join (the reference editor's default "Basic blocks" group). */
-export const PAGE_ITEMS_GROUP = 'Basic blocks'
+/**
+ * Group the custom page items join (the reference editor's default "Basic blocks" group), named by the editor's
+ * BlockNote dictionary so it matches the default items in every language.
+ */
+export function pageItemsGroup(editor: Pick<PageEditorInstance, 'dictionary'>): string {
+  return editor.dictionary.slash_menu.paragraph.group
+}
 
 export interface PageSlashActions {
   onSubpage: () => void
@@ -14,21 +20,21 @@ export interface PageSlashActions {
 }
 
 /** "Sub-page" and "Link a page" — titles, subtexts and aliases ported from the old docs slash menu. */
-export function pageSlashItems(actions: PageSlashActions): DefaultReactSuggestionItem[] {
+export function pageSlashItems(actions: PageSlashActions, group: string): DefaultReactSuggestionItem[] {
   return [
     {
-      title: 'Sub-page',
-      subtext: 'Create a page under this one',
+      title: i18n.t('docs:slashMenu.subpage'),
+      subtext: i18n.t('docs:slashMenu.subpageHint'),
       aliases: ['subpage', 'new', 'under', 'page'],
-      group: PAGE_ITEMS_GROUP,
+      group,
       icon: <DocumentText className="size-[18px]" />,
       onItemClick: actions.onSubpage,
     },
     {
-      title: 'Link a page',
-      subtext: 'Insert a link to an existing page',
+      title: i18n.t('docs:slashMenu.linkPage'),
+      subtext: i18n.t('docs:slashMenu.linkPageHint'),
       aliases: ['link', 'reference', 'mention'],
-      group: PAGE_ITEMS_GROUP,
+      group,
       icon: <Link2 className="size-[18px]" />,
       onItemClick: actions.onLinkPage,
     },
@@ -38,10 +44,10 @@ export function pageSlashItems(actions: PageSlashActions): DefaultReactSuggestio
 /** "Callout" (Basic blocks): turns the empty line into a callout, or inserts one below. */
 export function calloutSlashItem(editor: PageEditorInstance): DefaultReactSuggestionItem {
   return {
-    title: 'Callout',
-    subtext: 'Make writing stand out',
+    title: i18n.t('docs:slashMenu.callout'),
+    subtext: i18n.t('docs:slashMenu.calloutHint'),
     aliases: ['callout', 'note', 'tip', 'warning', 'info'],
-    group: PAGE_ITEMS_GROUP,
+    group: pageItemsGroup(editor),
     icon: <LampOn className="size-[18px]" />,
     onItemClick: () => {
       // Turning a paragraph into a callout keeps same-named props, so the paragraph's `backgroundColor: 'default'`
@@ -54,10 +60,10 @@ export function calloutSlashItem(editor: PageEditorInstance): DefaultReactSugges
 /** "Mermaid diagram" (Basic blocks): a code block with the language `mermaid`, which shows its diagram below the code. */
 export function mermaidSlashItem(editor: PageEditorInstance): DefaultReactSuggestionItem {
   return {
-    title: 'Mermaid diagram',
-    subtext: 'Draw a diagram from text',
+    title: i18n.t('docs:slashMenu.mermaid'),
+    subtext: i18n.t('docs:slashMenu.mermaidHint'),
     aliases: ['mermaid', 'diagram', 'flowchart', 'chart', 'graph', 'sequence'],
-    group: PAGE_ITEMS_GROUP,
+    group: pageItemsGroup(editor),
     icon: <Hierarchy className="size-[18px]" />,
     onItemClick: () => {
       insertOrUpdateBlockForSlashMenu(editor, {
@@ -81,7 +87,7 @@ export function insertAfterKey<T extends { group?: string; key?: string }>(items
  * whenever the group changes between consecutive items, so the custom items must sit next to the existing
  * group members or the label would appear twice. Falls back to prepending when the group is absent.
  */
-export function mergeSlashItems<T extends { group?: string }>(defaults: readonly T[], custom: readonly T[], group = PAGE_ITEMS_GROUP): T[] {
+export function mergeSlashItems<T extends { group?: string }>(defaults: readonly T[], custom: readonly T[], group: string | undefined): T[] {
   const index = defaults.findIndex((item) => item.group === group)
   if (index === -1) return [...custom, ...defaults]
   return [...defaults.slice(0, index), ...custom, ...defaults.slice(index)]
@@ -112,7 +118,8 @@ export function preferTitleMatches<T extends { title: string; group?: string }>(
  */
 export function getPageSlashMenuItems(editor: PageEditorInstance, actions: PageSlashActions, query: string): DefaultReactSuggestionItem[] {
   const defaults = insertAfterKey(getDefaultReactSlashMenuItems(editor), 'quote', calloutSlashItem(editor))
-  const merged = mergeSlashItems(insertAfterKey(defaults, 'code_block', mermaidSlashItem(editor)), pageSlashItems(actions))
+  const group = pageItemsGroup(editor)
+  const merged = mergeSlashItems(insertAfterKey(defaults, 'code_block', mermaidSlashItem(editor)), pageSlashItems(actions, group), group)
   return preferTitleMatches(filterSuggestionItems(merged, query), query)
 }
 

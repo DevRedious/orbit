@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { Comment as CommentIcon, X } from 'reicon-react'
 import { cn } from 'cn'
 import { Button } from '@/components/ui/button'
@@ -27,19 +28,20 @@ export function CommentsPanel({
   listRef: (element: HTMLDivElement | null) => void
   onClose: () => void
 }) {
+  const { t } = useTranslation('docs')
   const empty = filter === 'open' ? openCount === 0 : resolvedCount === 0
   return (
     <aside
-      aria-label="Comments"
+      aria-label={t('comments.title')}
       data-comments-panel=""
       data-print-hide=""
       className="flex w-[340px] shrink-0 animate-in flex-col border-l border-border bg-background duration-150 ease-out fade-in max-[1099px]:absolute max-[1099px]:inset-y-0 max-[1099px]:right-0 max-[1099px]:z-20 max-[1099px]:shadow-xl max-[1099px]:duration-200 max-[1099px]:slide-in-from-right-4 max-[599px]:w-full motion-reduce:animate-none"
     >
       <div className="flex h-12 shrink-0 items-center gap-2 border-b border-border pr-2 pl-3">
-        <span className="text-[13px] font-semibold text-foreground">Comments</span>
+        <span className="text-[13px] font-semibold text-foreground">{t('comments.title')}</span>
         <span className="flex-1" />
-        <Tip label="Close" side="bottom">
-          <Button type="button" variant="ghost" size="icon-sm" className="text-muted-foreground" aria-label="Close comments" onClick={onClose}>
+        <Tip label={t('comments.closeTip')} side="bottom">
+          <Button type="button" variant="ghost" size="icon-sm" className="text-muted-foreground" aria-label={t('comments.close')} onClick={onClose}>
             <X className="size-4" />
           </Button>
         </Tip>
@@ -50,7 +52,7 @@ export function CommentsPanel({
             const count = item === 'open' ? openCount : resolvedCount
             return (
               <TabsTrigger key={item} value={item} className="gap-1.5 text-[13px]">
-                {item === 'open' ? 'Open' : 'Resolved'}
+                {item === 'open' ? t('comments.tabOpen') : t('comments.tabResolved')}
                 <span
                   className={cn(
                     'min-w-[18px] rounded-full px-1 text-center text-[11px] leading-4 font-semibold tabular-nums',
@@ -73,16 +75,16 @@ export function CommentsPanel({
               <CommentIcon className="size-[18px]" aria-hidden="true" />
             </span>
             {loading ? (
-              <p className="text-[13px] text-muted-foreground">Loading comments…</p>
+              <p className="text-[13px] text-muted-foreground">{t('comments.loading')}</p>
             ) : filter === 'open' ? (
               <>
-                <p className="text-[13px] font-medium text-foreground">No open comments</p>
-                <p className="max-w-[260px] text-xs leading-[18px] text-muted-foreground">Select text and click Comment to start a thread.</p>
+                <p className="text-[13px] font-medium text-foreground">{t('comments.emptyOpen')}</p>
+                <p className="max-w-[260px] text-xs leading-[18px] text-muted-foreground">{t('comments.emptyOpenHint')}</p>
               </>
             ) : (
               <>
-                <p className="text-[13px] font-medium text-foreground">No resolved comments</p>
-                <p className="max-w-[240px] text-xs leading-[18px] text-muted-foreground">Resolved threads show up here.</p>
+                <p className="text-[13px] font-medium text-foreground">{t('comments.emptyResolved')}</p>
+                <p className="max-w-[240px] text-xs leading-[18px] text-muted-foreground">{t('comments.emptyResolvedHint')}</p>
               </>
             )}
           </div>

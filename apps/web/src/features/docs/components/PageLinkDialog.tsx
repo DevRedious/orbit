@@ -2,6 +2,7 @@
 // Built on the shadcn Command (cmdk): it owns the highlight, arrow-key navigation and Enter.
 // Filtering stays ours (`shouldFilter={false}`) so the substring match is unchanged.
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { DocumentText as FileText } from 'reicon-react'
 import type { PageSummary } from '@orbit/api/generated/types.gen'
 import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
@@ -21,6 +22,7 @@ export function PageLinkDialog({
   onPick: (page: PageSummary) => void
   onClose: () => void
 }) {
+  const { t } = useTranslation('docs')
   const [query, setQuery] = useState('')
 
   const results = useMemo(() => {
@@ -31,11 +33,11 @@ export function PageLinkDialog({
   }, [pages, excludeId, query])
 
   return (
-    <Modal title="Link a page" onClose={onClose}>
-      <Command shouldFilter={false} label="Link a page" className="gap-2 bg-transparent p-0">
-        <CommandInput autoFocus placeholder="Search pages…" value={query} onValueChange={setQuery} />
+    <Modal title={t('pageLinkDialog.title')} onClose={onClose}>
+      <Command shouldFilter={false} label={t('pageLinkDialog.title')} className="gap-2 bg-transparent p-0">
+        <CommandInput autoFocus placeholder={t('pageLinkDialog.search')} value={query} onValueChange={setQuery} />
         <CommandList className="max-h-[320px]">
-          <CommandEmpty className="px-3 py-7 text-[13px] text-muted-foreground/70">No pages found</CommandEmpty>
+          <CommandEmpty className="px-3 py-7 text-[13px] text-muted-foreground/70">{t('pageLinkDialog.empty')}</CommandEmpty>
           {results.map((page) => {
             const parent = ancestorsOf(pages, page.id).at(-1)
             return (

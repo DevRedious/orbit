@@ -9,53 +9,46 @@ import { CUSTOM_THEME_PRESETS, serializeCustomTheme, setCustomTheme, useCustomTh
 import { CustomThemeDialog, CustomThemeSwatch } from '@/features/profile/components/CustomThemeDialog'
 import { useTheme, type Appearance } from '@/lib/themeContext'
 
-const THEMES: { value: Appearance['theme']; label: string; description: string; preview: string }[] = [
-  { value: 'light', label: 'Light', description: 'Bright surfaces and dark text.', preview: 'bg-white' },
-  { value: 'system', label: 'System', description: 'Follow your operating system.', preview: 'bg-linear-to-r from-white via-neutral-400 to-[#050505]' },
-  { value: 'dark', label: 'Dark', description: 'Dark surfaces and soft contrast.', preview: 'bg-[#181818]' },
+// Each option's label and description are `profile:appearance.<group>.<value>` keys, read at render.
+const THEMES: { value: Appearance['theme']; preview: string }[] = [
+  { value: 'light', preview: 'bg-white' },
+  { value: 'system', preview: 'bg-linear-to-r from-white via-neutral-400 to-[#050505]' },
+  { value: 'dark', preview: 'bg-[#181818]' },
 ]
 
-const LAYOUTS: { value: Appearance['layout']; label: string; description: string }[] = [
-  { value: 'classic', label: 'Classic', description: 'The sidebar always shows the app links. Settings, Docs and Chat have their own list beside the content. The custom theme colors chat.' },
-  { value: 'new', label: 'New UI', description: 'The sidebar changes with the page: settings links, the page tree and conversations, with Back. The custom theme colors the whole app.' },
-]
+const LAYOUTS: Appearance['layout'][] = ['classic', 'new']
 
-const NAV_STYLES: { value: Appearance['navStyle']; label: string; description: string }[] = [
-  { value: 'default', label: 'Default', description: 'The sidebar and the content run edge to edge.' },
-  { value: 'floating', label: 'Floating', description: 'Framed panels float on a dotted backdrop. Only on wide screens.' },
-]
+const NAV_STYLES: Appearance['navStyle'][] = ['default', 'floating']
 
-const STYLES: { value: Appearance['style']; label: string; description: string }[] = [
-  { value: '3d', label: '3D', description: 'Buttons and sidebar icons sit on a raised edge that lifts on hover.' },
-  { value: 'flat', label: 'Flat', description: 'No raised edges. Sidebar items are plain rows with a highlight for the current page.' },
-]
+const STYLES: Appearance['style'][] = ['3d', 'flat']
 
 /** Coolify's Profile → Appearance: how Orbit looks in this browser. */
 export function AppearancePage() {
+  const { t } = useTranslation('profile')
   const { appearance, setAppearance } = useTheme()
   const customTheme = useCustomTheme()
   // in the new UI the custom theme replaces the colour theme; in the classic layout it colours chat on top of it
   const newUi = appearance.layout === 'new'
   const [customThemeOpen, setCustomThemeOpen] = useState(false)
   const customThemeName = customTheme
-    ? (CUSTOM_THEME_PRESETS.find((preset) => serializeCustomTheme(preset.theme) === serializeCustomTheme(customTheme))?.name ?? 'Your colors')
+    ? (CUSTOM_THEME_PRESETS.find((preset) => serializeCustomTheme(preset.theme) === serializeCustomTheme(customTheme))?.name ?? t('appearance.colorTheme.yourColors'))
     : null
 
   return (
     <>
       <LanguageCard />
 
-      <SettingsCard title="Layout">
+      <SettingsCard title={t('appearance.layout.title')}>
         <div className="grid gap-3 sm:grid-cols-2">
-          {LAYOUTS.map((option) => {
-            const contextual = option.value === 'new'
+          {LAYOUTS.map((layout) => {
+            const contextual = layout === 'new'
             return (
               <AppearanceOption
-                key={option.value}
-                label={option.label}
-                description={option.description}
-                selected={appearance.layout === option.value}
-                onClick={() => setAppearance({ layout: option.value })}
+                key={layout}
+                label={t(`appearance.layout.${layout}.label`)}
+                description={t(`appearance.layout.${layout}.description`)}
+                selected={appearance.layout === layout}
+                onClick={() => setAppearance({ layout })}
                 previewClassName="items-stretch justify-start"
               >
                 {/* the sidebar: app icons, or Back and the page's list; classic adds a second list column */}
@@ -85,13 +78,13 @@ export function AppearancePage() {
         </div>
       </SettingsCard>
 
-      <SettingsCard title="Color theme" description="Choose the color scheme used in this browser.">
+      <SettingsCard title={t('appearance.colorTheme.title')} description={t('appearance.colorTheme.description')}>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {THEMES.map((option) => (
             <AppearanceOption
               key={option.value}
-              label={option.label}
-              description={option.description}
+              label={t(`appearance.colorTheme.${option.value}.label`)}
+              description={t(`appearance.colorTheme.${option.value}.description`)}
               selected={!(newUi && customTheme) && appearance.theme === option.value}
               onClick={() => {
                 if (newUi) setCustomTheme(null)
@@ -105,8 +98,8 @@ export function AppearancePage() {
           {/* the custom theme opens its editor. New UI: it is a theme of its own, and picking one above turns it off.
               Classic: it colours chat on top of the theme above, so it is never the chosen one */}
           <AppearanceOption
-            label={customTheme ? `Custom · ${customThemeName}` : 'Custom'}
-            description={newUi ? 'Your own colors for the whole app. Pick a preset or your own.' : 'Your own chat colors. Pick a preset or your own.'}
+            label={customTheme ? t('appearance.colorTheme.customNamed', { name: customThemeName ?? '' }) : t('appearance.colorTheme.custom')}
+            description={newUi ? t('appearance.colorTheme.customDescriptionNew') : t('appearance.colorTheme.customDescriptionClassic')}
             selected={newUi ? Boolean(customTheme) : undefined}
             aria-haspopup="dialog"
             onClick={() => setCustomThemeOpen(true)}
@@ -116,17 +109,17 @@ export function AppearancePage() {
         </div>
       </SettingsCard>
 
-      <SettingsCard title="Navigation style" description="Choose how the sidebar and the content sit on the page.">
+      <SettingsCard title={t('appearance.navStyle.title')} description={t('appearance.navStyle.description')}>
         <div className="grid gap-3 sm:grid-cols-2">
-          {NAV_STYLES.map((option) => {
-            const floating = option.value === 'floating'
+          {NAV_STYLES.map((navStyle) => {
+            const floating = navStyle === 'floating'
             return (
               <AppearanceOption
-                key={option.value}
-                label={option.label}
-                description={option.description}
-                selected={appearance.navStyle === option.value}
-                onClick={() => setAppearance({ navStyle: option.value })}
+                key={navStyle}
+                label={t(`appearance.navStyle.${navStyle}.label`)}
+                description={t(`appearance.navStyle.${navStyle}.description`)}
+                selected={appearance.navStyle === navStyle}
+                onClick={() => setAppearance({ navStyle })}
                 previewClassName={cn('items-stretch justify-start', floating && 'gap-1.5 bg-[radial-gradient(circle,rgb(0_0_0/0.13)_1px,transparent_1.3px)] bg-size-[10px_10px] p-1.5 dark:bg-[radial-gradient(circle,rgb(255_255_255/0.09)_1px,transparent_1.3px)]')}
               >
                 <span className={cn('flex flex-col items-center gap-1.5 bg-background px-2 py-2', floating ? 'rounded-lg border' : 'border-r')}>
@@ -143,17 +136,17 @@ export function AppearancePage() {
         </div>
       </SettingsCard>
 
-      <SettingsCard title="Style" description="Choose how buttons and sidebar items look.">
+      <SettingsCard title={t('appearance.style.title')} description={t('appearance.style.description')}>
         <div className="grid gap-3 sm:grid-cols-2">
-          {STYLES.map((option) => {
-            const tiles = option.value === '3d'
+          {STYLES.map((style) => {
+            const tiles = style === '3d'
             return (
               <AppearanceOption
-                key={option.value}
-                label={option.label}
-                description={option.description}
-                selected={appearance.style === option.value}
-                onClick={() => setAppearance({ style: option.value })}
+                key={style}
+                label={t(`appearance.style.${style}.label`)}
+                description={t(`appearance.style.${style}.description`)}
+                selected={appearance.style === style}
+                onClick={() => setAppearance({ style })}
                 previewClassName="flex-col items-start gap-1.5 px-4"
               >
                 {[User, Settings].map((Icon, index) => (

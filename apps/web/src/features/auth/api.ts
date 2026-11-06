@@ -4,6 +4,7 @@ import { apiClient, createApiClient } from '@/api/client'
 import { queryKeys } from '@/api/queryKeys'
 import { disablePushForSignOut } from '@/features/realtime/push'
 import { clearViewSessionEdits } from '@/features/views/useViewState'
+import { i18n } from '@/i18n'
 import { clearLocalCache, withinTime } from '@/lib/localCache'
 import { connectionRetryDelay, retryConnectionFailure } from '@/lib/connection'
 import {
@@ -410,7 +411,7 @@ export function useSetStatus() {
     },
     onError: (_error, _status, context) => {
       if (context?.previous) queryClient.setQueryData(queryKeys.currentUser, context.previous)
-      toast.error('Could not update your status. Try again.')
+      toast.error(i18n.t('auth:status.updateFailed'))
     },
     onSuccess: (user) => {
       queryClient.setQueryData(queryKeys.currentUser, user)

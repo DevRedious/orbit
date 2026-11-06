@@ -1,9 +1,10 @@
 import { useId } from 'react'
-import { ApiProblem } from '@orbit/api/problem'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { PasswordInput } from '@/components/ui/password-input'
 import { Label } from '@/components/ui/label'
+import { problemMessage } from '@/i18n/problem'
 import { cn } from 'cn'
 
 export function AuthInput({ label, value, onChange, type = 'text', required = true }: { label: string; value: string; onChange?: (value: string) => void; type?: string; required?: boolean }) {
@@ -29,6 +30,7 @@ export function AuthBrand() {
 
 /** Header, an inset panel with the fields and actions, and an optional footer row (Coolify's sign-in layout). */
 export function AuthForm({ title, description, children, error, pending, submitLabel, onSubmit, actions, footer }: { title: string; description?: string; children: React.ReactNode; error: Error | null; pending: boolean; submitLabel: string; onSubmit: () => Promise<unknown>; actions?: React.ReactNode; footer?: React.ReactNode }) {
+  const { t } = useTranslation('auth')
   return (
     <AuthCard className="p-0"><form onSubmit={(event) => {
       event.preventDefault()
@@ -42,8 +44,8 @@ export function AuthForm({ title, description, children, error, pending, submitL
       </header>
       <div className={cn('-mx-px grid gap-4 rounded-xl border bg-background/40 p-6', !footer && '-mb-px')}>
         {children}
-        {error ? <p className="text-[13px] text-destructive" role="alert">{error instanceof ApiProblem ? error.detail : 'The server could not complete the request.'}</p> : null}
-        <div className="grid gap-3"><Button type="submit" size="lg" disabled={pending}>{pending ? 'Please wait…' : submitLabel}</Button>{actions}</div>
+        {error ? <p className="text-[13px] text-destructive" role="alert">{problemMessage(error, t('authForm.requestFailed'))}</p> : null}
+        <div className="grid gap-3"><Button type="submit" size="lg" disabled={pending}>{pending ? t('authForm.pleaseWait') : submitLabel}</Button>{actions}</div>
       </div>
       {footer ? <div className="px-6 py-4 text-center text-[13px] text-muted-foreground">{footer}</div> : null}
     </form></AuthCard>

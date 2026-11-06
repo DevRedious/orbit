@@ -3,6 +3,8 @@
  * WebAuthn JSON form and takes the credential's `toJSON()` back.
  */
 
+import { i18n } from '@/i18n'
+
 type JsonObject = { [key: string]: unknown }
 
 /** This browser can create and use passkeys with the JSON helpers (missing before Chrome 129, Safari 18.4, Firefox 119). */
@@ -21,20 +23,20 @@ export function isPasskeyCancel(error: unknown): boolean {
 
 export class PasskeyUnsupportedError extends Error {
   constructor() {
-    super('This browser does not support passkeys.')
+    super(i18n.t('auth:passkey.unsupported'))
     this.name = 'PasskeyUnsupportedError'
   }
 }
 
 function publicKeyOf(options: JsonObject): JsonObject {
   const publicKey = options.publicKey
-  if (!publicKey || typeof publicKey !== 'object') throw new Error('The passkey options from the server are invalid.')
+  if (!publicKey || typeof publicKey !== 'object') throw new Error(i18n.t('auth:passkey.invalidOptions'))
   return publicKey as JsonObject
 }
 
 function credentialJson(credential: Credential | null): JsonObject {
   const json = (credential as PublicKeyCredential | null)?.toJSON?.() as JsonObject | undefined
-  if (!json) throw new Error('The browser did not return a passkey.')
+  if (!json) throw new Error(i18n.t('auth:passkey.noCredential'))
   return json
 }
 
@@ -63,5 +65,5 @@ export function defaultPasskeyName(userAgent: string = typeof navigator === 'und
   if (/Windows/.test(userAgent)) return 'Windows'
   if (/CrOS/.test(userAgent)) return 'Chromebook'
   if (/Linux/.test(userAgent)) return 'Linux'
-  return 'This device'
+  return i18n.t('auth:passkey.thisDevice')
 }

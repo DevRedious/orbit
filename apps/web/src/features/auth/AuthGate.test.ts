@@ -65,7 +65,7 @@ describe('AuthGate state', () => {
 })
 
 test('public recovery copy directs users to the installation administrator', () => {
-  expect(recoveryRequestCopy).toEqual({
+  expect(recoveryRequestCopy()).toEqual({
     title: 'Contact your administrator',
     detail: 'Your installation administrator can create a one-time password recovery link for you.',
   })

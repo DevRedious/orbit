@@ -1,4 +1,5 @@
 import { useId, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ApiProblem } from '@orbit/api/problem'
 import { Modal } from '@/components/common/Modal'
 import { Button } from '@/components/ui/button'
@@ -7,6 +8,7 @@ import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '@/c
 import { Input } from '@/components/ui/input'
 import { useRequestEmailChange } from '@/features/auth/api'
 import { CurrentPassword } from '@/features/auth/components/CurrentPassword'
+import { problemMessage } from '@/i18n/problem'
 
 /** A 401 is about the password or the sign-in, a 422 about the address; the rest shows under the form. */
 function errorPlace(error: unknown): 'password' | 'email' | 'form' | null {
@@ -21,27 +23,28 @@ function errorPlace(error: unknown): 'password' | 'email' | 'form' | null {
  * address; the email changes only once it is opened, so the dialog ends on "Check your inbox".
  */
 export function EmailChangeDialog({ currentEmail, hasPassword, onClose }: { currentEmail: string; hasPassword: boolean; onClose: () => void }) {
+  const { t } = useTranslation('profile')
   const request = useRequestEmailChange()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [sentTo, setSentTo] = useState<string | null>(null)
   const emailId = useId()
   const place = errorPlace(request.error)
-  const detail = request.error instanceof ApiProblem ? request.error.detail : 'The email could not be changed.'
+  const detail = problemMessage(request.error, t('emailChange.failed'))
 
   return (
     <Modal
-      title={sentTo ? 'Check your inbox' : 'Change your email'}
+      title={sentTo ? t('emailChange.sentTitle') : t('emailChange.title')}
       description={sentTo
-        ? `We sent a link to ${sentTo}. Open it within 60 minutes to finish the change. Until then, you sign in with ${currentEmail}.`
-        : 'We send a link to the new address. Your email changes when you open it.'}
+        ? t('emailChange.sent', { email: sentTo, current: currentEmail })
+        : t('emailChange.description')}
       onClose={onClose}
       dismissible={!request.isPending}
       className="sm:max-w-120"
     >
       {sentTo ? (
         <DialogFooter>
-          <DialogClose render={<Button type="button" />}>Done</DialogClose>
+          <DialogClose render={<Button type="button" />}>{t('emailChange.done')}</DialogClose>
         </DialogFooter>
       ) : (
         <form className="grid gap-4" onSubmit={(event) => {
@@ -51,16 +54,16 @@ export function EmailChangeDialog({ currentEmail, hasPassword, onClose }: { curr
         }}>
           <FieldGroup>
             <Field data-invalid={place === 'email' || undefined}>
-              <FieldLabel htmlFor={emailId}>New email</FieldLabel>
+              <FieldLabel htmlFor={emailId}>{t('emailChange.newEmail')}</FieldLabel>
               <Input id={emailId} type="email" required autoFocus autoComplete="email" aria-invalid={place === 'email' || undefined} value={email} onChange={(event) => setEmail(event.target.value)} />
-              {place === 'email' ? <FieldError>{detail}</FieldError> : <FieldDescription>Now {currentEmail}.</FieldDescription>}
+              {place === 'email' ? <FieldError>{detail}</FieldError> : <FieldDescription>{t('emailChange.now', { email: currentEmail })}</FieldDescription>}
             </Field>
-            <CurrentPassword returnTo="/profile" autoFocus={false} hasPassword={hasPassword} value={password} onChange={setPassword} error={place === 'password' ? request.error : null} fallback="The email could not be changed." />
+            <CurrentPassword returnTo="/profile" autoFocus={false} hasPassword={hasPassword} value={password} onChange={setPassword} error={place === 'password' ? request.error : null} fallback={t('emailChange.failed')} />
           </FieldGroup>
           {place === 'form' ? <p role="alert" className="text-[13px] text-destructive">{detail}</p> : null}
           <DialogFooter>
-            <DialogClose render={<Button type="button" variant="ghost" disabled={request.isPending} />}>Cancel</DialogClose>
-            <Button type="submit" disabled={request.isPending || !email.trim() || (hasPassword && !password)}>{request.isPending ? 'Sending…' : 'Send link'}</Button>
+            <DialogClose render={<Button type="button" variant="ghost" disabled={request.isPending} />}>{t('cancel')}</DialogClose>
+            <Button type="submit" disabled={request.isPending || !email.trim() || (hasPassword && !password)}>{request.isPending ? t('emailChange.sending') : t('emailChange.send')}</Button>
           </DialogFooter>
         </form>
       )}

@@ -1,4 +1,5 @@
 import { useId, useState, type ReactNode } from 'react'
+import { Trans, useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { cn } from 'cn'
 import { useTheme, type Theme } from '@/lib/themeContext'
@@ -24,21 +25,18 @@ import {
 /** The colours the fields start from when the user edits the Orbit default. */
 const CUSTOM_BASE: CustomTheme = { sidebar: '#1f1f23', selected: '#34343b', accent: '#f2458f', chat: '#26262b' }
 
-const COLOR_FIELDS: readonly { key: keyof CustomTheme; label: string; hint: string }[] = [
-  { key: 'sidebar', label: 'Sidebar', hint: 'The app sidebar' },
-  { key: 'selected', label: 'Selected', hint: 'The open row in a list' },
-  { key: 'accent', label: 'Accent', hint: 'Unread, badges, mentions' },
-  { key: 'chat', label: 'Pages', hint: 'Every page, menus, dialogs' },
-]
+/** The colour fields, in order; their label and hint are `profile:customTheme.fields.<key>` keys. */
+const COLOR_FIELDS: readonly (keyof CustomTheme)[] = ['sidebar', 'selected', 'accent', 'chat']
 
 /** The custom theme editor: presets, four colours, a live preview, and a code to share. Saved for this browser. */
 export function CustomThemeDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+  const { t } = useTranslation('profile')
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="overflow-y-auto sm:max-w-3xl">
         <DialogHeader>
-          <DialogTitle>Custom theme</DialogTitle>
-          <DialogDescription>Colours of the whole app, in place of Light, System or Dark. Only you see them, and text stays readable on every colour.</DialogDescription>
+          <DialogTitle>{t('customTheme.title')}</DialogTitle>
+          <DialogDescription>{t('customTheme.description')}</DialogDescription>
         </DialogHeader>
         <CustomThemeForm onDone={() => onOpenChange(false)} />
       </DialogContent>
@@ -47,6 +45,7 @@ export function CustomThemeDialog({ open, onOpenChange }: { open: boolean; onOpe
 }
 
 function CustomThemeForm({ onDone }: { onDone: () => void }) {
+  const { t } = useTranslation('profile')
   const saved = useCustomTheme()
   const [theme, setTheme] = useState<CustomTheme | null>(saved)
   // Changes when the colours come from a preset or a pasted code, so the hex fields take the new values.
@@ -75,7 +74,7 @@ function CustomThemeForm({ onDone }: { onDone: () => void }) {
       <div className="grid gap-6 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <section aria-labelledby={presetsId} className="grid content-start gap-2">
           <h3 id={presetsId} className="text-xs font-medium text-muted-foreground">
-            Presets
+            {t('customTheme.presets')}
           </h3>
           <div role="group" aria-labelledby={presetsId} className="grid grid-cols-3 gap-x-2 gap-y-2.5">
             <PresetButton name="Orbit" theme={null} pressed={theme === null} onSelect={() => replace(null)} />
@@ -96,17 +95,17 @@ function CustomThemeForm({ onDone }: { onDone: () => void }) {
 
           <section aria-labelledby={colorsId} className="grid gap-2">
             <h3 id={colorsId} className="text-xs font-medium text-muted-foreground">
-              Colours
+              {t('customTheme.colours')}
             </h3>
             <div className="grid gap-1.5">
               {COLOR_FIELDS.map((field) => (
                 <ColorField
-                  key={`${field.key}-${revision}`}
-                  label={field.label}
-                  hint={field.hint}
-                  value={colors[field.key]}
+                  key={`${field}-${revision}`}
+                  label={t(`customTheme.fields.${field}.label`)}
+                  hint={t(`customTheme.fields.${field}.hint`)}
+                  value={colors[field]}
                   onChange={(color) => {
-                    setTheme({ ...colors, [field.key]: color })
+                    setTheme({ ...colors, [field]: color })
                     setCodeError(false)
                   }}
                 />
@@ -116,7 +115,7 @@ function CustomThemeForm({ onDone }: { onDone: () => void }) {
 
           <Field data-invalid={codeError || undefined} className="gap-1.5">
             <FieldLabel htmlFor={codeId} className="text-xs font-medium text-muted-foreground">
-              Share code
+              {t('customTheme.shareCode')}
             </FieldLabel>
             <InputGroup>
               <InputGroupInput
@@ -137,11 +136,11 @@ function CustomThemeForm({ onDone }: { onDone: () => void }) {
               <InputGroupAddon align="inline-end">
                 <InputGroupButton
                   size="icon-xs"
-                  aria-label="Copy share code"
+                  aria-label={t('customTheme.copyShareCode')}
                   onClick={() => {
                     void navigator.clipboard.writeText(serializeCustomTheme(colors)).then(
-                      () => toast.success('Share code copied'),
-                      () => toast.error('Could not copy the share code.'),
+                      () => toast.success(t('customTheme.copied')),
+                      () => toast.error(t('customTheme.copyFailed')),
                     )
                   }}
                 >
@@ -150,10 +149,10 @@ function CustomThemeForm({ onDone }: { onDone: () => void }) {
               </InputGroupAddon>
             </InputGroup>
             {codeError ? (
-              <FieldError id={`${codeId}-hint`}>A code is four hex colours, for example #3f0e40,#1164a3,#ecb22e,#ffffff.</FieldError>
+              <FieldError id={`${codeId}-hint`}>{t('customTheme.codeInvalid')}</FieldError>
             ) : (
               <FieldDescription id={`${codeId}-hint`} className="text-xs">
-                Paste a code that someone shared, or copy yours.
+                {t('customTheme.codeHint')}
               </FieldDescription>
             )}
           </Field>
@@ -161,9 +160,9 @@ function CustomThemeForm({ onDone }: { onDone: () => void }) {
       </div>
 
       <DialogFooter>
-        <DialogClose render={<Button type="button" variant="outline" />}>Cancel</DialogClose>
+        <DialogClose render={<Button type="button" variant="outline" />}>{t('cancel')}</DialogClose>
         <Button type="submit" disabled={codeError}>
-          Save theme
+          {t('customTheme.save')}
         </Button>
       </DialogFooter>
     </form>
@@ -232,6 +231,7 @@ export function CustomThemeSwatch({ theme, className }: { theme: CustomTheme | n
 
 /** One colour: the system colour picker on the swatch, what the colour is for, and a hex field for exact values. */
 function ColorField({ label, hint, value, onChange }: { label: string; hint: string; value: string; onChange: (color: string) => void }) {
+  const { t } = useTranslation('profile')
   const [text, setText] = useState(value)
   const id = useId()
   const invalid = normalizeHex(text) === null
@@ -242,7 +242,7 @@ function ColorField({ label, hint, value, onChange }: { label: string; hint: str
         className="relative size-8 shrink-0 cursor-pointer overflow-hidden rounded-md border border-input has-focus-visible:ring-3 has-focus-visible:ring-ring/50"
         style={{ backgroundColor: value }}
       >
-        <span className="sr-only">Pick the colour: {label}</span>
+        <span className="sr-only">{t('customTheme.pickColour', { label })}</span>
         <input
           type="color"
           value={value}
@@ -278,6 +278,7 @@ function ColorField({ label, hint, value, onChange }: { label: string; hint: str
 
 /** A small copy of chat with the theme on it: every state the four colours touch. */
 function ThemePreview({ theme }: { theme: CustomTheme | null }) {
+  const { t } = useTranslation('profile')
   return (
     <div
       data-slot="chat-theme-preview"
@@ -286,29 +287,29 @@ function ThemePreview({ theme }: { theme: CustomTheme | null }) {
       style={customThemeVariables(theme)}
     >
       <div className="flex w-[132px] shrink-0 flex-col gap-px border-r border-border bg-background p-1.5 text-foreground/80" style={customSidebarVariables(theme)}>
-        <span className="px-2 pt-1 pb-2 text-xs font-semibold text-foreground">Chat</span>
-        <PreviewRow name="news" unread />
-        <PreviewRow name="general" selected />
-        <PreviewRow name="design" count={3} />
-        <PreviewRow name="support" />
+        <span className="px-2 pt-1 pb-2 text-xs font-semibold text-foreground">{t('customTheme.preview.chat')}</span>
+        <PreviewRow name={t('customTheme.preview.channels.news')} unread />
+        <PreviewRow name={t('customTheme.preview.channels.general')} selected />
+        <PreviewRow name={t('customTheme.preview.channels.design')} count={3} />
+        <PreviewRow name={t('customTheme.preview.channels.support')} />
       </div>
       <div className="flex min-w-0 flex-1 flex-col">
         <span className="flex h-8 shrink-0 items-center gap-1 border-b border-border px-2.5 text-xs font-semibold">
           <Hashtag className="size-3.5 text-muted-foreground" />
-          general
+          {t('customTheme.preview.channels.general')}
         </span>
         <div className="flex min-h-0 flex-1 flex-col gap-1.5 p-2.5">
-          <PreviewMessage name="Maya">The build is green again.</PreviewMessage>
+          <PreviewMessage name="Maya">{t('customTheme.preview.buildGreen')}</PreviewMessage>
           <span className="flex items-center gap-1 text-[10px] font-semibold text-primary">
             <span className="size-1.5 bg-primary" />
-            New
+            {t('customTheme.preview.newDivider')}
             <span className="h-px flex-1 bg-primary" />
           </span>
           <PreviewMessage name="Tom">
-            Thanks <span className="rounded-sm bg-primary/10 px-0.5 font-medium text-primary dark:bg-primary/20">@Maya</span>
+            <Trans t={t} i18nKey="customTheme.preview.thanks" components={{ mention: <span className="rounded-sm bg-primary/10 px-0.5 font-medium text-primary dark:bg-primary/20" /> }} />
           </PreviewMessage>
           <span className="mt-auto flex h-7 shrink-0 items-center justify-between rounded-md border border-input px-2 text-xs text-muted-foreground dark:bg-input/30">
-            Message
+            {t('customTheme.preview.message')}
             <span className="size-3 rounded-[3px] bg-primary" />
           </span>
         </div>

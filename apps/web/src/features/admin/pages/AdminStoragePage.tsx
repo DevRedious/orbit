@@ -1,6 +1,6 @@
+import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import type { BackupSchedule, CompressionStatus, S3View, StorageView } from '@orbit/api/generated/types.gen'
-import { ApiProblem } from '@orbit/api/problem'
 import { confirmAction } from '@/components/common/confirmAction'
 import { SettingsCard } from '@/components/common/SettingsCard'
 import { Button } from '@/components/ui/button'
@@ -10,24 +10,19 @@ import { Switch } from '@/components/ui/switch'
 import { useInstanceSettings, useRemoveS3, useSaveS3, useSaveStorageOptions, useStartImageCompression } from '@/features/admin/api'
 import { S3BucketForm } from '@/features/settings/components/S3BucketForm'
 import { SettingsRow } from '@/features/settings/components/SettingsParts'
+import { i18n } from '@/i18n'
+import { problemMessage } from '@/i18n/problem'
 import { formatSize } from '@/lib/attachmentLib'
 
-// `items` lets Select.Value render the option label instead of the raw value.
-const SCHEDULE_OPTIONS: { value: BackupSchedule; label: string }[] = [
-  { value: 'off', label: 'Off' },
-  { value: 'hourly', label: 'Every hour' },
-  { value: 'daily', label: 'Every day' },
-]
-
-function problemText(error: unknown, fallback: string) {
-  return error instanceof ApiProblem ? error.detail : fallback
-}
+// Their labels are `admin:storage.schedule.<value>` keys.
+const SCHEDULES: BackupSchedule[] = ['off', 'hourly', 'daily']
 
 /** Where attachments and backups are stored: this server's disk or an S3 bucket, and automatic backups. */
 export function AdminStoragePage() {
+  const { t } = useTranslation('admin')
   const settings = useInstanceSettings()
-  if (settings.isPending) return <SettingsCard title="Storage"><p role="status">Loading settings…</p></SettingsCard>
-  if (settings.isError) return <SettingsCard title="Storage"><p role="alert">Settings could not be loaded. <Button variant="ghost" onClick={() => void settings.refetch()}>Retry</Button></p></SettingsCard>
+  if (settings.isPending) return <SettingsCard title={t('storage.title')}><p role="status">{t('loadingSettings')}</p></SettingsCard>
+  if (settings.isError) return <SettingsCard title={t('storage.title')}><p role="alert">{t('settingsFailed')} <Button variant="ghost" onClick={() => void settings.refetch()}>{t('retry')}</Button></p></SettingsCard>
   const storage = settings.data.storage
   return (
     <>
@@ -40,34 +35,35 @@ export function AdminStoragePage() {
 }
 
 function BucketCard({ s3 }: { s3: S3View | null }) {
+  const { t } = useTranslation('admin')
   const save = useSaveS3()
   const remove = useRemoveS3()
 
   async function removeBucket() {
     const confirmed = await confirmAction({
-      title: 'Remove the bucket?',
-      description: 'Orbit stops using it. Backups already in the bucket stay there.',
-      confirmLabel: 'Remove',
+      title: t('storage.bucket.removeTitle'),
+      description: t('storage.bucket.removeDescription'),
+      confirmLabel: t('remove'),
       danger: true,
     })
     if (!confirmed) return
     remove.mutate(undefined, {
-      onSuccess: () => toast('Bucket removed'),
-      onError: (error) => toast.error(problemText(error, 'The bucket could not be removed.')),
+      onSuccess: () => toast(i18n.t('admin:storage.bucket.removed')),
+      onError: (error) => toast.error(problemMessage(error, i18n.t('admin:storage.bucket.removeFailed'))),
     })
   }
 
   return (
     <S3BucketForm
       s3={s3}
-      title="S3 bucket"
-      description="An S3-compatible bucket (AWS S3, Cloudflare R2, MinIO, …) for attachments and backups. Orbit writes, reads and deletes a test file before it saves."
+      title={t('storage.bucket.title')}
+      description={t('storage.bucket.description')}
       endpointPlaceholder="https://s3.eu-central-1.amazonaws.com"
       saving={save.isPending}
       removing={remove.isPending}
       onSave={(body) => save.mutate(body, {
-        onSuccess: () => toast('Bucket saved'),
-        onError: (error) => toast.error(problemText(error, 'The bucket could not be saved.')),
+        onSuccess: () => toast(i18n.t('admin:storage.bucket.saved')),
+        onError: (error) => toast.error(problemMessage(error, i18n.t('admin:storage.bucket.saveFailed'))),
       })}
       onRemove={s3 ? () => void removeBucket() : undefined}
     />
@@ -75,6 +71,7 @@ function BucketCard({ s3 }: { s3: S3View | null }) {
 }
 
 function UsageCard({ storage }: { storage: StorageView }) {
+  const { t } = useTranslation('admin')
   const save = useSaveStorageOptions()
   const ready = Boolean(storage.s3)
   function change(options: Partial<Pick<StorageView, 'attachments_in_s3' | 'backups_in_s3' | 'backup_schedule'>>, message: string) {
@@ -85,22 +82,26 @@ function UsageCard({ storage }: { storage: StorageView }) {
       ...options,
     }, {
       onSuccess: () => toast(message),
-      onError: (error) => toast.error(problemText(error, 'Storage settings could not be saved.')),
+      onError: (error) => toast.error(problemMessage(error, i18n.t('admin:storage.usage.saveFailed'))),
     })
   }
   const moving = storage.files_to_move > 0
-    ? `${storage.files_to_move} ${storage.files_to_move === 1 ? 'file' : 'files'} left to move ${storage.attachments_in_s3 ? 'to the bucket' : 'to this server'}.`
+    ? (storage.attachments_in_s3
+        ? t('storage.usage.movingToBucket', { count: storage.files_to_move })
+        : t('storage.usage.movingToServer', { count: storage.files_to_move }))
     : null
+  // `items` lets Select.Value render the option label instead of the raw value.
+  const scheduleOptions = SCHEDULES.map((value) => ({ value, label: t(`storage.schedule.${value}`) }))
   return (
-    <SettingsCard title="Usage" description="What Orbit keeps in the bucket, and how often it backs up by itself." flush>
+    <SettingsCard title={t('storage.usage.title')} description={t('storage.usage.description')} flush>
       <div className="flex flex-col divide-y">
         <SettingsRow className="flex-nowrap">
           <div className="flex min-w-0 flex-1 flex-col gap-0.5 text-[13px]">
-            <span className="font-medium text-foreground">Attachments in S3</span>
+            <span className="font-medium text-foreground">{t('storage.usage.attachments')}</span>
             <span className="text-xs text-muted-foreground">
               {ready
-                ? 'On: new files go to the bucket and existing files move there in the background. Off: they move back to this server.'
-                : 'Save a bucket above first.'}
+                ? t('storage.usage.attachmentsHint')
+                : t('storage.usage.saveBucketFirst')}
             </span>
             {moving ? (
               <span role="status" className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -109,45 +110,45 @@ function UsageCard({ storage }: { storage: StorageView }) {
                 {moving}
               </span>
             ) : null}
-            {storage.move_error ? <span role="alert" className="text-xs text-destructive">Moving files stopped: {storage.move_error} Orbit tries again every ten minutes.</span> : null}
+            {storage.move_error ? <span role="alert" className="text-xs text-destructive">{t('storage.usage.moveError', { error: storage.move_error })}</span> : null}
           </div>
           <Switch
-            aria-label="Attachments in S3"
+            aria-label={t('storage.usage.attachments')}
             checked={storage.attachments_in_s3}
             disabled={(!ready && !storage.attachments_in_s3) || save.isPending}
-            onCheckedChange={(checked: boolean) => change({ attachments_in_s3: checked }, checked ? 'Attachments go to S3' : 'Attachments move back to this server')}
+            onCheckedChange={(checked: boolean) => change({ attachments_in_s3: checked }, checked ? i18n.t('admin:storage.usage.attachmentsOn') : i18n.t('admin:storage.usage.attachmentsOff'))}
           />
         </SettingsRow>
         <SettingsRow className="flex-nowrap">
           <div className="flex min-w-0 flex-1 flex-col gap-0.5 text-[13px]">
-            <span className="font-medium text-foreground">Backups in S3</span>
+            <span className="font-medium text-foreground">{t('storage.usage.backups')}</span>
             <span className="text-xs text-muted-foreground">
               {ready
-                ? 'On: each new backup is uploaded to the bucket and removed from this server, so a lost server loses no backups.'
-                : 'Save a bucket above first.'}
+                ? t('storage.usage.backupsHint')
+                : t('storage.usage.saveBucketFirst')}
             </span>
           </div>
           <Switch
-            aria-label="Backups in S3"
+            aria-label={t('storage.usage.backups')}
             checked={storage.backups_in_s3}
             disabled={(!ready && !storage.backups_in_s3) || save.isPending}
-            onCheckedChange={(checked: boolean) => change({ backups_in_s3: checked }, checked ? 'Backups go to S3' : 'Backups stay on this server')}
+            onCheckedChange={(checked: boolean) => change({ backups_in_s3: checked }, checked ? i18n.t('admin:storage.usage.backupsOn') : i18n.t('admin:storage.usage.backupsOff'))}
           />
         </SettingsRow>
         <SettingsRow className="flex-nowrap">
           <div className="flex min-w-0 flex-1 flex-col gap-0.5 text-[13px]">
-            <span className="font-medium text-foreground">Automatic backups</span>
-            <span className="text-xs text-muted-foreground">Orbit keeps the newest backup of each of the last 7 days and 4 weeks.</span>
+            <span className="font-medium text-foreground">{t('storage.usage.automatic')}</span>
+            <span className="text-xs text-muted-foreground">{t('storage.usage.automaticHint')}</span>
           </div>
           <Select
-            items={SCHEDULE_OPTIONS}
+            items={scheduleOptions}
             value={storage.backup_schedule}
             disabled={save.isPending}
-            onValueChange={(value) => change({ backup_schedule: value as BackupSchedule }, 'Backup schedule saved')}
+            onValueChange={(value) => change({ backup_schedule: value as BackupSchedule }, i18n.t('admin:storage.usage.scheduleSaved'))}
           >
-            <SelectTrigger aria-label="Automatic backups" className="w-36"><SelectValue /></SelectTrigger>
+            <SelectTrigger aria-label={t('storage.usage.automatic')} className="w-36"><SelectValue /></SelectTrigger>
             <SelectContent>
-              {SCHEDULE_OPTIONS.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
+              {scheduleOptions.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
             </SelectContent>
           </Select>
         </SettingsRow>
@@ -158,28 +159,29 @@ function UsageCard({ storage }: { storage: StorageView }) {
 
 /** Makes images that were uploaded before the client shrank them smaller, on this server and in S3. */
 function ImagesCard({ status }: { status: CompressionStatus }) {
+  const { t } = useTranslation('admin')
   const start = useStartImageCompression()
   const done = status.compressed + status.skipped
   const summary = status.compressed > 0
-    ? `${status.compressed} ${status.compressed === 1 ? 'image' : 'images'} compressed: ${formatSize(status.bytes_before)} → ${formatSize(status.bytes_after)}.`
-    : 'No image was compressed.'
+    ? t('storage.images.compressed', { count: status.compressed, before: formatSize(status.bytes_before), after: formatSize(status.bytes_after) })
+    : t('storage.images.none')
   return (
-    <SettingsCard title="Images" description="Large images keep their original size if they were uploaded before Orbit made images smaller on upload." flush>
+    <SettingsCard title={t('storage.images.title')} description={t('storage.images.description')} flush>
       <SettingsRow className="flex-nowrap">
         <div className="flex min-w-0 flex-1 flex-col gap-0.5 text-[13px]">
-          <span className="font-medium text-foreground">Compress images</span>
-          <span className="text-xs text-muted-foreground">Scales JPEG, PNG and WebP images of 512 KB or more to at most 2560 px and saves them as WebP. The originals are replaced; GIFs and other files stay as they are.</span>
-          {status.running ? <span role="status" className="text-xs text-muted-foreground">Compressing… {done} {done === 1 ? 'file' : 'files'} checked. {summary}</span> : null}
-          {!status.running && done > 0 ? <span role="status" className="text-xs text-muted-foreground">Done. {summary}</span> : null}
-          {status.error ? <span role="alert" className="text-xs text-destructive">Compression stopped: {status.error}</span> : null}
+          <span className="font-medium text-foreground">{t('storage.images.compress')}</span>
+          <span className="text-xs text-muted-foreground">{t('storage.images.compressHint')}</span>
+          {status.running ? <span role="status" className="text-xs text-muted-foreground">{t('storage.images.running', { count: done, summary })}</span> : null}
+          {!status.running && done > 0 ? <span role="status" className="text-xs text-muted-foreground">{t('storage.images.done', { summary })}</span> : null}
+          {status.error ? <span role="alert" className="text-xs text-destructive">{t('storage.images.error', { error: status.error })}</span> : null}
         </div>
         <Button
           type="button"
           variant="outline"
           disabled={status.running || start.isPending}
-          onClick={() => start.mutate(undefined, { onError: (error) => toast.error(problemText(error, 'Compression could not start.')) })}
+          onClick={() => start.mutate(undefined, { onError: (error) => toast.error(problemMessage(error, i18n.t('admin:storage.images.startFailed'))) })}
         >
-          {status.running ? 'Compressing…' : 'Compress images'}
+          {status.running ? t('storage.images.compressing') : t('storage.images.compress')}
         </Button>
       </SettingsRow>
     </SettingsCard>

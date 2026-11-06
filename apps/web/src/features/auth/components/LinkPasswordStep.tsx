@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { Provider } from '@orbit/api/generated/types.gen'
 import { ApiProblem } from '@orbit/api/problem'
 import { Button } from '@/components/ui/button'
@@ -19,16 +20,17 @@ export function LinkPasswordStep({ token, provider, email, onSignedIn, onTwoFact
   onTwoFactor: (token: string) => void
   onBack: (error: Error | null) => void
 }) {
+  const { t } = useTranslation('auth')
   const link = useLinkProviderSignIn()
   const [password, setPassword] = useState('')
   const name = PROVIDER_NAMES[provider]
   return (
     <AuthForm
-      title={`Connect ${name}`}
-      description={`An Orbit account for ${email} already exists. Enter its password to connect your ${name} account. You only do this once.`}
+      title={t('linkPassword.title', { provider: name })}
+      description={t('linkPassword.description', { email, provider: name })}
       error={link.error}
       pending={link.isPending}
-      submitLabel="Connect and sign in"
+      submitLabel={t('linkPassword.submit')}
       onSubmit={async () => {
         try {
           const result = await link.mutateAsync({ password_token: token, password })
@@ -39,10 +41,10 @@ export function LinkPasswordStep({ token, provider, email, onSignedIn, onTwoFact
           throw error
         }
       }}
-      footer={<Button type="button" variant="link" className="h-auto p-0" onClick={() => onBack(null)}>Back</Button>}
+      footer={<Button type="button" variant="link" className="h-auto p-0" onClick={() => onBack(null)}>{t('back')}</Button>}
     >
-      <AuthInput label="Email" value={email} />
-      <AuthInput label="Password" type="password" value={password} onChange={setPassword} />
+      <AuthInput label={t('fields.email')} value={email} />
+      <AuthInput label={t('fields.password')} type="password" value={password} onChange={setPassword} />
     </AuthForm>
   )
 }

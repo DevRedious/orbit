@@ -1,4 +1,5 @@
 import type { AuthUserResponse } from '@orbit/api/generated/types.gen'
+import { i18n } from '@/i18n'
 
 interface AuthGateInput {
   /** `undefined` until the setup status has loaded once. */
@@ -17,9 +18,17 @@ export function initialLoginValues(development: boolean) {
     : { email: '', password: '' }
 }
 
-export const recoveryRequestCopy = {
-  title: 'Contact your administrator',
-  detail: 'Your installation administrator can create a one-time password recovery link for you.',
+export function recoveryRequestCopy() {
+  return { title: i18n.t('auth:recovery.requestTitle'), detail: i18n.t('auth:recovery.requestDetail') }
+}
+
+// The success messages of the recovery and registration requests that Orbit translates.
+const ACCEPTED = ['auth:accepted.recoveryGeneric', 'auth:accepted.recoveryEmailed', 'auth:accepted.registrationSent'] as const
+
+/** The `detail` of a 202 answer in the UI language when its English text is known, else as the server sent it. */
+export function acceptedDetail(detail: string): string {
+  const key = ACCEPTED.find((candidate) => i18n.t(candidate, { lng: 'en' }) === detail)
+  return key ? i18n.t(key) : detail
 }
 
 export function authGateState(input: AuthGateInput): AuthGateState {

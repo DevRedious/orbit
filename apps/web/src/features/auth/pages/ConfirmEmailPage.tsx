@@ -1,21 +1,26 @@
 import { useEffect, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { ApiProblem } from '@orbit/api/problem'
 import { useConfirmEmailChange } from '@/features/auth/api'
 import { AuthCard } from '@/features/auth/components/AuthForm'
 import { AuthMessage } from '@/features/auth/components/AuthMessage'
 import { useConsumedToken } from '@/features/auth/useConsumedToken'
+import { problemMessage } from '@/i18n/problem'
 
-const ERROR_TITLES: Record<string, string> = {
-  invalid_email_change_token: 'This link does not work',
-  email_taken: 'This email is taken',
-}
+const ERROR_TITLES = {
+  invalid_email_change_token: 'confirmEmail.invalidTitle',
+  email_taken: 'confirmEmail.takenTitle',
+} as const
+
+const errorTitle = (code: string) => (Object.hasOwn(ERROR_TITLES, code) ? ERROR_TITLES[code as keyof typeof ERROR_TITLES] : null)
 
 /**
  * `/confirm-email?token=…`: the link that an email change sends to the new address. Opens with or without a session,
  * since the person may read the email on another device.
  */
 export function ConfirmEmailPage() {
+  const { t } = useTranslation('auth')
   const token = useConsumedToken()
   const confirm = useConfirmEmailChange()
   const started = useRef(false)
@@ -27,25 +32,25 @@ export function ConfirmEmailPage() {
     confirm.mutate(token)
   }, [confirm, token])
 
-  if (!token) return <AuthMessage title="This link does not work" detail="The link is missing its token. Open the link from the email again." />
+  if (!token) return <AuthMessage title={t('confirmEmail.invalidTitle')} detail={t('confirmEmail.missingToken')} />
   if (confirm.isSuccess) {
     return (
       <AuthCard>
-        <h1 className="mb-1 text-xl font-semibold">Your email is changed</h1>
-        <p className="text-[13px] leading-[1.6] text-muted-foreground">You now sign in with {confirm.data}. Your other devices are signed out.</p>
-        <p className="mt-4 text-[13px]"><Link to="/" className="font-medium text-foreground">Continue to Orbit</Link></p>
+        <h1 className="mb-1 text-xl font-semibold">{t('confirmEmail.changedTitle')}</h1>
+        <p className="text-[13px] leading-[1.6] text-muted-foreground">{t('confirmEmail.changedDetail', { email: confirm.data })}</p>
+        <p className="mt-4 text-[13px]"><Link to="/" className="font-medium text-foreground">{t('confirmEmail.continue')}</Link></p>
       </AuthCard>
     )
   }
   if (confirm.isError) {
-    const problem = confirm.error instanceof ApiProblem ? confirm.error : null
+    const titleKey = confirm.error instanceof ApiProblem ? errorTitle(confirm.error.code) : null
     return (
       <AuthCard>
-        <h1 className="mb-1 text-xl font-semibold">{(problem && ERROR_TITLES[problem.code]) ?? 'Your email is not changed'}</h1>
-        <p role="alert" className="text-[13px] leading-[1.6] text-muted-foreground">{problem ? problem.detail : 'The server could not change the email. Try opening the link again.'}</p>
-        <p className="mt-4 text-[13px]"><Link to="/profile" className="font-medium text-foreground">Go to your account settings</Link></p>
+        <h1 className="mb-1 text-xl font-semibold">{titleKey ? t(titleKey) : t('confirmEmail.notChangedTitle')}</h1>
+        <p role="alert" className="text-[13px] leading-[1.6] text-muted-foreground">{problemMessage(confirm.error, t('confirmEmail.failed'))}</p>
+        <p className="mt-4 text-[13px]"><Link to="/profile" className="font-medium text-foreground">{t('confirmEmail.goToSettings')}</Link></p>
       </AuthCard>
     )
   }
-  return <AuthMessage title="Changing your email" detail="One moment." />
+  return <AuthMessage title={t('confirmEmail.changingTitle')} detail={t('oneMoment')} />
 }

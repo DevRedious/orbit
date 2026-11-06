@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link, useLocation, useNavigate } from 'react-router'
 import { toast } from 'sonner'
 import { ApiProblem } from '@orbit/api/problem'
@@ -9,10 +10,23 @@ import { LinkPasswordStep } from '@/features/auth/components/LinkPasswordStep'
 import { TwoFactorStep } from '@/features/auth/components/TwoFactorStep'
 import { loginDestination } from '@/features/auth/returnTo'
 import { clearProviderFlow, parseProviderCallback, PROVIDER_NAMES, storedProviderFlow } from '@/features/auth/providerSignIn'
+import { i18n } from '@/i18n'
+import { problemMessage } from '@/i18n/problem'
+import en from '@orbit/i18n/locales/en/auth'
 
 /** Where a `connect` or `confirm` goes back to: the account page that started it. */
 function settingsDestination(returnTo: string | null) {
   return returnTo === '/profile' || returnTo?.startsWith('/profile/') ? returnTo : '/profile/security'
+}
+
+type TitledCode = keyof typeof en.callback.problemTitles
+
+/** The problem title in the UI language when Orbit knows its code and English wording, else as the server sent it. */
+function problemTitle(problem: ApiProblem): string {
+  const { code } = problem
+  if (!Object.hasOwn(en.callback.problemTitles, code)) return problem.problem.title
+  const key = `auth:callback.problemTitles.${code as TitledCode}` as const
+  return i18n.t(key, { lng: 'en' }) === problem.problem.title ? i18n.t(key) : problem.problem.title
 }
 
 /**
@@ -20,6 +34,7 @@ function settingsDestination(returnTo: string | null) {
  * verifier for a session (or a code step), or finishes a `connect` / `confirm` for the signed-in account.
  */
 export function ProviderCallbackPage() {
+  const { t } = useTranslation('auth')
   const location = useLocation()
   const navigate = useNavigate()
   const exchange = useProviderExchange()
@@ -41,7 +56,7 @@ export function ProviderCallbackPage() {
       onSuccess: (result) => {
         if (result.kind === 'signed_in') void navigate(loginDestination(returnTo), { replace: true })
         if (result.kind === 'done') {
-          toast(flow.intent === 'connect' ? `${PROVIDER_NAMES[flow.provider]} is connected` : `Confirmed with ${PROVIDER_NAMES[flow.provider]}. Try the change again.`)
+          toast(flow.intent === 'connect' ? i18n.t('auth:callback.connected', { provider: PROVIDER_NAMES[flow.provider] }) : i18n.t('auth:callback.confirmed', { provider: PROVIDER_NAMES[flow.provider] }))
           void navigate(settingsDestination(returnTo), { replace: true })
         }
       },
@@ -54,12 +69,12 @@ export function ProviderCallbackPage() {
     const problem = error instanceof ApiProblem ? error : null
     return (
       <AuthCard>
-        <h1 className="mb-1 text-xl font-semibold">{problem?.problem.title ?? 'Sign-in expired'}</h1>
-        <p role="alert" className="text-[13px] leading-[1.6] text-muted-foreground">{problem ? problem.detail : error ? 'The server could not complete the sign-in. Try again.' : 'This sign-in has expired or was opened in another tab. Start again.'}</p>
+        <h1 className="mb-1 text-xl font-semibold">{problem ? problemTitle(problem) : t('callback.expiredTitle')}</h1>
+        <p role="alert" className="text-[13px] leading-[1.6] text-muted-foreground">{error ? problemMessage(error, t('callback.failed')) : t('callback.expired')}</p>
         <p className="mt-4 text-[13px]">
           {signingIn
-            ? <Link to="/login" className="font-medium text-foreground">Back to sign in</Link>
-            : <Link to={settingsDestination(returnTo)} className="font-medium text-foreground">Back to settings</Link>}
+            ? <Link to="/login" className="font-medium text-foreground">{t('backToSignIn')}</Link>
+            : <Link to={settingsDestination(returnTo)} className="font-medium text-foreground">{t('callback.backToSettings')}</Link>}
         </p>
       </AuthCard>
     )
@@ -74,5 +89,5 @@ export function ProviderCallbackPage() {
   if (exchange.data?.kind === 'password') {
     return <LinkPasswordStep token={exchange.data.token} provider={exchange.data.provider} email={exchange.data.email} onSignedIn={signedIn} onTwoFactor={setLinkTwoFactorToken} onBack={back} />
   }
-  return <AuthMessage title={signingIn ? 'Signing you in' : 'Confirming your account'} detail="One moment." />
+  return <AuthMessage title={signingIn ? t('callback.signingIn') : t('callback.confirming')} detail={t('oneMoment')} />
 }

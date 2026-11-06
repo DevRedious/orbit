@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Trans, useTranslation } from 'react-i18next'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 import { ApiProblem } from '@orbit/api/problem'
 import { Button } from '@/components/ui/button'
@@ -10,14 +11,16 @@ import { TwoFactorStep } from '@/features/auth/components/TwoFactorStep'
 import { isPasskeyCancel, passkeysSupported } from '@/features/auth/passkey'
 
 import { loginDestination } from '@/features/auth/returnTo'
+import { i18n } from '@/i18n'
 
 /** The server sends an expired or replayed provider sign-in back here with `?sign_in_error=provider_expired`. */
 function signInError(code: string | null): Error | null {
   if (code !== 'provider_expired') return null
-  return new ApiProblem({ type: 'about:blank', title: 'Sign-in expired', status: 400, code, detail: 'The sign-in took too long or was already used. Try again.', instance: '/login', request_id: '' })
+  return new ApiProblem({ type: 'about:blank', title: i18n.t('auth:login.expiredTitle'), status: 400, code, detail: i18n.t('auth:login.expiredDetail'), instance: '/login', request_id: '' })
 }
 
 export function LoginPage() {
+  const { t } = useTranslation('auth')
   const [params] = useSearchParams()
   const navigate = useNavigate()
   const mutation = useLogin()
@@ -41,7 +44,7 @@ export function LoginPage() {
   const showPasskey = options.data?.passkeys_enabled === true && passkeysSupported()
   const passkeyError = passkey.error && !isPasskeyCancel(passkey.error) ? passkey.error : null
   return (
-    <AuthForm title="Orbit" description="Sign in to your tasks, docs, mail and chat." error={mutation.error ?? passkeyError ?? returnError} pending={mutation.isPending || passkey.isPending} submitLabel="Sign in" onSubmit={async () => {
+    <AuthForm title="Orbit" description={t('login.description')} error={mutation.error ?? passkeyError ?? returnError} pending={mutation.isPending || passkey.isPending} submitLabel={t('login.submit')} onSubmit={async () => {
       setReturnError(null)
       passkey.reset()
       const response = await mutation.mutateAsync({ email, password })
@@ -56,13 +59,13 @@ export function LoginPage() {
         mutation.reset()
         passkey.mutate(undefined, { onSuccess: () => void signedIn() })
       }}>
-        Sign in with a passkey
+        {t('login.passkey')}
       </Button> : null}
       <ProviderButtons providers={options.data?.providers ?? []} returnTo={params.get('return_to')} disabled={mutation.isPending || passkey.isPending} />
-    </>} footer={options.data?.registration_open || options.data?.provider_registration_open ? <>New to Orbit? <Link to="/register" className="font-medium text-foreground">Create an account</Link></> : undefined}>
-      <AuthInput label="Email" type="email" value={email} onChange={setEmail} />
-      <AuthInput label="Password" type="password" value={password} onChange={setPassword} />
-      <Link to="/recovery" className="justify-self-end text-[13px] text-muted-foreground hover:text-foreground">Forgot password?</Link>
+    </>} footer={options.data?.registration_open || options.data?.provider_registration_open ? <Trans t={t} i18nKey="login.newToOrbit" components={{ link: <Link to="/register" className="font-medium text-foreground" /> }} /> : undefined}>
+      <AuthInput label={t('fields.email')} type="email" value={email} onChange={setEmail} />
+      <AuthInput label={t('fields.password')} type="password" value={password} onChange={setPassword} />
+      <Link to="/recovery" className="justify-self-end text-[13px] text-muted-foreground hover:text-foreground">{t('login.forgotPassword')}</Link>
     </AuthForm>
   )
 }

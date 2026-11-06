@@ -1,4 +1,5 @@
 import { useId, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Copy } from 'reicon-react'
 import type { AdminUser } from '@orbit/api/generated/types.gen'
@@ -17,31 +18,29 @@ import { ADMIN_USER_RESULTS, useAdminUsers, useAdminUserSummary, useChangeUserEm
 import { useAuthOptions, useCurrentUser } from '@/features/auth/api'
 import { useIsRoot } from '@/features/workspaces/permissions'
 import { SettingsRow } from '@/features/settings/components/SettingsParts'
+import { i18n } from '@/i18n'
+import { problemMessage } from '@/i18n/problem'
 import { useDebouncedValue } from '@/lib/useDebouncedValue'
 
-function failure(error: unknown, fallback: string) {
-  return error instanceof ApiProblem ? error.problem.detail : fallback
-}
-
 /** Orbit Cloud emails the person about a changed email, a password reset and a two-factor reset, so they need a mail server. */
-const NO_MAIL_SERVER = 'Needs a mail server on Orbit Cloud'
-
-function MenuItemReason({ children }: { children: string }) {
-  return <span className="block text-xs text-muted-foreground">{children}</span>
+function NoMailServer() {
+  const { t } = useTranslation('admin')
+  return <span className="block text-xs text-muted-foreground">{t('users.noMailServer')}</span>
 }
 
 /** The number of accounts and, on Orbit Cloud, of workspaces on a trial and with an expired trial. */
 function SummaryCard() {
+  const { t } = useTranslation('admin')
   const summary = useAdminUserSummary().data
   const stats = [
-    { label: 'Users', value: summary?.users },
+    { label: t('users.overview.users'), value: summary?.users },
     ...(summary?.trials ? [
-      { label: 'Trials ongoing', value: summary.trials.ongoing },
-      { label: 'Trials expired', value: summary.trials.expired },
+      { label: t('users.overview.trialsOngoing'), value: summary.trials.ongoing },
+      { label: t('users.overview.trialsExpired'), value: summary.trials.expired },
     ] : []),
   ]
   return (
-    <SettingsCard title="Overview" description="Deleted accounts and deleted workspaces are not counted. A trial belongs to a workspace." flush>
+    <SettingsCard title={t('users.overview.title')} description={t('users.overview.description')} flush>
       <dl className="grid grid-flow-col auto-cols-fr divide-x">
         {stats.map((stat) => (
           <div key={stat.label} className="flex flex-col gap-1 px-4 py-3">
@@ -60,6 +59,7 @@ function SummaryCard() {
  * (the server enforces the same rules).
  */
 export function AdminUsersPage() {
+  const { t } = useTranslation('admin')
   const suspension = useSetSuspension()
   const recovery = useCreateRecoveryLink()
   const instanceAdmin = useSetInstanceAdmin()
@@ -78,51 +78,51 @@ export function AdminUsersPage() {
 
   async function suspend(user: AdminUser) {
     const confirmed = await confirmAction({
-      title: `Suspend ${user.display_name}?`,
-      description: 'They are signed out everywhere and cannot sign in until you reinstate the account. Their API tokens stop working.',
-      confirmLabel: 'Suspend account',
+      title: t('users.suspendTitle', { name: user.display_name }),
+      description: t('users.suspendDescription'),
+      confirmLabel: t('users.suspend'),
       danger: true,
     })
     if (!confirmed) return
     suspension.mutate({ userId: user.id, suspended: true }, {
-      onSuccess: () => toast(`${user.display_name} is suspended`),
-      onError: (error) => toast.error(failure(error, 'The account could not be suspended.')),
+      onSuccess: () => toast(i18n.t('admin:users.suspended', { name: user.display_name })),
+      onError: (error) => toast.error(problemMessage(error, i18n.t('admin:users.suspendFailed'))),
     })
   }
 
   function reinstate(user: AdminUser) {
     suspension.mutate({ userId: user.id, suspended: false }, {
-      onSuccess: () => toast(`${user.display_name} is reinstated`),
-      onError: (error) => toast.error(failure(error, 'The account could not be reinstated.')),
+      onSuccess: () => toast(i18n.t('admin:users.reinstated', { name: user.display_name })),
+      onError: (error) => toast.error(problemMessage(error, i18n.t('admin:users.reinstateFailed'))),
     })
   }
 
   async function setAdmin(user: AdminUser, admin: boolean) {
     if (admin) {
       const confirmed = await confirmAction({
-        title: `Make ${user.display_name} an instance admin?`,
-        description: 'They can manage accounts (except you and other admins), email, registration, backups and the audit log.',
-        confirmLabel: 'Make admin',
+        title: t('users.makeAdminTitle', { name: user.display_name }),
+        description: t('users.makeAdminDescription'),
+        confirmLabel: t('users.makeAdmin'),
       })
       if (!confirmed) return
     }
     instanceAdmin.mutate({ userId: user.id, admin }, {
-      onSuccess: () => toast(admin ? `${user.display_name} is now an admin` : `${user.display_name} is no longer an admin`),
-      onError: (error) => toast.error(failure(error, 'The admin role could not be changed.')),
+      onSuccess: () => toast(admin ? i18n.t('admin:users.nowAdmin', { name: user.display_name }) : i18n.t('admin:users.noLongerAdmin', { name: user.display_name })),
+      onError: (error) => toast.error(problemMessage(error, i18n.t('admin:users.adminFailed'))),
     })
   }
 
   async function resetTwoFactor(user: AdminUser) {
     const confirmed = await confirmAction({
-      title: `Reset two-factor sign-in for ${user.display_name}?`,
-      description: `Their authenticator app and recovery codes stop working, and they sign in with only their password until they set it up again.${cloud ? ' They get an email about it.' : ''} Do this only after you have confirmed who is asking.`,
-      confirmLabel: 'Reset two-factor',
+      title: t('users.resetTwoFactorTitle', { name: user.display_name }),
+      description: cloud ? t('users.resetTwoFactorDescriptionCloud') : t('users.resetTwoFactorDescription'),
+      confirmLabel: t('users.resetTwoFactor'),
       danger: true,
     })
     if (!confirmed) return
     twoFactorReset.mutate(user.id, {
-      onSuccess: () => toast(`Two-factor sign-in is off for ${user.display_name}`),
-      onError: (error) => toast.error(failure(error, 'Two-factor sign-in could not be reset.')),
+      onSuccess: () => toast(i18n.t('admin:users.twoFactorOff', { name: user.display_name })),
+      onError: (error) => toast.error(problemMessage(error, i18n.t('admin:users.twoFactorFailed'))),
     })
   }
 
@@ -130,9 +130,9 @@ export function AdminUsersPage() {
     recovery.mutate(user.id, {
       onSuccess: (created) => {
         if (created.url) setLink({ user, url: created.url, expiresAt: created.expires_at })
-        else toast('Password reset email sent', { description: `Sent to ${created.sent_to ?? user.email}` })
+        else toast(i18n.t('admin:users.resetEmailSent'), { description: i18n.t('admin:users.sentTo', { email: created.sent_to ?? user.email }) })
       },
-      onError: (error) => toast.error(failure(error, cloud ? 'The password reset email could not be sent.' : 'The recovery link could not be created.')),
+      onError: (error) => toast.error(problemMessage(error, cloud ? i18n.t('admin:users.resetEmailFailed') : i18n.t('admin:users.recoveryLinkFailed'))),
     })
   }
 
@@ -140,15 +140,15 @@ export function AdminUsersPage() {
     <>
       <SummaryCard />
       <SettingsCard
-        title="Users"
-        actions={<Input type="search" aria-label="Search users" placeholder="Search by name or email…" value={query} onChange={(event) => setQuery(event.target.value)} className="h-8 w-60 max-sm:w-40" />}
+        title={t('users.title')}
+        actions={<Input type="search" aria-label={t('users.search')} placeholder={t('users.searchPlaceholder')} value={query} onChange={(event) => setQuery(event.target.value)} className="h-8 w-60 max-sm:w-40" />}
         flush
       >
         <div className="flex flex-col divide-y text-[13px]">
-          {!search ? <SettingsRow role="status" className="text-muted-foreground">Search by name or email to find a user.</SettingsRow> : null}
-          {search && users.isPending ? <SettingsRow role="status">Searching…</SettingsRow> : null}
-          {users.isError ? <SettingsRow role="alert">Users could not be loaded. <Button variant="ghost" onClick={() => void users.refetch()}>Retry</Button></SettingsRow> : null}
-          {search && users.data?.users.length === 0 ? <SettingsRow role="status">No user matches "{search}".</SettingsRow> : null}
+          {!search ? <SettingsRow role="status" className="text-muted-foreground">{t('users.searchPrompt')}</SettingsRow> : null}
+          {search && users.isPending ? <SettingsRow role="status">{t('users.searching')}</SettingsRow> : null}
+          {users.isError ? <SettingsRow role="alert">{t('users.loadFailed')} <Button variant="ghost" onClick={() => void users.refetch()}>{t('retry')}</Button></SettingsRow> : null}
+          {search && users.data?.users.length === 0 ? <SettingsRow role="status">{t('users.noMatch', { search })}</SettingsRow> : null}
           {search ? users.data?.users.map((user) => (
             <SettingsRow key={user.id} className="flex-nowrap" data-admin-user={user.id}>
               <Avatar size="sm" className="size-8">
@@ -157,44 +157,44 @@ export function AdminUsersPage() {
               <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                 <span className="flex min-w-0 items-center gap-2 font-medium text-foreground">
                   <span className="truncate">{user.display_name}</span>
-                  {user.deleted ? <Badge variant="secondary">Deleted</Badge> : (
+                  {user.deleted ? <Badge variant="secondary">{t('deleted')}</Badge> : (
                     <>
-                      {user.root ? <Badge>Root</Badge> : user.admin ? <Badge variant="secondary">Admin</Badge> : null}
-                      {user.two_factor ? <Badge variant="outline">2FA</Badge> : null}
-                      {user.suspended ? <Badge variant="destructive">Suspended</Badge> : null}
+                      {user.root ? <Badge>{t('users.badges.root')}</Badge> : user.admin ? <Badge variant="secondary">{t('users.badges.admin')}</Badge> : null}
+                      {user.two_factor ? <Badge variant="outline">{t('users.badges.twoFactor')}</Badge> : null}
+                      {user.suspended ? <Badge variant="destructive">{t('users.badges.suspended')}</Badge> : null}
                     </>
                   )}
                 </span>
                 {/* a deleted account's email is a placeholder that frees the address */}
-                <span className="truncate text-xs text-muted-foreground">{user.deleted ? 'Anonymized. It can never sign in again.' : user.email}</span>
+                <span className="truncate text-xs text-muted-foreground">{user.deleted ? t('users.anonymized') : user.email}</span>
               </div>
               <span className="text-xs text-muted-foreground/70 max-[899px]:hidden">
-                {user.workspace_count} {user.workspace_count === 1 ? 'workspace' : 'workspaces'} · {user.last_active_at ? `Active ${new Date(user.last_active_at).toLocaleDateString()}` : 'Never signed in'}
+                {t('users.workspaces', { count: user.workspace_count })} · {user.last_active_at ? t('users.activeOn', { date: new Date(user.last_active_at).toLocaleDateString(i18n.language) }) : t('users.neverSignedIn')}
               </span>
               <div className="flex w-24 justify-end">
                 {user.deleted || (user.id !== viewerId && !manageable(user)) ? null : (
                   <DropdownMenu>
-                    <DropdownMenuTrigger render={<Button variant="outline" size="sm" className="text-[11px]" aria-label={`Manage ${user.display_name}`} />}>
-                      Manage
+                    <DropdownMenuTrigger render={<Button variant="outline" size="sm" className="text-[11px]" aria-label={t('users.manageLabel', { name: user.display_name })} />}>
+                      {t('users.manage')}
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-auto min-w-52">
                       <DropdownMenuItem disabled={mailBlocked} onClick={() => setEmailUser(user)}>
-                        <span>Change email{mailBlocked ? <MenuItemReason>{NO_MAIL_SERVER}</MenuItemReason> : null}</span>
+                        <span>{t('users.changeEmail')}{mailBlocked ? <NoMailServer /> : null}</span>
                       </DropdownMenuItem>
                       {manageable(user) ? (
                         <>
-                          {viewerIsRoot && user.admin ? <DropdownMenuItem onClick={() => void setAdmin(user, false)}>Remove admin</DropdownMenuItem> : null}
-                          {viewerIsRoot && !user.admin && !user.suspended ? <DropdownMenuItem onClick={() => void setAdmin(user, true)}>Make admin</DropdownMenuItem> : null}
+                          {viewerIsRoot && user.admin ? <DropdownMenuItem onClick={() => void setAdmin(user, false)}>{t('users.removeAdmin')}</DropdownMenuItem> : null}
+                          {viewerIsRoot && !user.admin && !user.suspended ? <DropdownMenuItem onClick={() => void setAdmin(user, true)}>{t('users.makeAdmin')}</DropdownMenuItem> : null}
                           {user.suspended ? (
-                            <DropdownMenuItem onClick={() => reinstate(user)}>Reinstate account</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => reinstate(user)}>{t('users.reinstate')}</DropdownMenuItem>
                           ) : (
                             <>
                               <DropdownMenuItem disabled={mailBlocked} onClick={() => createLink(user)}>
-                                <span>{cloud ? 'Send password reset email' : 'Create password recovery link'}{mailBlocked ? <MenuItemReason>{NO_MAIL_SERVER}</MenuItemReason> : null}</span>
+                                <span>{cloud ? t('users.sendReset') : t('users.createRecovery')}{mailBlocked ? <NoMailServer /> : null}</span>
                               </DropdownMenuItem>
                               {user.two_factor ? (
                                 <DropdownMenuItem disabled={mailBlocked} onClick={() => void resetTwoFactor(user)}>
-                                  <span>Reset two-factor{mailBlocked ? <MenuItemReason>{NO_MAIL_SERVER}</MenuItemReason> : null}</span>
+                                  <span>{t('users.resetTwoFactor')}{mailBlocked ? <NoMailServer /> : null}</span>
                                 </DropdownMenuItem>
                               ) : null}
                               <DropdownMenuSeparator />
@@ -204,7 +204,7 @@ export function AdminUsersPage() {
                                 data-danger="true"
                                 onClick={() => void suspend(user)}
                               >
-                                Suspend account
+                                {t('users.suspend')}
                               </DropdownMenuItem>
                             </>
                           )}
@@ -217,7 +217,7 @@ export function AdminUsersPage() {
             </SettingsRow>
           )) : null}
           {search && users.data?.more ? (
-            <SettingsRow role="status" className="text-muted-foreground">Showing the first {ADMIN_USER_RESULTS} matches. Type more of the name or email to narrow the search.</SettingsRow>
+            <SettingsRow role="status" className="text-muted-foreground">{t('users.more', { limit: ADMIN_USER_RESULTS })}</SettingsRow>
           ) : null}
         </div>
       </SettingsCard>
@@ -229,30 +229,31 @@ export function AdminUsersPage() {
 
 /** Self-hosted only: Orbit Cloud emails the link instead of showing it. */
 function RecoveryLinkDialog({ user, url, expiresAt, onClose }: { user: AdminUser; url: string; expiresAt: string; onClose: () => void }) {
+  const { t } = useTranslation('admin')
   const [copied, setCopied] = useState(false)
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(url)
       setCopied(true)
-      toast('Recovery link copied')
+      toast(t('recoveryLink.copied'))
     } catch {
-      toast.error('Could not copy the link. Select and copy it manually.')
+      toast.error(t('recoveryLink.copyFailed'))
     }
   }
   return (
     <Dialog open onOpenChange={(open) => { if (!open) onClose() }}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Recovery link for {user.display_name}</DialogTitle>
+          <DialogTitle>{t('recoveryLink.title', { name: user.display_name })}</DialogTitle>
           <DialogDescription>
-            Send this link to {user.email}. It sets a new password, works once, and expires at {new Date(expiresAt).toLocaleTimeString()}.
+            {t('recoveryLink.description', { email: user.email, time: new Date(expiresAt).toLocaleTimeString(i18n.language) })}
           </DialogDescription>
         </DialogHeader>
         <div className="flex items-center gap-2">
-          <Input aria-label="Recovery link" value={url} readOnly onFocus={(event) => event.target.select()} />
+          <Input aria-label={t('recoveryLink.label')} value={url} readOnly onFocus={(event) => event.target.select()} />
           <Button type="button" variant="outline" onClick={() => void copy()}>
             <Copy className="size-3.5" />
-            {copied ? 'Copied' : 'Copy'}
+            {copied ? t('copied') : t('copy')}
           </Button>
         </div>
       </DialogContent>
@@ -262,17 +263,18 @@ function RecoveryLinkDialog({ user, url, expiresAt, onClose }: { user: AdminUser
 
 /** A 422 or a taken address is about the field; the rest shows under the form. */
 function ChangeEmailDialog({ user, cloud, onClose }: { user: AdminUser; cloud: boolean; onClose: () => void }) {
+  const { t } = useTranslation('admin')
   const change = useChangeUserEmail()
   const [email, setEmail] = useState('')
   const emailId = useId()
   const problem = change.error instanceof ApiProblem ? change.error : null
   const fieldError = problem !== null && (problem.status === 422 || problem.code === 'email_taken')
-  const detail = problem?.detail ?? 'The email could not be changed.'
+  const detail = problemMessage(change.error, t('changeEmail.failed'))
 
   return (
     <Modal
-      title={`Change email of ${user.display_name}`}
-      description={cloud ? 'The person is signed out everywhere. The old and the new address get an email about the change.' : 'The person is signed out everywhere. No confirmation email is sent.'}
+      title={t('changeEmail.title', { name: user.display_name })}
+      description={cloud ? t('changeEmail.descriptionCloud') : t('changeEmail.description')}
       onClose={onClose}
       dismissible={!change.isPending}
       className="sm:max-w-120"
@@ -281,22 +283,22 @@ function ChangeEmailDialog({ user, cloud, onClose }: { user: AdminUser; cloud: b
         event.preventDefault()
         change.mutate({ userId: user.id, email: email.trim() }, {
           onSuccess: () => {
-            toast(`The email of ${user.display_name} is now ${email.trim()}`)
+            toast(t('changeEmail.changed', { name: user.display_name, email: email.trim() }))
             onClose()
           },
         })
       }}>
         <FieldGroup>
           <Field data-invalid={fieldError || undefined}>
-            <FieldLabel htmlFor={emailId}>New email</FieldLabel>
+            <FieldLabel htmlFor={emailId}>{t('changeEmail.newEmail')}</FieldLabel>
             <Input id={emailId} type="email" required autoFocus autoComplete="off" aria-invalid={fieldError || undefined} value={email} onChange={(event) => setEmail(event.target.value)} />
-            {fieldError ? <FieldError>{detail}</FieldError> : <FieldDescription>Now {user.email}.</FieldDescription>}
+            {fieldError ? <FieldError>{detail}</FieldError> : <FieldDescription>{t('changeEmail.now', { email: user.email })}</FieldDescription>}
           </Field>
         </FieldGroup>
         {change.error && !fieldError ? <p role="alert" className="text-[13px] text-destructive">{detail}</p> : null}
         <DialogFooter>
-          <DialogClose render={<Button type="button" variant="ghost" disabled={change.isPending} />}>Cancel</DialogClose>
-          <Button type="submit" disabled={change.isPending || !email.trim()}>{change.isPending ? 'Saving…' : 'Change email'}</Button>
+          <DialogClose render={<Button type="button" variant="ghost" disabled={change.isPending} />}>{t('cancel')}</DialogClose>
+          <Button type="submit" disabled={change.isPending || !email.trim()}>{change.isPending ? t('saving') : t('changeEmail.submit')}</Button>
         </DialogFooter>
       </form>
     </Modal>

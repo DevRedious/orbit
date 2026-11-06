@@ -1,23 +1,22 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import type { LimitsView } from '@orbit/api/generated/types.gen'
-import { ApiProblem } from '@orbit/api/problem'
 import { SettingsCard } from '@/components/common/SettingsCard'
 import { Button } from '@/components/ui/button'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { useInstanceSettings, useSaveLimits } from '@/features/admin/api'
 import { FieldGrid } from '@/features/settings/components/SettingsParts'
-
-function problemText(error: unknown, fallback: string) {
-  return error instanceof ApiProblem ? error.detail : fallback
-}
+import { i18n } from '@/i18n'
+import { problemMessage } from '@/i18n/problem'
 
 /** What one account and one workspace may use. */
 export function AdminLimitsPage() {
+  const { t } = useTranslation('admin')
   const settings = useInstanceSettings()
-  if (settings.isPending) return <SettingsCard title="Limits"><p role="status">Loading settings…</p></SettingsCard>
-  if (settings.isError) return <SettingsCard title="Limits"><p role="alert">Settings could not be loaded. <Button variant="ghost" onClick={() => void settings.refetch()}>Retry</Button></p></SettingsCard>
+  if (settings.isPending) return <SettingsCard title={t('limits.title')}><p role="status">{t('loadingSettings')}</p></SettingsCard>
+  if (settings.isError) return <SettingsCard title={t('limits.title')}><p role="alert">{t('settingsFailed')} <Button variant="ghost" onClick={() => void settings.refetch()}>{t('retry')}</Button></p></SettingsCard>
   // Remount on save so the form shows what the server stored.
   return <LimitsCard key={JSON.stringify(settings.data.limits)} limits={settings.data.limits} />
 }
@@ -33,6 +32,7 @@ function parseLimit(value: string, scale = 1): number | null | undefined {
 }
 
 function LimitsCard({ limits }: { limits: LimitsView }) {
+  const { t } = useTranslation('admin')
   const save = useSaveLimits()
   const [workspaces, setWorkspaces] = useState(limits.max_owned_workspaces ? String(limits.max_owned_workspaces) : '')
   const [storage, setStorage] = useState(limits.workspace_storage_quota_bytes ? String(limits.workspace_storage_quota_bytes / BYTES_PER_GB) : '')
@@ -42,32 +42,32 @@ function LimitsCard({ limits }: { limits: LimitsView }) {
     const maxOwnedWorkspaces = parseLimit(workspaces)
     const storageQuota = parseLimit(storage, BYTES_PER_GB)
     if (maxOwnedWorkspaces === undefined || storageQuota === undefined) {
-      toast.error('Enter a number, or leave the field empty for no limit.')
+      toast.error(i18n.t('admin:limits.invalidNumber'))
       return
     }
     save.mutate({ max_owned_workspaces: maxOwnedWorkspaces, workspace_storage_quota_bytes: storageQuota }, {
-      onSuccess: () => toast('Limits saved'),
-      onError: (error) => toast.error(problemText(error, 'The limits could not be saved.')),
+      onSuccess: () => toast(i18n.t('admin:limits.saved')),
+      onError: (error) => toast.error(problemMessage(error, i18n.t('admin:limits.saveFailed'))),
     })
   }
 
   return (
     <form onSubmit={submit}>
-      <SettingsCard title="Limits" description="What one account and one workspace may use. Empty or 0 means no limit. A lower limit removes nothing that exists.">
+      <SettingsCard title={t('limits.title')} description={t('limits.description')}>
         <FieldGrid>
           <Field>
-            <FieldLabel htmlFor="limit-workspaces">Workspaces per account</FieldLabel>
-            <Input id="limit-workspaces" type="number" min={0} step={1} placeholder="No limit" value={workspaces} onChange={(event) => setWorkspaces(event.target.value)} />
-            <FieldDescription>Workspaces one account may own, not counting the trash. Admins have no limit.</FieldDescription>
+            <FieldLabel htmlFor="limit-workspaces">{t('limits.workspaces')}</FieldLabel>
+            <Input id="limit-workspaces" type="number" min={0} step={1} placeholder={t('noLimit')} value={workspaces} onChange={(event) => setWorkspaces(event.target.value)} />
+            <FieldDescription>{t('limits.workspacesHint')}</FieldDescription>
           </Field>
           <Field>
-            <FieldLabel htmlFor="limit-storage">Storage per workspace (GB)</FieldLabel>
-            <Input id="limit-storage" type="number" min={0} step="any" placeholder="No limit" value={storage} onChange={(event) => setStorage(event.target.value)} />
-            <FieldDescription>Files, emoji and stickers of one workspace, each file counted once.</FieldDescription>
+            <FieldLabel htmlFor="limit-storage">{t('limits.storage')}</FieldLabel>
+            <Input id="limit-storage" type="number" min={0} step="any" placeholder={t('noLimit')} value={storage} onChange={(event) => setStorage(event.target.value)} />
+            <FieldDescription>{t('limits.storageHint')}</FieldDescription>
           </Field>
         </FieldGrid>
         <div className="mt-4 flex justify-end">
-          <Button type="submit" disabled={save.isPending}>{save.isPending ? 'Saving…' : 'Save limits'}</Button>
+          <Button type="submit" disabled={save.isPending}>{save.isPending ? t('saving') : t('saveLimits')}</Button>
         </div>
       </SettingsCard>
     </form>

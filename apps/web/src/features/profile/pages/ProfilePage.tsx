@@ -1,4 +1,5 @@
 import { useContext, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { ApiProblem } from '@orbit/api/problem'
 import { UnsavedBar } from '@/components/common/UnsavedBar'
@@ -21,6 +22,7 @@ import { EmailChangeDialog } from '@/features/profile/components/EmailChangeDial
 import { PROFILE_LIMITS, phoneValid, profileChanges, profileDirty, profileFormOf, type ProfileForm } from '@/features/profile/profileLib'
 import { SettingsCard } from '@/components/common/SettingsCard'
 import { FieldGrid, RequiredMark } from '@/features/settings/components/SettingsParts'
+import { problemMessage } from '@/i18n/problem'
 
 
 function PasswordField({
@@ -46,12 +48,9 @@ function PasswordField({
   )
 }
 
-function errorDetail(error: unknown, fallback: string) {
-  return error instanceof ApiProblem ? error.detail : fallback
-}
-
 /** Profile picture with upload and remove. The picture is cropped and scaled in the browser first. */
 function AvatarField() {
+  const { t } = useTranslation('profile')
   const me = useCurrentUser().data
   const setAvatar = useSetAvatar()
   const inputRef = useRef<HTMLInputElement>(null)
@@ -65,13 +64,13 @@ function AvatarField() {
     try {
       image = await avatarImage(file)
     } catch {
-      setReadError('This image could not be read. Use a PNG, JPEG or WebP file.')
+      setReadError(t('avatar.readFailed'))
       return
     }
     setAvatar.mutate(image)
   }
 
-  const error = readError ?? (setAvatar.isError ? errorDetail(setAvatar.error, 'The picture could not be saved.') : null)
+  const error = readError ?? (setAvatar.isError ? problemMessage(setAvatar.error, t('avatar.saveFailed')) : null)
   return (
     <div className="flex flex-wrap items-center gap-4">
       <UserAvatar
@@ -81,18 +80,18 @@ function AvatarField() {
       <div className="flex min-w-0 flex-col gap-2">
         <div className="flex flex-wrap gap-2">
           <Button type="button" variant="outline" disabled={setAvatar.isPending} onClick={() => inputRef.current?.click()}>
-            {setAvatar.isPending ? 'Saving…' : me?.avatar_url ? 'Change picture' : 'Upload picture'}
+            {setAvatar.isPending ? t('saving') : me?.avatar_url ? t('avatar.change') : t('avatar.upload')}
           </Button>
           {me?.avatar_url ? (
             <Button type="button" variant="ghost" disabled={setAvatar.isPending} onClick={() => setAvatar.mutate(null)}>
-              Remove
+              {t('avatar.remove')}
             </Button>
           ) : null}
         </div>
         {error ? (
           <p className="text-xs text-destructive" role="alert">{error}</p>
         ) : (
-          <p className="text-xs text-muted-foreground">Cropped to a square. People in your workspaces see it.</p>
+          <p className="text-xs text-muted-foreground">{t('avatar.hint')}</p>
         )}
       </div>
       <input
@@ -100,7 +99,7 @@ function AvatarField() {
         type="file"
         accept="image/png,image/jpeg,image/webp"
         className="hidden"
-        aria-label="Profile picture"
+        aria-label={t('avatar.label')}
         onChange={(event) => {
           void pick(event.target.files?.[0])
           event.target.value = ''
@@ -112,8 +111,9 @@ function AvatarField() {
 
 /** How the account signs in, under the email; Security is where the methods change. */
 function SignInMethods({ hasPassword }: { hasPassword: boolean }) {
+  const { t } = useTranslation('profile')
   const connected = useConnectedAccounts()
-  const methods = [...(hasPassword ? ['Password'] : []), ...(connected.data ?? []).map((account) => PROVIDER_NAMES[account.provider])]
+  const methods = [...(hasPassword ? [t('details.passwordMethod')] : []), ...(connected.data ?? []).map((account) => PROVIDER_NAMES[account.provider])]
   // with no workspace, only an operator can open Security (`WorkspaceProvider`)
   const inWorkspace = useContext(WorkspaceContext) !== null
   const isOperator = useIsInstallationAdmin()
@@ -121,7 +121,7 @@ function SignInMethods({ hasPassword }: { hasPassword: boolean }) {
   if (methods.length === 0) return null
   return (
     <FieldDescription>
-      Sign-in methods: {methods.join(' · ')}.{canManage ? <>{' '}<Link to="/profile/security" className="font-medium text-foreground underline-offset-4 hover:underline">Manage</Link></> : null}
+      {t('details.signInMethods', { methods: methods.join(' · ') })}{canManage ? <>{' '}<Link to="/profile/security" className="font-medium text-foreground underline-offset-4 hover:underline">{t('details.manage')}</Link></> : null}
     </FieldDescription>
   )
 }
@@ -131,6 +131,7 @@ const BIO_COUNTER_FROM = 100
 
 /** Account settings: the profile other members see, the email, the password, and deleting the account. */
 export function ProfilePage() {
+  const { t } = useTranslation('profile')
   const user = useCurrentUser()
   const me = user.data
   const updateProfile = useUpdateProfile()
@@ -172,7 +173,7 @@ export function ProfilePage() {
   const submitPassword = (e: React.FormEvent) => {
     e.preventDefault()
     if (newPassword !== confirmPassword) {
-      setPasswordError('The new password confirmation does not match.')
+      setPasswordError(t('password.mismatch'))
       return
     }
     setPasswordError(null)
@@ -190,7 +191,7 @@ export function ProfilePage() {
 
   const passwordAlert = passwordError
     ?? (changePasswordMutation.isError
-      ? errorDetail(changePasswordMutation.error, 'Password could not be changed.')
+      ? problemMessage(changePasswordMutation.error, t('password.failed'))
       : null)
   const reauthenticate = changePasswordMutation.error instanceof ApiProblem && changePasswordMutation.error.code === 'reauthentication_required'
 
@@ -199,13 +200,13 @@ export function ProfilePage() {
     <>
             <form ref={formRef} onSubmit={saveDetails}>
               <SettingsCard
-                title="Profile details"
+                title={t('details.title')}
               >
                 <AvatarField />
                 <FieldGrid className="mt-4">
                   <Field>
                     <FieldLabel htmlFor="profile-name">
-                      Name <RequiredMark />
+                      {t('details.name')} <RequiredMark />
                     </FieldLabel>
                     <Input
                       id="profile-name"
@@ -216,45 +217,45 @@ export function ProfilePage() {
                   </Field>
                   <Field>
                     <FieldLabel htmlFor="profile-email">
-                      Email
+                      {t('details.email')}
                     </FieldLabel>
                     <div className="flex gap-2">
                       <Input id="profile-email" value={me?.email ?? ''} readOnly />
-                      {emailEnabled ? <Button type="button" variant="outline" onClick={() => setChangingEmail(true)}>Change</Button> : null}
+                      {emailEnabled ? <Button type="button" variant="outline" onClick={() => setChangingEmail(true)}>{t('details.change')}</Button> : null}
                     </div>
-                    {options.data && !emailEnabled ? <FieldDescription>This Orbit cannot send email, so the email cannot be changed. Ask an administrator.</FieldDescription> : null}
+                    {options.data && !emailEnabled ? <FieldDescription>{t('details.emailUnavailable')}</FieldDescription> : null}
                     {me ? <SignInMethods hasPassword={hasPassword} /> : null}
                   </Field>
                   <Field>
-                    <FieldLabel htmlFor="profile-title">Title</FieldLabel>
-                    <Input id="profile-title" maxLength={PROFILE_LIMITS.title} placeholder="Product designer" value={form.title} onChange={(e) => set({ title: e.target.value })} />
+                    <FieldLabel htmlFor="profile-title">{t('details.jobTitle')}</FieldLabel>
+                    <Input id="profile-title" maxLength={PROFILE_LIMITS.title} placeholder={t('details.jobTitlePlaceholder')} value={form.title} onChange={(e) => set({ title: e.target.value })} />
                   </Field>
                   <Field>
-                    <FieldLabel htmlFor="profile-pronouns">Pronouns</FieldLabel>
-                    <Input id="profile-pronouns" maxLength={PROFILE_LIMITS.pronouns} placeholder="she/her" value={form.pronouns} onChange={(e) => set({ pronouns: e.target.value })} />
+                    <FieldLabel htmlFor="profile-pronouns">{t('details.pronouns')}</FieldLabel>
+                    <Input id="profile-pronouns" maxLength={PROFILE_LIMITS.pronouns} placeholder={t('details.pronounsPlaceholder')} value={form.pronouns} onChange={(e) => set({ pronouns: e.target.value })} />
                   </Field>
                   <Field data-invalid={phoneInvalid || undefined}>
-                    <FieldLabel htmlFor="profile-phone">Phone number</FieldLabel>
+                    <FieldLabel htmlFor="profile-phone">{t('details.phone')}</FieldLabel>
                     <Input
                       id="profile-phone"
                       type="tel"
                       autoComplete="tel"
                       maxLength={PROFILE_LIMITS.phone}
-                      placeholder="+1 555 010 0000"
+                      placeholder={t('details.phonePlaceholder')}
                       aria-invalid={phoneInvalid || undefined}
                       value={form.phone}
                       onChange={(e) => set({ phone: e.target.value })}
                     />
                     <FieldDescription>
-                      {phoneInvalid ? 'Use digits, spaces and + - ( ) . only.' : 'The people in your workspaces can see it.'}
+                      {phoneInvalid ? t('details.phoneInvalid') : t('details.phoneHint')}
                     </FieldDescription>
                   </Field>
                   <Field>
-                    <FieldLabel htmlFor="profile-timezone">Time zone</FieldLabel>
+                    <FieldLabel htmlFor="profile-timezone">{t('details.timeZone')}</FieldLabel>
                     <TimeZonePicker id="profile-timezone" value={form.timezone} onChange={(timezone) => set({ timezone })} />
                   </Field>
                   <Field className="min-[900px]:col-span-2">
-                    <FieldLabel htmlFor="profile-bio">Bio</FieldLabel>
+                    <FieldLabel htmlFor="profile-bio">{t('details.bio')}</FieldLabel>
                     <Textarea id="profile-bio" maxLength={PROFILE_LIMITS.bio} rows={3} value={form.bio} onChange={(e) => set({ bio: e.target.value })} aria-describedby={bioLeft <= BIO_COUNTER_FROM ? 'profile-bio-count' : undefined} />
                     {bioLeft <= BIO_COUNTER_FROM ? (
                       <FieldDescription id="profile-bio-count" className="text-right text-xs tabular-nums">
@@ -265,7 +266,7 @@ export function ProfilePage() {
                 </FieldGrid>
                 {updateProfile.isError ? (
                   <p className="text-xs text-destructive" role="alert">
-                    {errorDetail(updateProfile.error, 'Your profile could not be saved.')}
+                    {problemMessage(updateProfile.error, t('details.saveFailed'))}
                   </p>
                 ) : null}
               </SettingsCard>
@@ -273,11 +274,11 @@ export function ProfilePage() {
 
             <form onSubmit={submitPassword}>
               <SettingsCard
-                title={hasPassword ? 'Password' : 'Set a password'}
-                description={hasPassword ? 'Other devices will be signed out.' : 'Sign in with your email and a password as well as your connected account.'}
+                title={hasPassword ? t('password.title') : t('password.setTitle')}
+                description={hasPassword ? t('password.description') : t('password.setDescription')}
                 actions={
                   <Button type="submit" variant="outline" disabled={changePasswordMutation.isPending}>
-                    {changePasswordMutation.isPending ? 'Saving…' : hasPassword ? 'Change password' : 'Set password'}
+                    {changePasswordMutation.isPending ? t('saving') : hasPassword ? t('password.change') : t('password.set')}
                   </Button>
                 }
               >
@@ -286,7 +287,7 @@ export function ProfilePage() {
                     <div className="min-[900px]:col-span-2">
                       <PasswordField
                         id="current-password"
-                        label="Current password"
+                        label={t('password.current')}
                         autoComplete="current-password"
                         value={currentPassword}
                         onChange={setCurrentPassword}
@@ -295,14 +296,14 @@ export function ProfilePage() {
                   ) : null}
                   <PasswordField
                     id="new-password"
-                    label="New password"
+                    label={t('password.new')}
                     autoComplete="new-password"
                     value={newPassword}
                     onChange={setNewPassword}
                   />
                   <PasswordField
                     id="confirm-password"
-                    label="Confirm new password"
+                    label={t('password.confirm')}
                     autoComplete="new-password"
                     value={confirmPassword}
                     onChange={setConfirmPassword}

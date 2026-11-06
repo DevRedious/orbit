@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { Navigate, Outlet, useLocation, useSearchParams } from 'react-router'
 import { createApiClient } from '@/api/client'
 import { LoadingScreen } from '@/components/common/LoadingScreen'
@@ -9,6 +10,7 @@ import { loginDestination, loginPath } from './returnTo'
 import { OrbitUnavailable } from '@/components/common/OrbitUnavailable'
 
 export function AuthGate() {
+  const { t } = useTranslation('auth')
   const location = useLocation()
   const setup = useSetupStatus()
   const user = useCurrentUser(setup.data?.complete === true)
@@ -19,7 +21,7 @@ export function AuthGate() {
     failed: firstLoadFailed(setup) || firstLoadFailed(user),
   })
   if (state === 'unavailable') {
-    return <OrbitUnavailable detail="The server could not verify this session." onRetry={() => { void setup.refetch(); void user.refetch() }} />
+    return <OrbitUnavailable detail={t('authGate.unavailableDetail')} onRetry={() => { void setup.refetch(); void user.refetch() }} />
   }
   if (state === 'setup') return <Navigate to="/setup" replace />
   if (state === 'login') return <Navigate to={loginPath(`${location.pathname}${location.search}${location.hash}`)} replace />

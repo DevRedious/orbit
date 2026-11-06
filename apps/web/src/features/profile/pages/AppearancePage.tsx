@@ -18,23 +18,18 @@ import {
 import { CustomThemeDialog, CustomThemeSwatch } from '@/features/profile/components/CustomThemeDialog'
 import { TEXT_SIZES, useTheme, type Appearance } from '@/lib/themeContext'
 
-const THEMES: { value: Appearance['theme']; label: string; description: string; preview: string }[] = [
-  { value: 'light', label: 'Light', description: 'Bright surfaces and dark text.', preview: 'bg-white' },
-  { value: 'system', label: 'System', description: 'Follow your operating system.', preview: 'bg-linear-to-r from-white via-neutral-400 to-[#050505]' },
-  { value: 'dark', label: 'Dark', description: 'Dark surfaces and soft contrast.', preview: 'bg-[#181818]' },
+// Each option's label and description are `profile:appearance.<group>.<value>` keys, read at render.
+const THEMES: { value: Appearance['theme']; preview: string }[] = [
+  { value: 'light', preview: 'bg-white' },
+  { value: 'system', preview: 'bg-linear-to-r from-white via-neutral-400 to-[#050505]' },
+  { value: 'dark', preview: 'bg-[#181818]' },
 ]
 
 const SECTION_LABELS: Record<AppSection, string> = { docs: 'Docs', chat: 'Chat', tasks: 'Tasks' }
 
-const NAV_STYLES: { value: Appearance['navStyle']; label: string; description: string }[] = [
-  { value: 'default', label: 'Default', description: 'The sidebar and the content run edge to edge.' },
-  { value: 'floating', label: 'Floating', description: 'Framed panels float on a dotted backdrop. Only on wide screens.' },
-]
+const NAV_STYLES: Appearance['navStyle'][] = ['default', 'floating']
 
-const STYLES: { value: Appearance['style']; label: string; description: string }[] = [
-  { value: '3d', label: '3D', description: 'Buttons and sidebar icons sit on a raised edge that lifts on hover.' },
-  { value: 'flat', label: 'Flat', description: 'No raised edges. Sidebar items are plain rows with a highlight for the current page.' },
-]
+const STYLES: Appearance['style'][] = ['3d', 'flat']
 
 // each tile draws its sample in its own font: `data-font` sets `--font-ui` there (index.css)
 const FONT_OPTIONS: { value: Appearance['font']; label: string }[] = [
@@ -57,6 +52,7 @@ const TEXT_SIZE_OPTIONS: { value: Appearance['textSize']; label: string; sample:
 
 /** Coolify's Profile → Appearance: how Orbit looks in this browser. */
 export function AppearancePage() {
+  const { t } = useTranslation('profile')
   const { appearance, setAppearance } = useTheme()
   const choice = useCustomThemeChoice()
   const appLooks = choice && 'apps' in choice ? choice.apps : null
@@ -68,13 +64,13 @@ export function AppearancePage() {
     <>
       <LanguageCard />
 
-      <SettingsCard title="Color theme" description="Choose the color scheme used in this browser.">
+      <SettingsCard title={t('appearance.colorTheme.title')} description={t('appearance.colorTheme.description')}>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           {THEMES.map((option) => (
             <AppearanceOption
               key={option.value}
-              label={option.label}
-              description={option.description}
+              label={t(`appearance.colorTheme.${option.value}.label`)}
+              description={t(`appearance.colorTheme.${option.value}.description`)}
               selected={!choice && appearance.theme === option.value}
               onClick={() => {
                 setCustomTheme(null)
@@ -87,8 +83,8 @@ export function AppearancePage() {
           ))}
           {/* the custom theme opens its editor: it is a theme of its own, and picking one above turns it off */}
           <AppearanceOption
-            label={customTheme ? `Custom · ${themeName(customTheme)}` : 'Custom'}
-            description="Your own colors for the whole app. Pick a preset or your own."
+            label={customTheme ? t('appearance.colorTheme.customNamed', { name: themeName(customTheme) }) : t('appearance.colorTheme.custom')}
+            description={t('appearance.colorTheme.customDescription')}
             selected={Boolean(customTheme)}
             aria-haspopup="dialog"
             onClick={() => setEditing('all')}
@@ -129,17 +125,17 @@ export function AppearancePage() {
         </SettingsCard>
       ) : null}
 
-      <SettingsCard title="Navigation style" description="Choose how the sidebar and the content sit on the page.">
+      <SettingsCard title={t('appearance.navStyle.title')} description={t('appearance.navStyle.description')}>
         <div className="grid gap-3 sm:grid-cols-2">
-          {NAV_STYLES.map((option) => {
-            const floating = option.value === 'floating'
+          {NAV_STYLES.map((navStyle) => {
+            const floating = navStyle === 'floating'
             return (
               <AppearanceOption
-                key={option.value}
-                label={option.label}
-                description={option.description}
-                selected={appearance.navStyle === option.value}
-                onClick={() => setAppearance({ navStyle: option.value })}
+                key={navStyle}
+                label={t(`appearance.navStyle.${navStyle}.label`)}
+                description={t(`appearance.navStyle.${navStyle}.description`)}
+                selected={appearance.navStyle === navStyle}
+                onClick={() => setAppearance({ navStyle })}
                 previewClassName={cn('items-stretch justify-start', floating && 'gap-1.5 p-1.5')}
               >
                 <span className={cn('flex flex-col items-center gap-1.5 bg-background px-2 py-2', floating ? 'rounded-lg border' : 'border-r')}>
@@ -156,17 +152,17 @@ export function AppearancePage() {
         </div>
       </SettingsCard>
 
-      <SettingsCard title="Style" description="Choose how buttons and sidebar items look.">
+      <SettingsCard title={t('appearance.style.title')} description={t('appearance.style.description')}>
         <div className="grid gap-3 sm:grid-cols-2">
-          {STYLES.map((option) => {
-            const tiles = option.value === '3d'
+          {STYLES.map((style) => {
+            const tiles = style === '3d'
             return (
               <AppearanceOption
-                key={option.value}
-                label={option.label}
-                description={option.description}
-                selected={appearance.style === option.value}
-                onClick={() => setAppearance({ style: option.value })}
+                key={style}
+                label={t(`appearance.style.${style}.label`)}
+                description={t(`appearance.style.${style}.description`)}
+                selected={appearance.style === style}
+                onClick={() => setAppearance({ style })}
                 previewClassName="flex-col items-start gap-1.5 px-4"
               >
                 {[User, Settings].map((Icon, index) => (

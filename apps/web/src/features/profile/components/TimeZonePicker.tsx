@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Check, ChevronDown } from 'reicon-react'
 import { Button } from '@/components/ui/button'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
@@ -13,6 +14,7 @@ const zoneLabel = (zone: string) => zone.replaceAll('_', ' ')
  * one click, and a way to have none. `value` is the IANA name, `''` for none.
  */
 export function TimeZonePicker({ id, value, onChange }: { id: string; value: string; onChange: (zone: string) => void }) {
+  const { t } = useTranslation('profile')
   const [open, setOpen] = useState(false)
   // the list of the browser lacks `UTC`, and a saved zone must always be in it
   const [known] = useState(timeZones)
@@ -25,15 +27,15 @@ export function TimeZonePicker({ id, value, onChange }: { id: string; value: str
       <Popover open={open} onOpenChange={setOpen} modal={false}>
         <PopoverTrigger render={<Button id={id} type="button" variant="outline" className="w-full justify-between font-normal" />}>
           <span className="truncate data-empty:text-muted-foreground" data-empty={value ? undefined : ''}>
-            {value ? zoneLabel(value) : 'Not set'}
+            {value ? zoneLabel(value) : t('timeZone.notSet')}
           </span>
           <ChevronDown className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
         </PopoverTrigger>
         <PopoverContent align="start" className="w-(--anchor-width) min-w-64 gap-0 p-0">
-          <Command label="Time zone">
-            <CommandInput autoFocus aria-label="Search time zones" placeholder="Search time zones…" />
+          <Command label={t('timeZone.label')}>
+            <CommandInput autoFocus aria-label={t('timeZone.search')} placeholder={t('timeZone.searchPlaceholder')} />
             <CommandList>
-              <CommandEmpty className="py-4 text-xs text-muted-foreground">No time zone matches</CommandEmpty>
+              <CommandEmpty className="py-4 text-xs text-muted-foreground">{t('timeZone.empty')}</CommandEmpty>
               <CommandGroup>
                 {zones.map((zone) => (
                   <CommandItem
@@ -55,15 +57,15 @@ export function TimeZonePicker({ id, value, onChange }: { id: string; value: str
         </PopoverContent>
       </Popover>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-        {time ? <span>Now {time}</span> : null}
+        {time ? <span>{t('timeZone.now', { time })}</span> : null}
         {here && here !== value ? (
           <Button type="button" variant="link" size="xs" className="h-auto p-0" onClick={() => onChange(here)}>
-            Use my current time zone
+            {t('timeZone.useCurrent')}
           </Button>
         ) : null}
         {value ? (
           <Button type="button" variant="link" size="xs" className="h-auto p-0 text-muted-foreground" onClick={() => onChange('')}>
-            Clear
+            {t('timeZone.clear')}
           </Button>
         ) : null}
       </div>

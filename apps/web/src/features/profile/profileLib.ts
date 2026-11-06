@@ -1,12 +1,14 @@
 import type { AuthUserResponse, UpdateMeBody } from '@orbit/api/generated/types.gen'
+import { i18n } from '@/i18n'
 
 export const PROFILE_LIMITS = { title: 80, pronouns: 40, phone: 32, bio: 500, note: 1000 } as const
 
 /** "3:42 PM local time" in the member's zone; `null` when the zone is missing or not a zone this browser knows. */
-export function localTimeLabel(timezone: string | null | undefined, now: Date | number = Date.now(), locale?: string): string | null {
+export function localTimeLabel(timezone: string | null | undefined, now: Date | number = Date.now(), locale: string = i18n.language): string | null {
   if (!timezone) return null
   try {
-    return `${new Intl.DateTimeFormat(locale, { hour: 'numeric', minute: '2-digit', timeZone: timezone }).format(now)} local time`
+    const time = new Intl.DateTimeFormat(locale, { hour: 'numeric', minute: '2-digit', timeZone: timezone }).format(now)
+    return i18n.t('profile:timeZone.localTime', { time })
   } catch {
     return null
   }

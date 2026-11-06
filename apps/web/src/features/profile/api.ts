@@ -5,6 +5,7 @@ import { getMemberProfile, putMemberNote } from '@orbit/api/generated/sdk.gen'
 import type { MemberProfile } from '@orbit/api/generated/types.gen'
 import { ApiProblem } from '@orbit/api/problem'
 import { queryKeys } from '@/api/queryKeys'
+import { i18n } from '@/i18n'
 import { noteToSave } from './profileLib'
 
 /**
@@ -50,7 +51,7 @@ export async function saveMemberNote(queryClient: QueryClient, workspaceId: stri
   } catch {
     // a newer save may have written the cache since; only this save's own note goes back
     queryClient.setQueryData(key, (current): MemberProfile | null | undefined => (current && current.note === optimistic ? { ...current, note: previous.note } : current))
-    toast.error('Could not save your note. Try again.')
+    toast.error(i18n.t('profile:memberNote.saveFailed'))
   }
   return true
 }

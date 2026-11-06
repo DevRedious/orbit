@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
+import { Trans, useTranslation } from 'react-i18next'
 import { Navigate, useSearchParams } from 'react-router'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -23,14 +24,15 @@ const NO_PICK: Pick = { selected: [], all: false }
 
 type Scope = 'tasks:write' | 'docs:read' | 'docs:write' | 'chat:read'
 
-// Task read access comes with every grant, and chat has no write scope.
-const RESOURCES: ScopeResource<Scope>[] = [
-  { name: 'Tasks', hint: 'In the selected projects', write: 'tasks:write' },
-  { name: 'Docs', hint: 'Including private docs', read: 'docs:read', write: 'docs:write' },
-  { name: 'Chat', hint: 'Including private channels and direct messages', read: 'chat:read' },
+// Task read access comes with every grant, and chat has no write scope. Names and hints are `auth:oauthConsent.resources` keys.
+const RESOURCES: (Omit<ScopeResource<Scope>, 'name' | 'hint'> & { id: 'tasks' | 'docs' | 'chat' })[] = [
+  { id: 'tasks', write: 'tasks:write' },
+  { id: 'docs', read: 'docs:read', write: 'docs:write' },
+  { id: 'chat', read: 'chat:read' },
 ]
 
 export function OAuthConsentPage() {
+  const { t } = useTranslation('auth')
   const [params] = useSearchParams()
   const request = params.get('request') ?? ''
   const user = useQuery(currentUserQueryOptions(consentClient))
@@ -77,52 +79,52 @@ export function OAuthConsentPage() {
   }
   if (callback) return <AuthCard><div className="grid gap-5">
     <AuthBrand />
-    <h1 className="text-xl font-semibold">{callback.approved ? 'Complete the connection' : 'Connection denied'}</h1>
-    <p className="text-sm text-muted-foreground">Paste the full callback URL into the terminal where you started sign-in with --no-browser.</p>
-    {callback.approved ? <p className="text-sm text-muted-foreground">The authorization code expires after one minute. If it expires, restart sign-in from your client.</p> : null}
-    <Label htmlFor="callback-url">Callback URL</Label>
+    <h1 className="text-xl font-semibold">{callback.approved ? t('oauthConsent.completeTitle') : t('oauthConsent.deniedTitle')}</h1>
+    <p className="text-sm text-muted-foreground">{t('oauthConsent.pasteCallback')}</p>
+    {callback.approved ? <p className="text-sm text-muted-foreground">{t('oauthConsent.codeExpires')}</p> : null}
+    <Label htmlFor="callback-url">{t('oauthConsent.callbackUrl')}</Label>
     <textarea id="callback-url" readOnly value={callback.url} rows={4} className="w-full rounded-md border border-input bg-background p-3 font-mono text-xs break-all" onFocus={(event) => event.currentTarget.select()} />
-    <Button onClick={() => void copyCallback()}>Copy callback URL</Button>
-    <p role="status" className="text-sm text-muted-foreground">{copyState === 'copied' ? 'Callback URL copied.' : copyState === 'failed' ? 'Could not copy. Select the URL above and copy it manually.' : 'Keep this page open until the terminal confirms the result.'}</p>
+    <Button onClick={() => void copyCallback()}>{t('oauthConsent.copyCallback')}</Button>
+    <p role="status" className="text-sm text-muted-foreground">{copyState === 'copied' ? t('oauthConsent.copied') : copyState === 'failed' ? t('oauthConsent.copyFailed') : t('oauthConsent.keepOpen')}</p>
   </div></AuthCard>
   if (user.isPending) return <LoadingScreen />
   if (user.data === null) return <Navigate to={loginPath(`/oauth/consent?request=${request}`)} replace />
   const complete = chosen.length > 0 && chosen.every(({ id }) => pickOf(id).all || (pickOf(id).selected.length > 0 && pickOf(id).selected.length <= 100))
   return <AuthCard><div className="grid gap-5">
     <AuthBrand />
-    <h1 className="text-xl font-semibold">Connect to Orbit</h1>
-    {user.isError || consent.isError || !/^[A-Za-z0-9_-]{43}$/.test(request) ? <p role="alert">This request is not available. Restart the connection from your MCP client.</p> : consent.data ? <>
-      <p><strong>{consent.data.client_name}</strong> wants to connect to the workspaces and projects you select.</p>
-      <p className="text-sm text-muted-foreground">Signed in as {user.data?.display_name}.</p>
+    <h1 className="text-xl font-semibold">{t('oauthConsent.title')}</h1>
+    {user.isError || consent.isError || !/^[A-Za-z0-9_-]{43}$/.test(request) ? <p role="alert">{t('oauthConsent.unavailable')}</p> : consent.data ? <>
+      <p><Trans t={t} i18nKey="oauthConsent.wantsToConnect" values={{ client: consent.data.client_name }} components={{ strong: <strong /> }} /></p>
+      <p className="text-sm text-muted-foreground">{t('oauthConsent.signedInAs', { name: user.data?.display_name })}</p>
       {workspaces.length > 1 ? <div role="group" aria-labelledby="consent-workspaces" className="grid gap-3">
-        <span id="consent-workspaces" className="text-sm font-medium">Workspaces</span>
+        <span id="consent-workspaces" className="text-sm font-medium">{t('oauthConsent.workspaces')}</span>
         {workspaces.map(({ id, name }) => <Label key={id} className="flex items-center gap-2">
           <Checkbox checked={id in picks} onCheckedChange={(checked) => toggleWorkspace(id, Boolean(checked))} />
           {name}
         </Label>)}
-      </div> : workspaces.length ? <p className="text-sm">Workspace: <strong>{workspaces[0].name}</strong></p> : <p className="text-sm text-muted-foreground">No workspaces available. Create a workspace in Orbit, then restart the connection.</p>}
-      {workspaces.length ? <AccessPicker id="consent-access" resources={RESOURCES.map((resource) => resource.name === 'Tasks' ? { ...resource, details: <div className="grid gap-4">
-        {chosen.length ? chosen.map(({ id, name }) => {
-          const projects = consent.data?.projects.filter((project) => project.workspace_id === id) ?? []
-          return <div key={id} className="grid gap-2">
+      </div> : workspaces.length ? <p className="text-sm"><Trans t={t} i18nKey="oauthConsent.singleWorkspace" values={{ name: workspaces[0].name }} components={{ strong: <strong /> }} /></p> : <p className="text-sm text-muted-foreground">{t('oauthConsent.noWorkspaces')}</p>}
+      {workspaces.length ? <AccessPicker id="consent-access" resources={RESOURCES.map(({ id, ...resource }) => ({ ...resource, name: t(`oauthConsent.resources.${id}.name`), hint: t(`oauthConsent.resources.${id}.hint`), details: id === 'tasks' ? <div className="grid gap-4">
+        {chosen.length ? chosen.map(({ id: workspaceId, name }) => {
+          const projects = consent.data?.projects.filter((project) => project.workspace_id === workspaceId) ?? []
+          return <div key={workspaceId} className="grid gap-2">
             {workspaces.length > 1 ? <p className="text-sm font-medium">{name}</p> : null}
-            <ProjectPicker id={`consent-projects-${id}`} projects={projects} selected={pickOf(id).selected} onChange={(selected) => setPick(id, { selected })} all={pickOf(id).all} onAllChange={(all) => setPick(id, { all })} empty={!projects.length ? 'No projects available.' : undefined} />
+            <ProjectPicker id={`consent-projects-${workspaceId}`} projects={projects} selected={pickOf(workspaceId).selected} onChange={(selected) => setPick(workspaceId, { selected })} all={pickOf(workspaceId).all} onAllChange={(all) => setPick(workspaceId, { all })} empty={!projects.length ? t('oauthConsent.noProjects') : undefined} />
           </div>
-        }) : <p className="text-sm text-muted-foreground">Select a workspace to choose its projects.</p>}
-      </div> } : resource)} scopes={scopes} onChange={setScopes} /> : null}
+        }) : <p className="text-sm text-muted-foreground">{t('oauthConsent.selectWorkspaceFirst')}</p>}
+      </div> : undefined }))} scopes={scopes} onChange={setScopes} /> : null}
       {workspaces.length ? <div className="flex items-center gap-1.5">
         <Label className="flex items-center gap-2">
           <Checkbox checked={remote} disabled={approve.isPending} onCheckedChange={(checked) => setRemote(Boolean(checked))} />
-          Client runs on a remote server
+          {t('oauthConsent.remote')}
         </Label>
-        <InfoTip text="Use --no-browser when you start sign-in in Claude or Codex. Orbit will show a callback URL to paste into that terminal." />
+        <InfoTip text={t('oauthConsent.remoteHint')} />
       </div> : null}
       {approve.isError ? <p role="alert" className="text-sm text-destructive">{approve.error.message}</p> : null}
       <div className="flex gap-3">
-        <Button variant="outline" disabled={approve.isPending} onClick={() => approve.mutate(false)}>Deny</Button>
-        {workspaces.length ? <Button disabled={!complete || approve.isPending} onClick={() => approve.mutate(true)}>{scopes.length ? 'Allow selected access' : 'Allow read access'}</Button> : null}
+        <Button variant="outline" disabled={approve.isPending} onClick={() => approve.mutate(false)}>{t('oauthConsent.deny')}</Button>
+        {workspaces.length ? <Button disabled={!complete || approve.isPending} onClick={() => approve.mutate(true)}>{scopes.length ? t('oauthConsent.allowSelected') : t('oauthConsent.allowRead')}</Button> : null}
       </div>
-      {workspaces.length ? <p className="text-xs text-muted-foreground">Allowing will redirect to <strong className="break-words font-medium text-foreground">{consent.data.redirect_to}</strong>.</p> : null}
-    </> : <p><LoadingText>Loading connection…</LoadingText></p>}
+      {workspaces.length ? <p className="text-xs text-muted-foreground"><Trans t={t} i18nKey="oauthConsent.redirect" values={{ url: consent.data.redirect_to }} components={{ strong: <strong className="break-words font-medium text-foreground" /> }} /></p> : null}
+    </> : <p><LoadingText>{t('oauthConsent.loading')}</LoadingText></p>}
   </div></AuthCard>
 }

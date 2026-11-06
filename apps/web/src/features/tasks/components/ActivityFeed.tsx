@@ -1,4 +1,5 @@
 import { Fragment, useState, type ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ChevronDown } from 'reicon-react'
 import { cn } from 'cn'
 import { Button } from '@/components/ui/button'
@@ -54,6 +55,7 @@ const VISIBLE_ACTIVITY = 5
 
 export function ActivityFeed({ task, state, onOpenTask }: ActivityFeedProps) {
   // the unfolded runs, by the id of their first row
+  const { t } = useTranslation('tasks')
   const [unfolded, setUnfolded] = useState<string[]>([])
   const { workspace } = useWorkspace()
   const createComment = useCreateTaskComment(workspace.id, task.id)
@@ -79,14 +81,14 @@ export function ActivityFeed({ task, state, onOpenTask }: ActivityFeedProps) {
                 {status ? (
                   <TaskStatusIcon status={status} size={14} />
                 ) : (
-                  <ProfileTrigger userId={actor?.id} name={actor?.name ?? 'Someone'} kind="avatar" tabIndex={-1} className="relative z-1 flex">
+                  <ProfileTrigger userId={actor?.id} name={actor?.name ?? t('someone')} kind="avatar" tabIndex={-1} className="relative z-1 flex">
                     <UserAvatar user={actor} size={14} />
                   </ProfileTrigger>
                 )}
               </span>
               <span className="truncate">
-                <ProfileTrigger userId={actor?.id} name={actor?.name ?? item.actorName ?? 'Someone'} className="font-medium text-foreground">
-                  {item.actorName ?? actor?.name ?? 'Someone'}
+                <ProfileTrigger userId={actor?.id} name={actor?.name ?? item.actorName ?? t('someone')} className="font-medium text-foreground">
+                  {item.actorName ?? actor?.name ?? t('someone')}
                 </ProfileTrigger>{' '}
                 <ActivityText item={item} state={state} onOpenTask={onOpenTask} /> · {agoLabel(item.createdAt)}
               </span>
@@ -95,7 +97,7 @@ export function ActivityFeed({ task, state, onOpenTask }: ActivityFeedProps) {
               <TimelineRow>
                 <Button variant="ghost" size="xs" className="-ml-1 gap-2 px-1 text-muted-foreground" aria-expanded={expanded} onClick={() => setUnfolded((current) => expanded ? current.filter((id) => id !== runId) : [...current, runId])}>
                   <ChevronDown className={cn('size-3.5 transition-transform', expanded && 'rotate-180')} />
-                  {expanded ? 'Show less' : `Show ${hiddenCount} more`}
+                  {expanded ? t('activity.showLess') : t('activity.showMore', { count: hiddenCount })}
                 </Button>
               </TimelineRow>
             ) : null}
@@ -113,7 +115,7 @@ export function ActivityFeed({ task, state, onOpenTask }: ActivityFeedProps) {
         <CommentItem key={reply.id} state={state} taskId={task.id} comment={reply} reply />
       ))}
       <div className="border-t py-1.5 pr-2 pl-3.5">
-        <TaskCommentComposer compact workspaceId={workspace.id} taskId={task.id} pending={createComment.isPending} error={createComment.isError ? 'Reply failed.' : undefined} members={state.users} onSend={(bodyJson) => createComment.mutateAsync({ bodyJson, parentId: thread.root.id })} />
+        <TaskCommentComposer compact workspaceId={workspace.id} taskId={task.id} pending={createComment.isPending} error={createComment.isError ? t('comments.replyFailed') : undefined} members={state.users} onSend={(bodyJson) => createComment.mutateAsync({ bodyJson, parentId: thread.root.id })} />
       </div>
     </div>
   )
@@ -121,7 +123,7 @@ export function ActivityFeed({ task, state, onOpenTask }: ActivityFeedProps) {
   return (
     <div>
       <div className="mt-5 mb-2 flex items-center gap-1 border-t pt-3.5 max-[899px]:mt-0 max-[899px]:border-t-0 max-[899px]:pt-0">
-        <h3 className="m-0 text-sm font-semibold text-foreground">Activity</h3>
+        <h3 className="m-0 text-sm font-semibold text-foreground">{t('activity.title')}</h3>
       </div>
       {feed.map((entry) =>
         entry.kind === 'activity' ? renderTimeline(entry.items) : renderThread(entry.thread),

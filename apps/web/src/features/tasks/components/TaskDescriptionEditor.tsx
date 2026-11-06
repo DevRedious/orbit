@@ -2,6 +2,7 @@ import { Suspense, useCallback, useEffect, useImperativeHandle, useMemo, useRef,
 import { useNavigate } from 'react-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import { useTranslation } from 'react-i18next'
 import { apiClient, UNAUTHORIZED_EVENT } from '@/api/client'
 import { announceWorkspaceReadOnly } from '@/features/workspaces/billing'
 import { storageQuotaDetail } from '@orbit/api/problem'
@@ -47,6 +48,7 @@ export function TaskDescriptionEditor({
 }) {
   const me = useCurrentUser()
   const selfId = me.data?.id ?? null
+  const { t } = useTranslation('tasks')
   const members = useMembers(workspaceId).data
   const queryClient = useQueryClient()
   const navigate = useNavigate()
@@ -96,7 +98,7 @@ export function TaskDescriptionEditor({
         void refresh().then(() => setGeneration((current) => current + 1))
         break
       case 'rate-limited':
-        toast.warning('Too many changes at once. Syncing again in a few seconds.', { id: `collab-rate-${task.id}` })
+        toast.warning(t('text.rateLimited'), { id: `collab-rate-${task.id}` })
         break
       case 'notice':
         setNotice(problem === 'too-large' ? 'too-large' : 'protocol')
@@ -132,11 +134,11 @@ export function TaskDescriptionEditor({
       try {
         return await uploadInlineFile(workspaceId, task.id, file)
       } catch (error) {
-        toast.error(storageQuotaDetail(error) ?? `Could not upload “${file.name}”.`)
+        toast.error(storageQuotaDetail(error) ?? t('composer.uploadFailed', { name: file.name }))
         throw error
       }
     },
-    [workspaceId, task.id],
+    [workspaceId, task.id, t],
   )
   const onOpenPage = useCallback((pageId: string) => navigate(`/docs/${pageId}`), [navigate])
   const mentions = {
@@ -167,7 +169,7 @@ export function TaskDescriptionEditor({
             profile="task"
             fileScope={fileScope}
             placeholder="description"
-            ariaLabel="Description"
+            ariaLabel={t('text.description')}
             collab={{ provider: collab.connection.provider, fragment: collab.connection.fragment, user }}
             editable={!readOnly && !lost && status !== 'error'}
             onOpenPage={onOpenPage}
@@ -201,8 +203,8 @@ export function TaskDescriptionEditor({
       ) : null}
       {notice ? (
         <p role="alert" className="mt-2 text-xs text-destructive">
-          {notice === 'too-large' ? 'Description is too long.' : 'The description could not sync.'}{' '}
-          <Button variant="ghost" size="sm" onClick={() => onProblem('reset')}>Reload</Button>
+          {notice === 'too-large' ? t('text.tooLong') : t('text.syncFailed')}{' '}
+          <Button variant="ghost" size="sm" onClick={() => onProblem('reset')}>{t('text.reload')}</Button>
         </p>
       ) : null}
     </div>

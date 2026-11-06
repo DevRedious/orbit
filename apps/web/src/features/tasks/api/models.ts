@@ -1,5 +1,6 @@
 import type { User } from '@/features/workspaces/models'
 import { formatTaskIdentifier } from '@/lib/taskLinks'
+import { i18n } from '@/i18n'
 import type { AttachmentRecord, AuditEvent, CommentRecord, LabelRecord, ProjectRecord, TaskRecord } from '@orbit/api/generated/types.gen'
 
 export type StatusCategory = 'unstarted' | 'started' | 'completed' | 'cancelled' | 'duplicate'
@@ -135,19 +136,32 @@ export interface TaskViewState {
   tasks: Task[]
 }
 
-const RELATION_FALLBACK: Record<string, string> = {
-  'task.marked_duplicate': 'marked as duplicate',
-  'task.unmarked_duplicate': 'unmarked as duplicate',
-  'task.relation_added': 'added relation',
-  'task.relation_removed': 'removed relation',
-}
+// catalog keys, translated when a record is read (never at import)
+const RELATION_FALLBACK = {
+  'task.marked_duplicate': 'activity.markedDuplicate',
+  'task.unmarked_duplicate': 'activity.unmarkedDuplicate',
+  'task.relation_added': 'activity.relationAdded',
+  'task.relation_removed': 'activity.relationRemoved',
+} as const
 
-const ACTIVITY_TEXT: Record<string, string> = {
-  'backup.item_restored': 'restored from a backup',
-}
+const ACTIVITY_TEXT = {
+  'task.created': 'activity.taskCreated',
+  'task.updated': 'activity.taskUpdated',
+  'task.deleted': 'activity.taskDeleted',
+  'task.restored': 'activity.taskRestored',
+  'task.reordered': 'activity.taskReordered',
+  'comment.created': 'activity.commentCreated',
+  'comment.updated': 'activity.commentUpdated',
+  'comment.deleted': 'activity.commentDeleted',
+  'attachment.deleted': 'activity.attachmentDeleted',
+  'backup.item_restored': 'activity.restoredFromBackup',
+} as const
 
+const knownAction = <T extends object>(map: T, action: string): action is Extract<keyof T, string> => Object.hasOwn(map, action)
+
+/** An event this client has no sentence for keeps its action words, e.g. "bulk_updated task". */
 function genericActivityText(action: string): string {
-  return ACTIVITY_TEXT[action] ?? action.split('.').reverse().join(' ')
+  return knownAction(ACTIVITY_TEXT, action) ? i18n.t(`tasks:${ACTIVITY_TEXT[action]}`) : action.split('.').reverse().join(' ')
 }
 
 /**
@@ -159,8 +173,8 @@ function relationActivity(
   metadata: Record<string, unknown>,
   identifierOf: (taskId: string, projectId: string | undefined) => string,
 ): Pick<TaskActivity, 'text' | 'related'> | null {
-  const fallback = RELATION_FALLBACK[action]
-  if (!fallback) return null
+  if (!knownAction(RELATION_FALLBACK, action)) return null
+  const fallback = i18n.t(`tasks:${RELATION_FALLBACK[action]}`)
   const taskId = typeof metadata.related_task_id === 'string' ? metadata.related_task_id : undefined
   if (!taskId) return { text: fallback }
   const projectId = typeof metadata.related_task_project_id === 'string' ? metadata.related_task_project_id : undefined
@@ -171,13 +185,13 @@ function relationActivity(
   const related = { taskId, identifier }
   switch (action) {
     case 'task.marked_duplicate':
-      return { related, text: incoming ? `marked ${identifier} as duplicate` : `marked as duplicate of ${identifier}${title ? ` · ${title}` : ''}` }
+      return { related, text: incoming ? i18n.t('tasks:activity.markedOtherDuplicate', { identifier }) : title ? i18n.t('tasks:activity.markedDuplicateOfTitled', { identifier, title }) : i18n.t('tasks:activity.markedDuplicateOf', { identifier }) }
     case 'task.unmarked_duplicate':
-      return incoming ? { related, text: `unmarked ${identifier} as duplicate` } : { text: fallback }
+      return incoming ? { related, text: i18n.t('tasks:activity.unmarkedOtherDuplicate', { identifier }) } : { text: fallback }
     case 'task.relation_added':
-      return { related, text: blocks ? (incoming ? `added blocker ${identifier}` : `blocks ${identifier}`) : `added related ${identifier}` }
+      return { related, text: i18n.t(blocks ? (incoming ? 'tasks:activity.addedBlocker' : 'tasks:activity.blocks') : 'tasks:activity.addedRelated', { identifier }) }
     default:
-      return { related, text: blocks ? (incoming ? `removed blocker ${identifier}` : `no longer blocks ${identifier}`) : `removed related ${identifier}` }
+      return { related, text: i18n.t(blocks ? (incoming ? 'tasks:activity.removedBlocker' : 'tasks:activity.noLongerBlocks') : 'tasks:activity.removedRelated', { identifier }) }
   }
 }
 
@@ -198,15 +212,15 @@ function subIssueActivity(
   }
   if (action === 'task.parent_changed') {
     const to = link('to')
-    if (to) return { text: `set parent to ${to.identifier}`, related: to }
+    if (to) return { text: i18n.t('tasks:activity.parentSet', { identifier: to.identifier }), related: to }
     const from = link('from')
-    return from ? { text: `removed parent ${from.identifier}`, related: from } : { text: 'changed parent' }
+    return from ? { text: i18n.t('tasks:activity.parentRemoved', { identifier: from.identifier }), related: from } : { text: i18n.t('tasks:activity.parentChanged') }
   }
   if (action === 'task.auto_closed') {
     const statusId = text('to_status_id')
     const source = link('source_task_id')
-    if (metadata.reason === 'parent_closed' && source) return { text: `closed automatically because ${source.identifier} was closed`, related: source, statusId }
-    return { text: 'closed automatically because all sub-issues were done', statusId }
+    if (metadata.reason === 'parent_closed' && source) return { text: i18n.t('tasks:activity.autoClosedByParent', { identifier: source.identifier }), related: source, statusId }
+    return { text: i18n.t('tasks:activity.autoClosedAllDone'), statusId }
   }
   return null
 }
@@ -352,7 +366,7 @@ export function taskFromRecord(
         statusId: sentence?.statusId,
         createdAt: event.occurred_at,
       }
-      const changes = event.action === 'task.updated' ? updateChanges(metadata, (id) => projectFor(id)?.name ?? 'another project') : null
+      const changes = event.action === 'task.updated' ? updateChanges(metadata, (id) => projectFor(id)?.name ?? i18n.t('tasks:activity.anotherProject')) : null
       // one row per changed field; a status change shows the new status glyph
       return changes
         ? changes.map((change) => ({ ...base, id: `${event.id}:${change.field}`, change, statusId: change.field === 'status' ? change.to : undefined }))

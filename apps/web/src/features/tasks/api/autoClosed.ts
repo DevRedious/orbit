@@ -5,6 +5,7 @@ import { queryKeys } from '@/api/queryKeys'
 import { refIdentifier, taskIdentifier } from './models'
 import { findCachedTask } from './optimistic'
 import { keepIdentifiersTogether } from '@/lib/toast'
+import { i18n } from '@/i18n'
 
 /** A task the server closed by automation in the same request (`auto_closed` on PATCH and bulk responses). */
 export type AutoClosedTask = { id: string; status_id: string }
@@ -29,11 +30,14 @@ export function autoClosedMessage({ items, parentIds, identifierOf }: {
   if (items.length === 0) return null
   const parents = items.filter((item) => parentIds.has(item.id))
   const subs = items.length - parents.length
-  const subText = `${subs} sub-issue${subs === 1 ? '' : 's'}`
-  const parentText = parents.length === 1 ? `parent ${identifierOf(parents[0]!.id)}` : `${parents.length} parent tasks`
-  if (parents.length === 0) return `Closed ${subText}`
-  if (subs === 0) return `Closed ${parentText}`
-  return `Closed ${subText} and ${parentText}`
+  if (parents.length === 0) return i18n.t('tasks:autoClosed.subIssues', { count: subs })
+  if (parents.length === 1) {
+    const parent = identifierOf(parents[0]!.id)
+    return subs === 0 ? i18n.t('tasks:autoClosed.parent', { parent }) : i18n.t('tasks:autoClosed.subIssuesAndParent', { count: subs, parent })
+  }
+  return subs === 0
+    ? i18n.t('tasks:autoClosed.parents', { count: parents.length })
+    : i18n.t('tasks:autoClosed.subIssuesAndParents', { count: subs, parents: parents.length })
 }
 
 /**

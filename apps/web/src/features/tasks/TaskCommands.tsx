@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
+import { useTranslation } from 'react-i18next'
 import type { BulkItem, LabelRecord } from '@orbit/api/generated/types.gen'
 import { ColorDot } from '@/components/common/ColorDot'
 import { UserAvatar } from '@/components/common/UserAvatar'
@@ -24,7 +25,14 @@ import { useCommand } from '@/shortcuts/useCommand'
 
 type TaskField = 'status' | 'priority' | 'assignee' | 'labels' | 'dueDate' | 'project'
 
-const FIELD_TITLE: Record<TaskField, string> = { status: 'Change status', priority: 'Change priority', assignee: 'Change assignee', labels: 'Change labels', dueDate: 'Set due date', project: 'Move to project' }
+const FIELD_TITLE = {
+  status: 'status.change',
+  priority: 'priority.change',
+  assignee: 'assignee.change',
+  labels: 'labels.change',
+  dueDate: 'setDueDate',
+  project: 'project.move',
+} as const satisfies Record<TaskField, string>
 
 interface TaskCommandsProps {
   /** The tasks in view, or the open task. */
@@ -39,6 +47,7 @@ interface TaskCommandsProps {
 /** The task commands of the keyboard and the command menu. They act on the target tasks: the selection, the focused
  *  row, the row under the pointer, or the open task. A property command opens one list of options for all of them. */
 export function TaskCommands({ tasks, users, labels, statuses, groupContext, currentUserId }: TaskCommandsProps) {
+  const { t } = useTranslation('tasks')
   const { workspace } = useWorkspace()
   const { getTargetIds, openTaskId, setSelected, pointer } = useTaskTarget()
   const bulkTasks = useBulkTasks(workspace.id)
@@ -60,7 +69,7 @@ export function TaskCommands({ tasks, users, labels, statuses, groupContext, cur
   const open = (field: TaskField) => () => setMenu({ field, ids: targets().map((task) => task.id), focused: focusedTaskId() })
   // one task only: these have no form for several tasks
   const single = () => targets().length === 1
-  const copy = (text: string, done: string) => void navigator.clipboard.writeText(text).then(() => toast(done), () => toast.error('Could not copy to the clipboard.'))
+  const copy = (text: string, done: string) => void navigator.clipboard.writeText(text).then(() => toast(done), () => toast.error(t('copyFailed')))
 
   useCommand('task.setStatus', open('status'), { available })
   useCommand('task.setPriority', open('priority'), { available })
@@ -69,8 +78,8 @@ export function TaskCommands({ tasks, users, labels, statuses, groupContext, cur
   useCommand('task.setDueDate', open('dueDate'), { available })
   useCommand('task.moveToProject', open('project'), { available: () => available() && projects.length > 1 })
   useCommand('task.assignMe', () => mutate(assignUpdates(targets(), currentUserId)), { available })
-  useCommand('task.copyId', () => copy(targets()[0].identifier, 'Copied task ID'), { available: single })
-  useCommand('task.copyLink', () => copy(`${window.location.origin}${taskPath(targets()[0])}`, 'Copied task link'), { available: single })
+  useCommand('task.copyId', () => copy(targets()[0].identifier, t('menu.copiedId')), { available: single })
+  useCommand('task.copyLink', () => copy(`${window.location.origin}${taskPath(targets()[0])}`, t('menu.copiedLink')), { available: single })
   // the open task has its own trash action, which also closes the page
   useCommand('task.trash', openTaskId ? null : async () => {
     if (await trashTasks(targets())) setSelected([])
@@ -87,7 +96,7 @@ export function TaskCommands({ tasks, users, labels, statuses, groupContext, cur
       if (focusedTaskId() !== row) focusTaskRow(row, pointer)
     }, 50)
   }
-  const scope = menuTasks.length === 1 ? menuTasks[0].identifier : `${menuTasks.length} tasks`
+  const scope = menuTasks.length === 1 ? menuTasks[0].identifier : t('taskCount', { count: menuTasks.length })
 
   if (menu.field === 'dueDate') {
     return (
@@ -111,14 +120,14 @@ export function TaskCommands({ tasks, users, labels, statuses, groupContext, cur
   }
 
   return (
-    <CommandDialog open onOpenChange={(next) => { if (!next) close() }} title={FIELD_TITLE[menu.field]} description={scope} className="flex max-h-[60vh] flex-col sm:max-w-md">
+    <CommandDialog open onOpenChange={(next) => { if (!next) close() }} title={t(FIELD_TITLE[menu.field])} description={scope} className="flex max-h-[60vh] flex-col sm:max-w-md">
       <Command className="min-h-0 bg-transparent p-0">
         <div className="px-3 pt-2.5 pb-1">
           <span className="rounded-sm bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">{scope}</span>
         </div>
-        <CommandInput autoFocus placeholder={`${FIELD_TITLE[menu.field]}…`} />
+        <CommandInput autoFocus placeholder={t('commands.placeholder', { title: t(FIELD_TITLE[menu.field]) })} />
         <CommandList className="mx-1.5 mt-1 mb-1.5 max-h-none min-h-0 flex-1 rounded-lg bg-background p-1 ring-1 ring-border">
-          <CommandEmpty className="p-6 text-[13px] text-muted-foreground">No match</CommandEmpty>
+          <CommandEmpty className="p-6 text-[13px] text-muted-foreground">{t('commands.noMatch')}</CommandEmpty>
           {menu.field === 'status' ? statusOptions.map((group) => (
             <CommandItem key={group.key} value={group.label} data-checked={statusKeys.has(group.key)} onSelect={() => choose(statusUpdates(menuTasks, statuses, group.value))}>
               <GroupIcon group={group} context={groupContext} />

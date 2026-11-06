@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { cva } from 'class-variance-authority'
 import { Textarea } from '@/components/ui/textarea'
 import type { Task } from '@/features/tasks/api/models'
@@ -39,14 +40,15 @@ export function TaskTextFields({
 }
 
 function TaskTitleDraft({ task, onUpdate, onTitleTab, readOnly = false }: Parameters<typeof TaskTextFields>[0]) {
+  const { t } = useTranslation('tasks')
   const isUntitled = task.title === 'Untitled'
   const [title, setTitle] = useState(isUntitled ? '' : task.title)
   const [editingTitle, setEditingTitle] = useState(isUntitled && !readOnly)
   if (readOnly) {
-    return <div className={taskTextVariants({ field: 'title', mode: 'read' })} aria-label="Task title"><LinkifiedText text={title} /></div>
+    return <div className={taskTextVariants({ field: 'title', mode: 'read' })} aria-label={t('text.title')}><LinkifiedText text={title} /></div>
   }
   if (!editingTitle) {
-    return <EditablePreview className={taskTextVariants({ field: 'title', mode: 'preview' })} ariaLabel="Task title" onEdit={() => setEditingTitle(true)}><LinkifiedText text={title} /></EditablePreview>
+    return <EditablePreview className={taskTextVariants({ field: 'title', mode: 'preview' })} ariaLabel={t('text.title')} onEdit={() => setEditingTitle(true)}><LinkifiedText text={title} /></EditablePreview>
   }
   return (
     <Textarea
@@ -54,8 +56,8 @@ function TaskTitleDraft({ task, onUpdate, onTitleTab, readOnly = false }: Parame
       rows={1}
       data-keep-font-size=""
       value={title}
-      placeholder="Task title"
-      aria-label="Task title"
+      placeholder={t('text.title')}
+      aria-label={t('text.title')}
       autoFocus
       // the caret starts at the end, as it did in the one-line field
       onFocus={(event) => event.currentTarget.setSelectionRange(title.length, title.length)}

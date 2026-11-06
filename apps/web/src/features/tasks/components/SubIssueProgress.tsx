@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { cn } from 'cn'
 import type { TaskStatusDef } from '@/features/tasks/api/models'
 import { projectStatuses } from '@/features/tasks/taskMeta'
@@ -13,11 +14,12 @@ export function completedStatusColor(statuses: TaskStatusDef[], projectId: strin
 
 /** `◔ 2/5`: closed/total direct sub-issues. The arc eases to its new length (200ms strong ease-out); reduced motion jumps. */
 export function SubIssueProgress({ closed, total, color, className }: { closed: number; total: number; color: string; className?: string }) {
+  const { t } = useTranslation('tasks')
   const ratio = total > 0 ? Math.min(closed, total) / total : 0
   return (
     <span
       role="img"
-      aria-label={`${closed} of ${total} sub-issues closed`}
+      aria-label={t('subIssues.progress', { count: closed, total })}
       className={cn('inline-flex h-[22px] shrink-0 items-center gap-1 rounded-full border border-border px-1.5 text-xs leading-none font-medium text-muted-foreground tabular-nums', className)}
     >
       <svg aria-hidden width="14" height="14" viewBox="0 0 14 14" fill="none" className="-rotate-90">

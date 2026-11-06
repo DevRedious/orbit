@@ -1,4 +1,5 @@
 import type { ProjectBody } from '@orbit/api/generated/types.gen'
+import { i18n } from '@/i18n'
 
 export function projectDraft(name: string): ProjectBody {
   return {
@@ -13,5 +14,5 @@ export function projectSettingsPath(projectId: string | null): string | null {
 }
 
 export function projectSettingsLabel(): string {
-  return 'Project settings'
+  return i18n.t('tasks:projectSettings.title')
 }

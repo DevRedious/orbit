@@ -1,17 +1,10 @@
 import type { TaskRelationRecord } from '@orbit/api/generated/types.gen'
 import type { Task, TaskStatusDef } from '@/features/tasks/api/models'
+import { i18n } from '@/i18n'
 
 /** What the picker chooses a task for. `blocked_by` is stored server-side as "the other task blocks this one". */
 export type RelationKind = 'duplicate' | 'blocks' | 'blocked_by' | 'related'
 export type RelationGroupKey = 'duplicate_of' | 'blocked_by' | 'blocks' | 'related' | 'duplicated_by'
-
-export const RELATION_GROUP_LABEL: Record<RelationGroupKey, string> = {
-  duplicate_of: 'Duplicate of',
-  blocked_by: 'Blocked by',
-  blocks: 'Blocks',
-  related: 'Related',
-  duplicated_by: 'Duplicated by',
-}
 
 const GROUP_ORDER: RelationGroupKey[] = ['duplicate_of', 'blocked_by', 'blocks', 'related', 'duplicated_by']
 
@@ -35,7 +28,7 @@ export function groupRelations(relations: TaskRelationRecord[]): RelationGroup[]
     const own = relations
       .filter((relation) => relationGroupOf(relation) === key)
       .sort((a, b) => a.created_at.localeCompare(b.created_at))
-    return own.length > 0 ? [{ key, label: RELATION_GROUP_LABEL[key], relations: own }] : []
+    return own.length > 0 ? [{ key, label: i18n.t(`tasks:relations.group.${key}`), relations: own }] : []
   })
 }
 
@@ -48,22 +41,21 @@ export function relatedTaskIds(relations: TaskRelationRecord[]): string[] {
 export function pickerTitle(kind: RelationKind, subject: string | number): string {
   switch (kind) {
     case 'duplicate':
-      return typeof subject === 'number' ? `Mark ${subject} tasks as duplicate of…` : `Mark ${subject} as duplicate of…`
+      return typeof subject === 'number'
+        ? i18n.t('tasks:relations.pickerTitle.duplicateMany', { count: subject })
+        : i18n.t('tasks:relations.pickerTitle.duplicate', { subject })
     case 'blocks':
-      return `${subject} blocks…`
+      return i18n.t('tasks:relations.pickerTitle.blocks', { subject })
     case 'blocked_by':
-      return `${subject} is blocked by…`
+      return i18n.t('tasks:relations.pickerTitle.blocked_by', { subject })
     case 'related':
-      return `Relate ${subject} to…`
+      return i18n.t('tasks:relations.pickerTitle.related', { subject })
   }
 }
 
-export const ADD_RELATION_OPTIONS: Array<{ kind: RelationKind; label: string }> = [
-  { kind: 'blocks', label: 'Blocks…' },
-  { kind: 'blocked_by', label: 'Blocked by…' },
-  { kind: 'related', label: 'Related to…' },
-  { kind: 'duplicate', label: 'Mark as duplicate of…' },
-]
+/** The "Add relation" menu, in order. `label` reads the catalog each time, so it follows the language. */
+export const ADD_RELATION_OPTIONS: ReadonlyArray<{ kind: RelationKind; readonly label: string }> = (['blocks', 'blocked_by', 'related', 'duplicate'] as const)
+  .map((kind) => ({ kind, get label() { return i18n.t(`tasks:relations.add.${kind}`) } }))
 
 /** Deduped picker rows: identifier, title or description contain the query; excluded ids and (optionally) duplicates dropped. */
 export function pickerCandidates({ tasks, query, excludeIds, excludeDuplicates, statuses = [], limit = 20 }: {
@@ -93,11 +85,11 @@ export function pickerCandidates({ tasks, query, excludeIds, excludeDuplicates, 
 
 export function duplicateToastMessage(count: number, targetIdentifier: string): string {
   return count === 1
-    ? `Marked as duplicate of ${targetIdentifier}`
-    : `Marked ${count} tasks as duplicate of ${targetIdentifier}`
+    ? i18n.t('tasks:duplicate.marked', { target: targetIdentifier })
+    : i18n.t('tasks:duplicate.markedMany', { count, target: targetIdentifier })
 }
 
 export function duplicateErrorMessage(verb: 'mark' | 'unmark', error: unknown): string {
-  const reason = error instanceof Error && error.message ? ` ${error.message}` : ''
-  return `Couldn't ${verb} as duplicate.${reason}`
+  const message = i18n.t(verb === 'mark' ? 'tasks:duplicate.markFailed' : 'tasks:duplicate.unmarkFailed')
+  return error instanceof Error && error.message ? `${message} ${error.message}` : message
 }

@@ -1,5 +1,6 @@
 import { useCommand } from '@/shortcuts/useCommand'
 import { useEffect, useRef, useState, type ComponentProps, type ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { cn } from 'cn'
 import { useQueryClient } from '@tanstack/react-query'
 import { confirmAction } from '@/components/common/confirmAction'
@@ -66,6 +67,7 @@ interface TaskDetailProps {
 
 /** Full-page task view: main column (title, description, activity, comment composer) + properties column. */
 export function TaskDetail({ task, project, state, onClose, onOpenTask, onOpenProject }: TaskDetailProps) {
+  const { t } = useTranslation('tasks')
   const { workspace } = useWorkspace()
   const updateTask = useUpdateTask(workspace.id)
   const deleteAttachment = useDeleteTaskAttachment(workspace.id, task?.id ?? '')
@@ -87,7 +89,7 @@ export function TaskDetail({ task, project, state, onClose, onOpenTask, onOpenPr
   // the date panel needs to close itself from Clear, so the popover stays controlled
   const [dueDateOpen, setDueDateOpen] = useState(false)
   // each pick saves and the picker stays open; quick picks queue behind the save in flight
-  const saveDueDate = useTaskPickerUpdate(task, 'Due date update failed.')
+  const saveDueDate = useTaskPickerUpdate(task, t('dueDate.updateFailed'))
   const [sourceOpen, setSourceOpen] = useState(false)
   const projects = useProjects(workspace.id).data ?? []
   const relations = useTaskRelations(workspace.id, task?.id).data ?? []
@@ -144,7 +146,7 @@ export function TaskDetail({ task, project, state, onClose, onOpenTask, onOpenPr
     if (!task) return
     // the whole subtree goes to trash with it: count every loaded level (the Sub-issues section loads them)
     const below = descendantCount(task.subIssueCount ?? 0, (id) => queryClient.getQueryData<PageTaskRecord>(subIssuesQuery(workspace.id, id).queryKey)?.items, task.id)
-    if (!await confirmAction({ title: `Move ${task.identifier} to trash?`, description: trashConfirmDescription(below), confirmLabel: 'Move to trash', danger: true })) return
+    if (!await confirmAction({ title: t('trash.moveOneTitle', { identifier: task.identifier }), description: trashConfirmDescription(below), confirmLabel: t('trash.move'), danger: true })) return
     void deleteAndClose({ taskId: task.id, version: task.version })
   }
   useCommand('task.trash', task ? () => void trash() : null)
@@ -155,15 +157,15 @@ export function TaskDetail({ task, project, state, onClose, onOpenTask, onOpenPr
   return (
     <Pane>
       <PaneHeader>
-        <Button variant="ghost" size="icon-sm" className="text-muted-foreground/70 min-[900px]:hidden" onClick={onClose} aria-label="Back to tasks">
+        <Button variant="ghost" size="icon-sm" className="text-muted-foreground/70 min-[900px]:hidden" onClick={onClose} aria-label={t('backToTasks')}>
           <ArrowLeft className="size-4" />
         </Button>
-        <TaskBreadcrumb project={project} ancestors={task?.ancestors ?? []} identifier={task?.identifier ?? 'Task'} onOpen={openTask} onOpenProject={onOpenProject} />
-        {githubSyncPaused ? <Badge variant="secondary">GitHub sync paused</Badge> : null}
+        <TaskBreadcrumb project={project} ancestors={task?.ancestors ?? []} identifier={task?.identifier ?? t('detail.task')} onOpen={openTask} onOpenProject={onOpenProject} />
+        {githubSyncPaused ? <Badge variant="secondary">{t('detail.githubSyncPaused')}</Badge> : null}
         <div className="flex-1" />
-        {task ? <Tip label="Move to trash" side="bottom"><Button variant="destructive" disabled={deleteTask.isPending} onClick={() => void trash()}>Delete</Button></Tip> : null}
-        <Tip label="Close task" side="bottom">
-          <Button variant="ghost" size="icon-sm" className="text-muted-foreground/70 max-[899px]:hidden" onClick={onClose} aria-label="Close task">
+        {task ? <Tip label={t('trash.move')} side="bottom"><Button variant="destructive" disabled={deleteTask.isPending} onClick={() => void trash()}>{t('delete')}</Button></Tip> : null}
+        <Tip label={t('detail.close')} side="bottom">
+          <Button variant="ghost" size="icon-sm" className="text-muted-foreground/70 max-[899px]:hidden" onClick={onClose} aria-label={t('detail.close')}>
             <X className="size-4" />
           </Button>
         </Tip>
@@ -172,8 +174,8 @@ export function TaskDetail({ task, project, state, onClose, onOpenTask, onOpenPr
         <div className="min-h-0 flex-1 overflow-y-auto">
           <EmptyState
             icon={SquareCheck}
-            title="Task not found"
-            description="This task does not exist or was removed."
+            title={t('detail.notFound')}
+            description={t('detail.notFoundDescription')}
           />
         </div>
       ) : (
@@ -210,25 +212,25 @@ export function TaskDetail({ task, project, state, onClose, onOpenTask, onOpenPr
               {(task.subIssueCount ?? 0) === 0 && childIds.length === 0 && !composingSubIssue ? (
                 <Button ref={subIssueAddRef} variant="ghost" className="text-xs text-muted-foreground/70" onClick={() => setComposingSubIssue(true)}>
                   <Hierarchy2 className="size-3.5" aria-hidden="true" />
-                  Add sub-issue
+                  {t('subIssues.add')}
                 </Button>
               ) : null}
             </div>
-            {githubLinks.data?.some((link) => link.source) ? <p className="mt-2 text-xs text-muted-foreground">This task's title and description are read-only while it is linked to GitHub.</p> : null}
-            {githubSyncPaused ? <p className="mt-2 text-xs text-muted-foreground">Add the project label to the GitHub issue or pull request again to resume updates.</p> : null}
-            {updateTask.isError ? <p role="alert" className="text-xs text-destructive">Task update failed. <Button variant="ghost" onClick={() => updateTask.variables && updateTask.mutate(updateTask.variables)}>Retry</Button></p> : null}
-            {deleteAttachment.isError ? <p role="alert" className="text-xs text-destructive">Attachment removal failed. <Button variant="ghost" onClick={() => deleteAttachment.variables && deleteAttachment.mutate(deleteAttachment.variables)}>Retry</Button></p> : null}
-            {deleteTask.isError ? <p role="alert" className="text-xs text-destructive">Task deletion failed. <Button variant="ghost" onClick={() => deleteTask.variables && void deleteAndClose(deleteTask.variables)}>Retry</Button></p> : null}
+            {githubLinks.data?.some((link) => link.source) ? <p className="mt-2 text-xs text-muted-foreground">{t('detail.githubReadOnly')}</p> : null}
+            {githubSyncPaused ? <p className="mt-2 text-xs text-muted-foreground">{t('detail.githubPausedHint')}</p> : null}
+            {updateTask.isError ? <p role="alert" className="text-xs text-destructive">{t('detail.updateFailed')} <Button variant="ghost" onClick={() => updateTask.variables && updateTask.mutate(updateTask.variables)}>{t('retry')}</Button></p> : null}
+            {deleteAttachment.isError ? <p role="alert" className="text-xs text-destructive">{t('detail.attachmentRemoveFailed')} <Button variant="ghost" onClick={() => deleteAttachment.variables && deleteAttachment.mutate(deleteAttachment.variables)}>{t('retry')}</Button></p> : null}
+            {deleteTask.isError ? <p role="alert" className="text-xs text-destructive">{t('detail.deleteFailed')} <Button variant="ghost" onClick={() => deleteTask.variables && void deleteAndClose(deleteTask.variables)}>{t('retry')}</Button></p> : null}
             {addRelation.isError ? <p role="alert" className="text-xs text-destructive">Couldn't add the relation. {addRelation.error.message}</p> : null}
             {removeRelation.isError ? <p role="alert" className="text-xs text-destructive">Couldn't remove the relation. {removeRelation.error.message}</p> : null}
 
-            {githubPullRequests.length > 0 ? <section aria-label="GitHub links" className="mt-6 border-t pt-4">
+            {githubPullRequests.length > 0 ? <section aria-label={t('detail.githubLinks')} className="mt-6 border-t pt-4">
               <h3 className="mb-2 text-xs font-semibold text-muted-foreground">GitHub</h3>
               <div className="grid gap-1">
                 {githubPullRequests.map((link) => <a key={link.url} href={link.url} target="_blank" rel="noopener noreferrer" className="flex min-w-0 items-center gap-2 rounded-md px-2 py-1.5 text-xs text-foreground transition-colors duration-150 ease-out hover:bg-muted">
                   <Link2 className="size-4 shrink-0 text-muted-foreground" />
                   <span className="truncate">{link.title}</span>
-                  <span className="ml-auto shrink-0 text-muted-foreground">{link.state === 'paused' ? 'Paused PR' : link.state === 'merged' ? 'Merged PR' : link.state === 'closed' ? 'Closed PR' : 'Open PR'}</span>
+                  <span className="ml-auto shrink-0 text-muted-foreground">{link.state === 'paused' ? t('detail.pullRequest.paused') : link.state === 'merged' ? t('detail.pullRequest.merged') : link.state === 'closed' ? t('detail.pullRequest.closed') : t('detail.pullRequest.open')}</span>
                 </a>)}
               </div>
             </section> : null}
@@ -260,13 +262,13 @@ export function TaskDetail({ task, project, state, onClose, onOpenTask, onOpenPr
           </div>
 
           <aside className="min-[900px]:col-start-2 min-[900px]:[grid-row:1/span_2] min-[900px]:border-l min-[900px]:px-5 min-[900px]:pt-8 min-[900px]:pb-6 max-[899px]:grid max-[899px]:w-full max-[899px]:grid-cols-2 max-[899px]:gap-x-3 max-[899px]:gap-y-3.5 max-[899px]:border-y max-[899px]:py-3.5">
-            <PropertyGroup title="Properties" className="max-[899px]:col-span-full max-[899px]:flex-row max-[899px]:flex-wrap max-[899px]:items-center max-[899px]:gap-1 max-[899px]:*:data-[slot=property-heading]:w-full">
+            <PropertyGroup title={t('detail.properties')} className="max-[899px]:col-span-full max-[899px]:flex-row max-[899px]:flex-wrap max-[899px]:items-center max-[899px]:gap-1 max-[899px]:*:data-[slot=property-heading]:w-full">
               <DropdownMenu>
                 <DropdownMenuTrigger
                   render={
                     <PropertyButton>
                       <TaskStatusIcon status={status} />
-                      {status?.name ?? 'No status'}
+                      {status?.name ?? t('status.none')}
                     </PropertyButton>
                   }
                 />
@@ -291,7 +293,7 @@ export function TaskDetail({ task, project, state, onClose, onOpenTask, onOpenPr
                   render={
                     <PropertyButton>
                       <PriorityIcon priority={task.priority} />
-                      {task.priority === 'none' ? 'Set priority' : PRIORITY_LABEL[task.priority]}
+                      {task.priority === 'none' ? t('priority.set') : PRIORITY_LABEL[task.priority]}
                     </PropertyButton>
                   }
                 />
@@ -322,7 +324,7 @@ export function TaskDetail({ task, project, state, onClose, onOpenTask, onOpenPr
                       ) : (
                         <>
                           <UserIcon aria-hidden="true" className="text-muted-foreground" />
-                          Assign
+                          {t('detail.assign')}
                         </>
                       )}
                     </PropertyButton>
@@ -330,7 +332,7 @@ export function TaskDetail({ task, project, state, onClose, onOpenTask, onOpenPr
                 />
                 <DropdownMenuContent className="w-auto min-w-45">
                   <DropdownMenuGroup>
-                    <DropdownMenuLabel>Assignees</DropdownMenuLabel>
+                    <DropdownMenuLabel>{t('assignee.title')}</DropdownMenuLabel>
                     {users.map((u) => {
                       const active = task.assigneeIds.includes(u.id)
                       return (
@@ -351,27 +353,27 @@ export function TaskDetail({ task, project, state, onClose, onOpenTask, onOpenPr
               {task.parent ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger render={
-                    <PropertyButton className="max-w-full" aria-label={`Parent: ${refIdentifier(task.parent)} ${task.parent.title}`}>
+                    <PropertyButton className="max-w-full" aria-label={t('detail.parent', { identifier: refIdentifier(task.parent), title: task.parent.title })}>
                       <Hierarchy2 className="size-3.5" aria-hidden="true" />
                       <span className="shrink-0 text-muted-foreground tabular-nums">{refIdentifier(task.parent)}</span>
-                      <span className="truncate">{task.parent.title || 'Untitled'}</span>
+                      <span className="truncate">{task.parent.title || t('untitled')}</span>
                     </PropertyButton>
                   } />
                   <DropdownMenuContent className="w-auto min-w-45">
-                    <DropdownMenuItem onClick={() => openTask(task.parent!.id)}>Open parent</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setParentPicker('set')}>Change parent…</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => void parentActions.setParent([task], null)}>Remove parent</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => openTask(task.parent!.id)}>{t('detail.openParent')}</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setParentPicker('set')}>{t('detail.changeParent')}</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => void parentActions.setParent([task], null)}>{t('menu.removeParent')}</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               ) : (
                 <PropertyButton className="text-muted-foreground" onClick={() => setParentPicker('set')}>
                   <Hierarchy2 className="size-3.5" aria-hidden="true" />
-                  Set parent
+                  {t('bulk.setParent')}
                 </PropertyButton>
               )}
             </PropertyGroup>
 
-            <PropertyGroup title="Labels">
+            <PropertyGroup title={t('labels.title')}>
               <LabelPicker
                 workspaceId={workspace.id}
                 projectId={task.projectId}
@@ -380,13 +382,13 @@ export function TaskDetail({ task, project, state, onClose, onOpenTask, onOpenPr
                 editLink
                 onChange={(labelIds) => updateTask.mutate({ taskId: task.id, body: { expected_version: task.version, label_ids: labelIds } })}
                 trigger={taskLabels.length === 0 ? (
-                  <PropertyButton className="text-muted-foreground" aria-label="Add label">
+                  <PropertyButton className="text-muted-foreground" aria-label={t('labels.add')}>
                     <Tag className="size-3.5" aria-hidden="true" />
-                    Add label
+                    {t('labels.add')}
                   </PropertyButton>
                 ) : (
                   // one control: the pills open the picker, where labels are also removed
-                  <button type="button" aria-label={`Labels: ${taskLabels.map((label) => label.name).join(', ')}`} className="-mx-1 flex max-w-full flex-wrap gap-1 rounded-md p-1 text-left outline-none hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50 aria-expanded:bg-muted/50">
+                  <button type="button" aria-label={t('labels.current', { names: taskLabels.map((label) => label.name).join(', ') })} className="-mx-1 flex max-w-full flex-wrap gap-1 rounded-md p-1 text-left outline-none hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50 aria-expanded:bg-muted/50">
                     {taskLabels.map((label) => <LabelPill key={label.id} label={label} />)}
                     <span aria-hidden="true" className="flex h-5 items-center px-0.5 text-muted-foreground"><Plus className="size-3.5" /></span>
                   </button>
@@ -394,27 +396,27 @@ export function TaskDetail({ task, project, state, onClose, onOpenTask, onOpenPr
               />
             </PropertyGroup>
 
-            <PropertyGroup title="Project">
+            <PropertyGroup title={t('detail.project')}>
               {githubIssueLinked ? (
                 // GitHub sync finds the task through its project's repository, so it cannot move
                 <>
                   {project ? <LabelPill label={project} /> : <span className="text-xs text-muted-foreground/70">—</span>}
-                  <p className="mt-1 text-xs text-muted-foreground">Synced with GitHub, so it stays in this project.</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{t('detail.githubProjectLocked')}</p>
                 </>
               ) : (
                 <DropdownMenu>
                   <DropdownMenuTrigger
                     render={
                       // the pill is the trigger, like "Add label": a ghost button around a badge reads as two controls
-                      <Button variant="outline" size="xs" className="h-5 max-w-full rounded-full font-medium" aria-label={`Project: ${project?.name ?? 'none'}`}>
+                      <Button variant="outline" size="xs" className="h-5 max-w-full rounded-full font-medium" aria-label={project ? t('project.current', { name: project.name }) : t('project.currentNone')}>
                         {project ? <ColorDot color={project.color} /> : null}
-                        <span className="truncate">{project?.name ?? 'Set project'}</span>
+                        <span className="truncate">{project?.name ?? t('detail.setProject')}</span>
                       </Button>
                     }
                   />
                   <DropdownMenuContent className="w-auto min-w-52">
                     <DropdownMenuGroup>
-                      <DropdownMenuLabel>Move to project</DropdownMenuLabel>
+                      <DropdownMenuLabel>{t('project.move')}</DropdownMenuLabel>
                       {projects.map((item) => (
                         <DropdownMenuItem
                           key={item.id}
@@ -433,7 +435,7 @@ export function TaskDetail({ task, project, state, onClose, onOpenTask, onOpenPr
               )}
             </PropertyGroup>
 
-            <PropertyGroup title="Source">
+            <PropertyGroup title={t('detail.source')}>
               {task.sourceUrl ? (
                 <a
                   href={task.sourceUrl}
@@ -446,26 +448,26 @@ export function TaskDetail({ task, project, state, onClose, onOpenTask, onOpenPr
                 </a>
               ) : null}
               <Popover open={sourceOpen} onOpenChange={setSourceOpen}>
-                <PopoverTrigger render={<PropertyButton type="button" className="h-7 text-muted-foreground">{task.sourceUrl ? 'Edit source' : 'Add source'}</PropertyButton>} />
+                <PopoverTrigger render={<PropertyButton type="button" className="h-7 text-muted-foreground">{task.sourceUrl ? t('detail.editSource') : t('detail.addSource')}</PropertyButton>} />
                 <PopoverContent align="start" className="w-72 gap-2 p-3">
                   <form onSubmit={(event) => {
                     event.preventDefault()
                     updateTask.mutate({ taskId: task.id, body: { expected_version: task.version, source_url: new FormData(event.currentTarget).get('source_url')?.toString().trim() || null } })
                     setSourceOpen(false)
                   }} className="flex flex-col gap-2">
-                    <label htmlFor="task-source-url" className="text-xs font-medium">Source URL</label>
+                    <label htmlFor="task-source-url" className="text-xs font-medium">{t('detail.sourceUrl')}</label>
                     <Input id="task-source-url" name="source_url" type="url" placeholder="https://..." defaultValue={task.sourceUrl ?? ''} />
-                    <Button type="submit" size="sm">Save</Button>
+                    <Button type="submit" size="sm">{t('save')}</Button>
                   </form>
                 </PopoverContent>
               </Popover>
             </PropertyGroup>
 
-            <PropertyGroup title="Due date">
+            <PropertyGroup title={t('detail.dueDate')}>
               <Popover open={dueDateOpen} onOpenChange={setDueDateOpen}>
                 <PopoverTrigger
                   render={
-                    <PropertyButton type="button" aria-label="Due date">
+                    <PropertyButton type="button" aria-label={t('detail.dueDate')}>
                       <Calendar className="size-3.5" aria-hidden="true" />
                       <span>{dueDateLabel(task.dueAt, task.dueStartAt)}</span>
                     </PropertyButton>
@@ -492,7 +494,7 @@ export function TaskDetail({ task, project, state, onClose, onOpenTask, onOpenPr
 
             {/* the rich text comment field: blocks, @mentions, inline files (paste / drop / pick) */}
             <div className="mt-4 max-[899px]:mt-3">
-              <TaskCommentComposer workspaceId={workspace.id} taskId={task.id} pending={createComment.isPending} error={createComment.isError ? 'Comment failed.' : undefined} members={users} onSend={(bodyJson) => createComment.mutateAsync({ bodyJson })} />
+              <TaskCommentComposer workspaceId={workspace.id} taskId={task.id} pending={createComment.isPending} error={createComment.isError ? t('comments.commentFailed') : undefined} members={users} onSend={(bodyJson) => createComment.mutateAsync({ bodyJson })} />
             </div>
           </div>
           {picker ? (
@@ -510,7 +512,7 @@ export function TaskDetail({ task, project, state, onClose, onOpenTask, onOpenPr
             <TaskPickerDialog
               open
               onOpenChange={(open) => { if (!open) setParentPicker(null) }}
-              title={parentPicker === 'set' ? parentPickerTitle(task.identifier) : `Add a sub-issue to ${task.identifier}…`}
+              title={parentPicker === 'set' ? parentPickerTitle(task.identifier) : t('subIssues.addExistingTitle', { identifier: task.identifier })}
               statuses={state.statuses}
               // set: never itself or anything below it that is loaded (deeper ones: the server's parent_cycle toast);
               // add: never itself, an ancestor, or a sub-issue it already has

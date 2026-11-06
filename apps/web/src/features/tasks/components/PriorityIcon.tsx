@@ -12,7 +12,7 @@ export function PriorityIcon({ priority, size = 14 }: { priority: TaskPriority; 
   }
   if (priority === 'urgent') {
     return (
-      <svg {...common} aria-label="Urgent">
+      <svg {...common} aria-label={PRIORITY_LABEL.urgent}>
         <rect x="1" y="1" width="12" height="12" rx="3" fill="var(--destructive)" />
         <path d="M7 3.8 V8" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" />
         <circle cx="7" cy="10.4" r="0.9" fill="#fff" />

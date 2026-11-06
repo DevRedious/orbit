@@ -1,15 +1,17 @@
 import type { LabelRecord } from '@orbit/api/generated/types.gen'
 import type { StatusCategory, TaskPriority, TaskStatusDef } from '@/features/tasks/api/models'
+import { i18n } from '@/i18n'
 
 /** Status categories (workflow stages). Every status belongs to one; the glyph shape comes from it. */
 export const CATEGORY_ORDER: StatusCategory[] = ['unstarted', 'started', 'completed', 'cancelled', 'duplicate']
 
-export const CATEGORY_LABEL: Record<StatusCategory, string> = {
-  unstarted: 'Unstarted',
-  started: 'Started',
-  completed: 'Completed',
-  cancelled: 'Cancelled',
-  duplicate: 'Duplicate',
+/** Getters: each read takes the text of the current language (never frozen at import). */
+export const CATEGORY_LABEL: Readonly<Record<StatusCategory, string>> = {
+  get unstarted() { return i18n.t('tasks:category.unstarted') },
+  get started() { return i18n.t('tasks:category.started') },
+  get completed() { return i18n.t('tasks:category.completed') },
+  get cancelled() { return i18n.t('tasks:category.cancelled') },
+  get duplicate() { return i18n.t('tasks:category.duplicate') },
 }
 
 /** Closed work: never overdue, dimmed on the timeline, left out of open totals. */
@@ -104,24 +106,25 @@ export function labelRepresentatives(labels: LabelRecord[]): { labels: LabelReco
   return { labels: [...byKey.values()].sort((a, b) => a.name.localeCompare(b.name)), representativeOf }
 }
 
-export const PRIORITY_LABEL: Record<TaskPriority, string> = {
-  none: 'No priority',
-  low: 'Low',
-  medium: 'Medium',
-  high: 'High',
-  urgent: 'Urgent',
+/** Getters, like `CATEGORY_LABEL`: each read follows the current language. */
+export const PRIORITY_LABEL: Readonly<Record<TaskPriority, string>> = {
+  get none() { return i18n.t('tasks:priority.none') },
+  get low() { return i18n.t('tasks:priority.low') },
+  get medium() { return i18n.t('tasks:priority.medium') },
+  get high() { return i18n.t('tasks:priority.high') },
+  get urgent() { return i18n.t('tasks:priority.urgent') },
 }
 
 export const PRIORITY_ORDER: TaskPriority[] = ['urgent', 'high', 'medium', 'low', 'none']
 
 /** Text of a due-date button: a range, one date with its time, or the prompt to set one. */
 export function dueDateLabel(value: string | null, startValue?: string | null) {
-  if (!value) return 'Set due date'
+  if (!value) return i18n.t('tasks:setDueDate')
   if (startValue) {
-    const format = new Intl.DateTimeFormat(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
-    return `${format.format(new Date(startValue))} – ${format.format(new Date(value))}`
+    const format = new Intl.DateTimeFormat(i18n.language, { year: 'numeric', month: 'short', day: 'numeric' })
+    return i18n.t('tasks:dateRange', { start: format.format(new Date(startValue)), end: format.format(new Date(value)) })
   }
-  return new Date(value).toLocaleString(undefined, {
+  return new Date(value).toLocaleString(i18n.language, {
     year: 'numeric',
     month: 'short',
     day: 'numeric',

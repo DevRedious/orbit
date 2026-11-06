@@ -1,5 +1,6 @@
 import { useRef, useState, type Ref } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { Add as Plus, Xmark as X } from 'reicon-react'
 import { cn } from 'cn'
 import type { PageTaskRecord } from '@orbit/api/generated/types.gen'
@@ -56,6 +57,7 @@ function useChildren(parentId: string, projects: Project[]): Task[] {
 
 /** Main-column section above Relations: progress, the sub-issue tree (same gutter as the list) and the inline composer. */
 export function SubIssuesSection({ parent, composing, onComposingChange, onAddExisting, addButtonRef, ...rest }: SubIssuesSectionProps) {
+  const { t } = useTranslation('tasks')
   const { workspace } = useWorkspace()
   const composerInputRef = useRef<HTMLInputElement>(null)
   const children = useChildren(parent.id, rest.projects)
@@ -66,19 +68,19 @@ export function SubIssuesSection({ parent, composing, onComposingChange, onAddEx
   const closed = children.filter((task) => CLOSED.has(statusOf(task)?.category ?? '')).length
   const context: Context = { ...rest, collapsed, toggle, newIds: new Set(newIds) }
   return (
-    <section aria-label="Sub-issues" className="mt-6 border-t pt-4">
+    <section aria-label={t('subIssues.title')} className="mt-6 border-t pt-4">
       <div className="mb-2 flex min-h-6 items-center gap-2">
-        <h3 className="text-xs font-semibold text-muted-foreground">Sub-issues</h3>
+        <h3 className="text-xs font-semibold text-muted-foreground">{t('subIssues.title')}</h3>
         {children.length > 0 ? <SubIssueProgress closed={closed} total={children.length} color={completedStatusColor(rest.statuses, parent.projectId)} /> : null}
         <div className="flex-1" />
-        <Button variant="ghost" size="xs" className="text-muted-foreground" onClick={onAddExisting}>Add existing</Button>
-        <Tip label="Add sub-issue">
+        <Button variant="ghost" size="xs" className="text-muted-foreground" onClick={onAddExisting}>{t('subIssues.addExisting')}</Button>
+        <Tip label={t('subIssues.add')}>
           <Button
             ref={addButtonRef}
             variant="ghost"
             size="icon-xs"
             className="text-muted-foreground"
-            aria-label="Add sub-issue"
+            aria-label={t('subIssues.add')}
             aria-pressed={composing}
             // already composing: take the user back to the field instead of doing nothing
             onClick={() => (composing ? composerInputRef.current?.focus() : onComposingChange(true))}
@@ -89,7 +91,7 @@ export function SubIssuesSection({ parent, composing, onComposingChange, onAddEx
       </div>
       <div className="-mx-2">
         {children.length > 0 ? (
-          <ul aria-label="Sub-issues" className="m-0 flex list-none flex-col gap-px p-0">
+          <ul aria-label={t('subIssues.title')} className="m-0 flex list-none flex-col gap-px p-0">
             {children.map((task) => <SubIssueNode key={task.id} task={task} depth={0} context={context} />)}
           </ul>
         ) : null}
@@ -121,16 +123,18 @@ function SubIssueNode({ task, depth, context }: { task: Task; depth: number; con
 }
 
 function SubIssueChildren({ parentId, depth, context }: { parentId: string; depth: number; context: Context }) {
+  const { t } = useTranslation('tasks')
   const children = useChildren(parentId, context.projects)
   if (children.length === 0) return null
   return (
-    <ul aria-label="Sub-issues" className="m-0 mt-px flex animate-relation-enter list-none flex-col gap-px p-0 motion-reduce:animate-none">
+    <ul aria-label={t('subIssues.title')} className="m-0 mt-px flex animate-relation-enter list-none flex-col gap-px p-0 motion-reduce:animate-none">
       {children.map((task) => <SubIssueNode key={task.id} task={task} depth={depth} context={context} />)}
     </ul>
   )
 }
 
 function SubIssueRow({ task, depth, context }: { task: Task; depth: number; context: Context }) {
+  const { t } = useTranslation('tasks')
   const { workspace } = useWorkspace()
   const parentActions = useParentActions(workspace.id)
   return (
@@ -155,7 +159,7 @@ function SubIssueRow({ task, depth, context }: { task: Task; depth: number; cont
         onClick={() => context.onOpen(task.id)}
       >
         <span className="shrink-0 text-muted-foreground tabular-nums">{task.identifier}</span>
-        <span className="truncate">{task.title || 'Untitled'}</span>
+        <span className="truncate">{task.title || t('untitled')}</span>
       </Button>
       {/* quiet until the row is hovered: the priority only when set, the avatar only when assigned */}
       <PriorityPicker
@@ -170,11 +174,11 @@ function SubIssueRow({ task, depth, context }: { task: Task; depth: number; cont
         max={3}
         className={cn(task.assigneeIds.length === 0 && 'hover-fine:opacity-0 hover-fine:group-hover/sub:opacity-100 focus-within:opacity-100 has-data-popup-open:opacity-100')}
       />
-      <Tip label="Remove from parent">
+      <Tip label={t('subIssues.removeFromParent')}>
         <Button
           variant="ghost"
           size="icon-xs"
-          aria-label={`Remove ${task.identifier} from parent`}
+          aria-label={t('subIssues.removeTaskFromParent', { identifier: task.identifier })}
           className="shrink-0 text-muted-foreground hover-fine:opacity-0 hover-fine:group-hover/sub:opacity-100 focus-visible:opacity-100"
           onClick={() => void parentActions.setParent([task], null)}
         >
@@ -198,6 +202,7 @@ function SubIssueComposer({ inputRef, parent, siblings, statuses, currentUserId,
   onCreated: (taskId: string) => void
   onClose: () => void
 }) {
+  const { t } = useTranslation('tasks')
   const { workspace } = useWorkspace()
   const queryClient = useQueryClient()
   const createTask = useCreateTask(workspace.id)
@@ -247,8 +252,8 @@ function SubIssueComposer({ inputRef, parent, siblings, statuses, currentUserId,
       <Input
         ref={inputRef}
         autoFocus
-        aria-label="Sub-issue title"
-        placeholder="Sub-issue title"
+        aria-label={t('subIssues.newTitle')}
+        placeholder={t('subIssues.newTitle')}
         value={title}
         onChange={(event) => changeTitle(event.target.value)}
         onKeyDown={(event) => {
@@ -261,7 +266,7 @@ function SubIssueComposer({ inputRef, parent, siblings, statuses, currentUserId,
         // borderless: the form row carries the fill and the focus ring
         className="h-8 min-w-0 flex-1 rounded-none border-0 bg-transparent px-0 text-[13px] focus-visible:ring-0 md:text-[13px] dark:bg-transparent"
       />
-      {createTask.isError ? <span role="alert" className="shrink-0 text-xs text-destructive">Couldn’t create the sub-issue.</span> : null}
+      {createTask.isError ? <span role="alert" className="shrink-0 text-xs text-destructive">{t('subIssues.createFailed')}</span> : null}
     </form>
   )
 }

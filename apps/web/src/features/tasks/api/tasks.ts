@@ -1,4 +1,5 @@
 import { confirmAction } from '@/components/common/confirmAction'
+import { i18n } from '@/i18n'
 import { keepPreviousData, queryOptions, useMutation, useInfiniteQuery, useQueries, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { apiClient } from '@/api/client'
 import type { createApiClient } from '@/api/client'
@@ -318,7 +319,7 @@ export function useTaskTrash(workspaceId: string) {
 }
 
 async function promptForConflict(error: Error, refresh: () => void) {
-  if (isTaskVersionConflict(error) && await confirmAction({ title: 'Refresh task?', description: 'This task changed on the server. Refresh it now?', confirmLabel: 'Refresh' })) refresh()
+  if (isTaskVersionConflict(error) && await confirmAction({ title: i18n.t('tasks:conflict.title'), description: i18n.t('tasks:conflict.description'), confirmLabel: i18n.t('tasks:conflict.confirm') })) refresh()
 }
 
 /** Cache patch for an optimistic update. `duplicate_of_id` is not a task field; the server response reconciles it. */

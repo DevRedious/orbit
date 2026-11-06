@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import type { StatusCategory, TaskStatusDef } from '@/features/tasks/api/models'
 
 /**
@@ -11,6 +12,7 @@ export function TaskStatusIcon({
   status: Pick<TaskStatusDef, 'category' | 'color'> | undefined
   size?: number
 }) {
+  const { t } = useTranslation('tasks')
   const common = {
     width: size,
     height: size,
@@ -20,7 +22,7 @@ export function TaskStatusIcon({
   }
   if (!status) {
     return (
-      <svg {...common} aria-label="No status">
+      <svg {...common} aria-label={t('status.none')}>
         <circle cx="7" cy="7" r="5.5" stroke="var(--muted-foreground)" strokeWidth="1.5" strokeDasharray="2 2" />
       </svg>
     )
@@ -30,34 +32,34 @@ export function TaskStatusIcon({
   switch (category) {
     case 'unstarted':
       return (
-        <svg {...common} aria-label="Unstarted">
+        <svg {...common} aria-label={t('category.unstarted')}>
           <circle cx="7" cy="7" r="5.5" stroke={color} strokeWidth="1.5" />
         </svg>
       )
     case 'started':
       return (
-        <svg {...common} aria-label="Started">
+        <svg {...common} aria-label={t('category.started')}>
           <circle cx="7" cy="7" r="5.5" stroke={color} strokeWidth="1.5" />
           <path d="M7 3.5 A3.5 3.5 0 0 1 7 10.5 Z" fill={color} />
         </svg>
       )
     case 'completed':
       return (
-        <svg {...common} aria-label="Completed">
+        <svg {...common} aria-label={t('category.completed')}>
           <circle cx="7" cy="7" r="6" fill={color} />
           <path d="M4.4 7.2 L6.2 9 L9.6 5.4" stroke="var(--card)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       )
     case 'cancelled':
       return (
-        <svg {...common} aria-label="Cancelled">
+        <svg {...common} aria-label={t('category.cancelled')}>
           <circle cx="7" cy="7" r="6" fill={color} />
           <path d="M4.8 4.8 L9.2 9.2 M9.2 4.8 L4.8 9.2" stroke="var(--card)" strokeWidth="1.5" strokeLinecap="round" />
         </svg>
       )
     case 'duplicate':
       return (
-        <svg {...common} aria-label="Duplicate">
+        <svg {...common} aria-label={t('category.duplicate')}>
           <circle cx="7" cy="7" r="6" fill={color} />
           <path d="M4.5 5.6 H9.5 M4.5 8.4 H9.5" stroke="var(--card)" strokeWidth="1.5" strokeLinecap="round" />
         </svg>

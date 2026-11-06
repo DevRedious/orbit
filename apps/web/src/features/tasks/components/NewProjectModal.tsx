@@ -1,4 +1,5 @@
 import { useId, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { DialogFooter, DialogClose } from '@/components/ui/dialog'
@@ -10,6 +11,7 @@ import { projectDraft } from '@/features/tasks/api/projectDraft'
 import { useCreateProject } from '@/features/tasks/api/projects'
 
 export function NewProjectModal({ onClose, onCreated }: { onClose: () => void; onCreated: (project: Project) => void }) {
+  const { t } = useTranslation('tasks')
   const { workspace } = useWorkspace()
   const createProject = useCreateProject(workspace.id)
   const [name, setName] = useState('')
@@ -27,17 +29,17 @@ export function NewProjectModal({ onClose, onCreated }: { onClose: () => void; o
   }
 
   return (
-    <Modal title="New project" onClose={onClose} className="sm:max-w-md">
+    <Modal title={t('newProject')} onClose={onClose} className="sm:max-w-md">
       <form className="grid gap-4" onSubmit={(event) => void submit(event)}>
         <Field>
-          <FieldLabel htmlFor={inputId}>Project name <span className="font-semibold text-primary">*</span></FieldLabel>
+          <FieldLabel htmlFor={inputId}>{t('newProjectModal.name')} <span className="font-semibold text-primary">*</span></FieldLabel>
           <Input id={inputId} autoFocus required value={name} disabled={createProject.isPending} onChange={(event) => setName(event.target.value)} />
         </Field>
-        {createProject.isError ? <p role="alert" className="text-xs text-destructive">Project creation failed. Try again.</p> : null}
+        {createProject.isError ? <p role="alert" className="text-xs text-destructive">{t('newProjectModal.failed')}</p> : null}
         <DialogFooter>
-          <DialogClose render={<Button type="button" variant="outline" disabled={createProject.isPending} />}>Cancel</DialogClose>
+          <DialogClose render={<Button type="button" variant="outline" disabled={createProject.isPending} />}>{t('cancel')}</DialogClose>
           <Button type="submit" disabled={!name.trim() || createProject.isPending}>
-            {createProject.isPending ? 'Creating…' : 'Create project'}
+            {createProject.isPending ? t('creating') : t('newProjectModal.create')}
           </Button>
         </DialogFooter>
       </form>

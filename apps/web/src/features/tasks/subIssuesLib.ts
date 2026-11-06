@@ -3,27 +3,33 @@ import { ApiProblem } from '@orbit/api/problem'
 import type { Task, TaskStatusDef } from '@/features/tasks/api/models'
 import { BulkTaskLimitError, MAX_BULK_TASK_UPDATES } from '@/features/tasks/api/tasks'
 import { defaultStatusOf } from '@/features/tasks/taskMeta'
+import { i18n } from '@/i18n'
 
 /** Success toast after a parent change; `parentIdentifier` null = the tasks were detached. */
 export function parentToastMessage(identifiers: string[], parentIdentifier: string | null): string {
-  const one = identifiers.length === 1
-  if (parentIdentifier === null) return one ? `${identifiers[0]} is no longer a sub-issue` : `${identifiers.length} tasks are no longer sub-issues`
-  return one ? `${identifiers[0]} is now a sub-issue of ${parentIdentifier}` : `${identifiers.length} tasks are now sub-issues of ${parentIdentifier}`
+  const [identifier] = identifiers
+  const count = identifiers.length
+  if (parentIdentifier === null) {
+    return count === 1 ? i18n.t('tasks:parent.detached', { identifier }) : i18n.t('tasks:parent.detachedMany', { count })
+  }
+  return count === 1
+    ? i18n.t('tasks:parent.set', { identifier, parent: parentIdentifier })
+    : i18n.t('tasks:parent.setMany', { count, parent: parentIdentifier })
 }
 
 /** Error toast for a failed parent change: the server's `parent_cycle` / `parent_invalid` refusals explain themselves. */
 export function parentErrorMessage(error: unknown): string {
   if (error instanceof ApiProblem) {
-    if (error.code === 'parent_cycle') return 'A task can’t be a sub-issue of itself or of its own sub-issues.'
-    if (error.code === 'parent_invalid') return 'That parent task isn’t available anymore.'
+    if (error.code === 'parent_cycle') return i18n.t('tasks:parent.cycle')
+    if (error.code === 'parent_invalid') return i18n.t('tasks:parent.invalid')
   }
-  if (error instanceof BulkTaskLimitError) return `Select ${MAX_BULK_TASK_UPDATES} or fewer tasks and try again.`
-  return 'Couldn’t change the parent.'
+  if (error instanceof BulkTaskLimitError) return i18n.t('tasks:parent.limit', { max: MAX_BULK_TASK_UPDATES })
+  return i18n.t('tasks:parent.failed')
 }
 
 /** `subject` is an identifier, or a count for the bulk picker. */
 export function parentPickerTitle(subject: string | number): string {
-  return typeof subject === 'number' ? `Set parent of ${subject} tasks…` : `Set parent of ${subject}…`
+  return typeof subject === 'number' ? i18n.t('tasks:parent.pickerTitleMany', { count: subject }) : i18n.t('tasks:parent.pickerTitle', { subject })
 }
 
 const sameSet = (a: readonly string[], b: readonly string[]) => a.length === b.length && a.every((id) => b.includes(id))
@@ -71,13 +77,11 @@ export function descendantCount(direct: number, childrenOf: (id: string) => read
 
 /** The trash confirmation's body: says how many sub-issues go to trash too (spec §5 trashes the whole subtree). */
 export function trashConfirmDescription({ total, exact }: { total: number; exact: boolean }): string {
-  if (total === 0) return 'You can restore this task from trash later.'
-  const count = `${total} sub-issue${total === 1 ? '' : 's'}`
-  const moved = exact ? `This also moves ${count} to trash.` : `This also moves its ${count} and everything nested under them to trash.`
-  return `${moved} You can restore them from trash later.`
+  if (total === 0) return i18n.t('tasks:trash.confirmAlone')
+  return i18n.t(exact ? 'tasks:trash.confirmSubIssues' : 'tasks:trash.confirmNested', { count: total })
 }
 
 /** "+2 sub-issues" beside a trashed parent; null when it went to trash alone. */
 export function trashedSubIssuesLabel(count: number): string | null {
-  return count > 0 ? `+${count} sub-issue${count === 1 ? '' : 's'}` : null
+  return count > 0 ? i18n.t('tasks:trash.withSubIssues', { count }) : null
 }

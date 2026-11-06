@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Tip } from '@/components/common/Tip'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
@@ -8,14 +9,15 @@ import { useTaskPickerUpdate } from '@/features/tasks/useTaskPickerUpdate'
 
 /** Priority glyph that opens a menu to change the priority in place (list rows, board cards, timeline and sub-issue rows). */
 export function PriorityPicker({ task, align = 'left', className }: { task: Pick<Task, 'id' | 'version' | 'priority'>; align?: 'left' | 'right'; className?: string }) {
-  const save = useTaskPickerUpdate(task, 'Priority update failed.')
+  const { t } = useTranslation('tasks')
+  const save = useTaskPickerUpdate(task, t('priority.updateFailed'))
   return (
     <div className={className} onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
       <DropdownMenu modal={false}>
-        <Tip label="Change priority">
+        <Tip label={t('priority.change')}>
           <DropdownMenuTrigger
             render={
-              <Button variant="ghost" size="icon-sm" className="size-[22px] text-muted-foreground/70" aria-label={`Priority: ${PRIORITY_LABEL[task.priority]}`}>
+              <Button variant="ghost" size="icon-sm" className="size-[22px] text-muted-foreground/70" aria-label={t('priority.current', { priority: PRIORITY_LABEL[task.priority] })}>
                 <PriorityIcon priority={task.priority} />
               </Button>
             }

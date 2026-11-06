@@ -1,4 +1,5 @@
 import { toast } from 'sonner'
+import { Trans, useTranslation } from 'react-i18next'
 import { Suspense, useMemo, useRef, useState } from 'react'
 import { Copy, Edit as Pencil, Trash as Trash2 } from 'reicon-react'
 import { cn } from 'cn'
@@ -32,6 +33,7 @@ interface CommentItemProps {
 
 /** A task comment with author, timestamp, body, and a compact hover action row. */
 export function CommentItem({ state, taskId, comment, reply }: CommentItemProps) {
+  const { t } = useTranslation('tasks')
   const { workspace } = useWorkspace()
   const updateComment = useUpdateTaskComment(workspace.id, taskId)
   const deleteComment = useDeleteTaskComment(workspace.id, taskId)
@@ -44,7 +46,7 @@ export function CommentItem({ state, taskId, comment, reply }: CommentItemProps)
   const [saved, setSaved] = useState<{ version: number; content: unknown[] } | null>(null)
   const shown = saved?.version === comment.version ? saved.content : null
   const author = comment.authorServiceAccountName ? undefined : state.users.find((u) => u.id === comment.authorId)
-  const name = comment.authorServiceAccountName || author?.name || 'Someone'
+  const name = comment.authorServiceAccountName || author?.name || t('someone')
   const mentions = useMemo(() => ({ members: state.users, candidates: state.users.filter((user) => !user.suspended), privatePage: false }), [state.users])
   const fileScope = useMemo(() => ({ workspaceId: workspace.id, taskId }), [workspace.id, taskId])
   const [bodyRef, nearScreen] = useNearViewport<HTMLDivElement>()
@@ -64,7 +66,7 @@ export function CommentItem({ state, taskId, comment, reply }: CommentItemProps)
       return
     }
     if (action === 'close' && changed && isEmptyRichText(content)) {
-      toast.info('The comment keeps its text. To remove it with its files, delete the comment.')
+      toast.info(t('comments.keepsText'))
     }
     if (action === 'save') {
       setSaved({ version: comment.version, content })
@@ -93,22 +95,22 @@ export function CommentItem({ state, taskId, comment, reply }: CommentItemProps)
             <span className="shrink-0 text-[11px] leading-none text-muted-foreground/70" aria-hidden="true">·</span>
             <time className="shrink-0 text-[11px] font-medium text-muted-foreground" dateTime={comment.createdAt}>
               {agoLabel(comment.createdAt)}
-              {comment.editedAt ? ' (edited)' : ''}
+              {comment.editedAt ? ` ${t('comments.edited')}` : ''}
             </time>
             {!editing ? (
               <div className="ml-auto flex shrink-0 items-center gap-px opacity-0 transition-opacity group-hover/comment:opacity-100 group-focus-within/comment:opacity-100 max-[899px]:opacity-100">
-                <Tip label="Copy text">
-                  <Button variant="ghost" size="icon-sm" className="size-6 text-muted-foreground/70" aria-label="Copy text" onClick={() => void navigator.clipboard.writeText(comment.body).then(() => toast('Text copied'), () => toast.error('Could not copy to the clipboard.'))}>
+                <Tip label={t('comments.copy')}>
+                  <Button variant="ghost" size="icon-sm" className="size-6 text-muted-foreground/70" aria-label={t('comments.copy')} onClick={() => void navigator.clipboard.writeText(comment.body).then(() => toast(t('comments.copied')), () => toast.error(t('copyFailed')))}>
                     <Copy className="size-3.5" />
                   </Button>
                 </Tip>
                 {comment.canEdit ? (
-                  <Tip label="Edit comment">
+                  <Tip label={t('comments.edit')}>
                     <Button
                       variant="ghost"
                       size="icon-sm"
                       className="size-6 text-muted-foreground/70"
-                      aria-label="Edit comment"
+                      aria-label={t('comments.edit')}
                       onClick={startEdit}
                     >
                       <Pencil className="size-3.5" />
@@ -116,8 +118,8 @@ export function CommentItem({ state, taskId, comment, reply }: CommentItemProps)
                   </Tip>
                 ) : null}
                 {comment.canDelete ? (
-                  <Tip label="Delete comment">
-                    <Button variant="ghost" size="icon-sm" className="size-6 text-muted-foreground/70 hover:bg-destructive/10 hover:text-destructive" aria-label="Delete comment" onClick={() => setConfirmDelete(true)}>
+                  <Tip label={t('comments.delete')}>
+                    <Button variant="ghost" size="icon-sm" className="size-6 text-muted-foreground/70 hover:bg-destructive/10 hover:text-destructive" aria-label={t('comments.delete')} onClick={() => setConfirmDelete(true)}>
                       <Trash2 className="size-3.5" />
                     </Button>
                   </Tip>
@@ -146,7 +148,7 @@ export function CommentItem({ state, taskId, comment, reply }: CommentItemProps)
                   uploadFile={editing ? (file) => uploadInlineFile(workspace.id, taskId, file) : undefined}
                   mentions={mentions}
                   sideMenu={false}
-                  ariaLabel={editing ? 'Edit comment' : 'Comment'}
+                  ariaLabel={editing ? t('comments.edit') : t('composer.comment')}
                 />
               </Suspense>
               )}
@@ -154,9 +156,9 @@ export function CommentItem({ state, taskId, comment, reply }: CommentItemProps)
           ) : null}
           {editing ? (
             <div className="mt-1 flex items-center gap-2 text-[11px] text-muted-foreground">
-              <span><Kbd className="h-4 text-[11px]">escape</Kbd> to <b className="text-foreground">cancel</b> · <Kbd className="h-4 text-[11px]">⌘ enter</Kbd> to <b className="text-foreground">save</b></span>
-              <Button variant="ghost" size="xs" className="ml-auto" onClick={() => setEditing(false)}>Cancel</Button>
-              <Button size="xs" onClick={commitEdit}>Save</Button>
+              <span><Trans t={t} i18nKey="comments.editHint" components={{ kbd: <Kbd className="h-4 text-[11px]" />, b: <b className="text-foreground" /> }} /></span>
+              <Button variant="ghost" size="xs" className="ml-auto" onClick={() => setEditing(false)}>{t('cancel')}</Button>
+              <Button size="xs" onClick={commitEdit}>{t('save')}</Button>
             </div>
           ) : null}
           {comment.attachments && comment.attachments.length > 0 ? (
@@ -167,8 +169,8 @@ export function CommentItem({ state, taskId, comment, reply }: CommentItemProps)
 
       {confirmDelete ? (
         <ConfirmDeleteModal
-          title="Delete comment?"
-          description={reply ? 'This will remove the reply.' : 'This will remove the comment and its replies.'}
+          title={t('comments.deleteTitle')}
+          description={reply ? t('comments.deleteReply') : t('comments.deleteThread')}
           onClose={() => setConfirmDelete(false)}
           onConfirm={() => {
             deleteComment.mutate({ commentId: comment.id, version: comment.version })
@@ -176,8 +178,8 @@ export function CommentItem({ state, taskId, comment, reply }: CommentItemProps)
           }}
         />
       ) : null}
-      {updateComment.isError ? <p role="alert" className="text-xs text-destructive">Comment update failed. <Button variant="ghost" onClick={() => updateComment.variables && updateComment.mutate(updateComment.variables)}>Retry</Button></p> : null}
-      {deleteComment.isError ? <p role="alert" className="text-xs text-destructive">Comment deletion failed. <Button variant="ghost" onClick={() => deleteComment.variables && deleteComment.mutate(deleteComment.variables)}>Retry</Button></p> : null}
+      {updateComment.isError ? <p role="alert" className="text-xs text-destructive">{t('comments.updateFailed')} <Button variant="ghost" onClick={() => updateComment.variables && updateComment.mutate(updateComment.variables)}>{t('retry')}</Button></p> : null}
+      {deleteComment.isError ? <p role="alert" className="text-xs text-destructive">{t('comments.deleteFailed')} <Button variant="ghost" onClick={() => deleteComment.variables && deleteComment.mutate(deleteComment.variables)}>{t('retry')}</Button></p> : null}
     </>
   )
 }

@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Gps } from 'reicon-react'
 import { cn } from 'cn'
 import { Button } from '@/components/ui/button'
@@ -27,6 +28,7 @@ export function TimelineRowLabel({ row, statuses, users, properties, groupContex
   /** Scrolls the timeline to this task's bar; only for tasks with dates. */
   onReveal?: () => void
 }) {
+  const { t } = useTranslation('tasks')
   if (row.kind === 'group') {
     return (
       <LabelCell fill="group">
@@ -44,7 +46,7 @@ export function TimelineRowLabel({ row, statuses, users, properties, groupContex
       <LabelCell fill="row">
         <CellButton className="pr-3 pl-6 text-xs text-muted-foreground hover:text-foreground" aria-expanded={row.open} onClick={() => onToggle(row.key, !row.open)}>
           <DisclosureChevron open={row.open} />
-          No dates ({row.count})
+          {t('timeline.noDates', { count: row.count })}
         </CellButton>
       </LabelCell>
     )
@@ -59,7 +61,7 @@ export function TimelineRowLabel({ row, statuses, users, properties, groupContex
       <CellButton className="pr-3 text-foreground" onClick={() => onOpen(row.task.id)}>
         {has('status') ? <span className="hidden max-[899px]:contents"><TaskStatusIcon status={statuses.find((status) => status.id === row.task.statusId)} /></span> : null}
         {has('id') ? <span className="shrink-0 text-xs text-muted-foreground tabular-nums">{row.task.identifier}</span> : null}
-        <span className="min-w-0 flex-1 truncate">{row.task.title || 'Untitled'}</span>
+        <span className="min-w-0 flex-1 truncate">{row.task.title || t('untitled')}</span>
       </CellButton>
       {has('assignee') ? (
         <AssigneePicker
@@ -71,12 +73,12 @@ export function TimelineRowLabel({ row, statuses, users, properties, groupContex
       ) : null}
       {onReveal ? (
         // overlays the row end on hover, so it never costs the title any width
-        <Tip label="Show on timeline">
+        <Tip label={t('timeline.revealHint')}>
           <Button
             type="button"
             variant="ghost"
             size="icon-xs"
-            aria-label={`Show ${row.task.identifier} on the timeline`}
+            aria-label={t('timeline.reveal', { identifier: row.task.identifier })}
             // the row-hover fill plus a soft left fade, so the title it covers fades out under it
             className={cn('absolute right-2', has('assignee') && 'right-10', 'bg-[color-mix(in_oklch,var(--foreground)_3%,var(--background))] text-muted-foreground opacity-0 shadow-[-12px_0_8px_-2px_color-mix(in_oklch,var(--foreground)_3%,var(--background))] group-hover/row:opacity-100 focus-visible:opacity-100')}
             onClick={onReveal}

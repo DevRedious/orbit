@@ -1,5 +1,6 @@
 import { useRef, useState, type ReactNode } from 'react'
 import { toast } from 'sonner'
+import { useTranslation } from 'react-i18next'
 import { ArrowUpRightSquare, Calendar, Clipboard, Copy, Flag, Folder, Hierarchy2, LinkBroken, RecordCircle, Tag, Trash, User as UserIcon, UserAdd } from 'reicon-react'
 import type { BulkItem, LabelRecord } from '@orbit/api/generated/types.gen'
 import { ColorDot } from '@/components/common/ColorDot'
@@ -55,11 +56,10 @@ interface TaskContextMenuProps {
   children: ReactNode
 }
 
-const DAY_FORMAT = new Intl.DateTimeFormat(undefined, { weekday: 'short', day: 'numeric', month: 'short' })
-
 /** The right-click menu of task rows and board cards. It acts on the selection when the row is part of it, else on
  *  the row alone. One menu for the whole list: a menu for each row would mount hundreds of them. */
 export function TaskContextMenu({ tasks, users, labels, statuses, groupContext, currentUserId, children }: TaskContextMenuProps) {
+  const { t, i18n } = useTranslation('tasks')
   const { workspace } = useWorkspace()
   const { selectedIds, setSelected } = useTaskTarget()
   const bulkTasks = useBulkTasks(workspace.id)
@@ -102,9 +102,10 @@ export function TaskContextMenu({ tasks, users, labels, statuses, groupContext, 
     if (updates.length > 0) bulkTasks.mutate(updates)
   }
   const setDue = (start: string | null, end: string | null) => mutate(dueUpdates(targets, start, end))
-  const copy = (text: string, done: string) => void navigator.clipboard.writeText(text).then(() => toast(done), () => toast.error('Could not copy to the clipboard.'))
+  const copy = (text: string, done: string) => void navigator.clipboard.writeText(text).then(() => toast(done), () => toast.error(t('copyFailed')))
   const statusOptions = groupTasks([], 'status', { ...groupContext, showEmpty: true }).filter((group) => !group.value?.startsWith('duplicate:'))
   const closeDialog = () => setDialog(null)
+  const dayFormat = new Intl.DateTimeFormat(i18n.language, { weekday: 'short', day: 'numeric', month: 'short' })
 
   return (
     <ContextMenu onOpenChange={onOpenChange}>
@@ -127,13 +128,13 @@ export function TaskContextMenu({ tasks, users, labels, statuses, groupContext, 
         <ContextMenuContent className="min-w-56">
           {targets.length > 1 ? (
             <ContextMenuGroup>
-              <ContextMenuLabel>{targets.length} tasks</ContextMenuLabel>
+              <ContextMenuLabel>{t('taskCount', { count: targets.length })}</ContextMenuLabel>
             </ContextMenuGroup>
           ) : null}
           <ContextMenuSub>
             <ContextMenuSubTrigger>
               <RecordCircle aria-hidden />
-              <span className="flex-1">Status</span>
+              <span className="flex-1">{t('menu.status')}</span>
               <ContextMenuShortcut><Shortcut id="task.setStatus" /></ContextMenuShortcut>
             </ContextMenuSubTrigger>
             <ContextMenuSubContent className="min-w-45">
@@ -151,7 +152,7 @@ export function TaskContextMenu({ tasks, users, labels, statuses, groupContext, 
           <ContextMenuSub>
             <ContextMenuSubTrigger>
               <Flag aria-hidden />
-              <span className="flex-1">Priority</span>
+              <span className="flex-1">{t('menu.priority')}</span>
               <ContextMenuShortcut><Shortcut id="task.setPriority" /></ContextMenuShortcut>
             </ContextMenuSubTrigger>
             <ContextMenuSubContent className="min-w-45">
@@ -167,7 +168,7 @@ export function TaskContextMenu({ tasks, users, labels, statuses, groupContext, 
           <ContextMenuSub>
             <ContextMenuSubTrigger>
               <UserAdd aria-hidden />
-              <span className="flex-1">Assignee</span>
+              <span className="flex-1">{t('menu.assignee')}</span>
               <ContextMenuShortcut><Shortcut id="task.setAssignee" /></ContextMenuShortcut>
             </ContextMenuSubTrigger>
             <ContextMenuSubContent className="min-w-45">
@@ -182,26 +183,26 @@ export function TaskContextMenu({ tasks, users, labels, statuses, groupContext, 
           <ContextMenuSub>
             <ContextMenuSubTrigger>
               <Calendar aria-hidden />
-              <span className="flex-1">Due date</span>
+              <span className="flex-1">{t('menu.dueDate')}</span>
               <ContextMenuShortcut><Shortcut id="task.setDueDate" /></ContextMenuShortcut>
             </ContextMenuSubTrigger>
             <ContextMenuSubContent className="min-w-52">
               {dueDatePresets(new Date()).map((preset) => (
                 <ContextMenuItem key={preset.label} onClick={() => setDue(null, preset.date.toISOString())}>
                   {preset.label}
-                  <ContextMenuShortcut className="tracking-normal">{DAY_FORMAT.format(preset.date)}</ContextMenuShortcut>
+                  <ContextMenuShortcut className="tracking-normal">{dayFormat.format(preset.date)}</ContextMenuShortcut>
                 </ContextMenuItem>
               ))}
               <ContextMenuSeparator />
-              <ContextMenuItem onClick={() => setDialog('dueDate')}>Custom…</ContextMenuItem>
-              {targets.some((task) => task.dueAt) ? <ContextMenuItem onClick={() => setDue(null, null)}>Remove due date</ContextMenuItem> : null}
+              <ContextMenuItem onClick={() => setDialog('dueDate')}>{t('menu.customDue')}</ContextMenuItem>
+              {targets.some((task) => task.dueAt) ? <ContextMenuItem onClick={() => setDue(null, null)}>{t('menu.removeDue')}</ContextMenuItem> : null}
             </ContextMenuSubContent>
           </ContextMenuSub>
           {labelOptions.length > 0 ? (
             <ContextMenuSub>
               <ContextMenuSubTrigger>
                 <Tag aria-hidden />
-                <span className="flex-1">Labels</span>
+                <span className="flex-1">{t('menu.labels')}</span>
                 <ContextMenuShortcut><Shortcut id="task.setLabels" /></ContextMenuShortcut>
               </ContextMenuSubTrigger>
               <ContextMenuSubContent className="min-w-45">
@@ -217,7 +218,7 @@ export function TaskContextMenu({ tasks, users, labels, statuses, groupContext, 
             <ContextMenuSub>
               <ContextMenuSubTrigger>
                 <Folder aria-hidden />
-                <span className="flex-1">Move to project</span>
+                <span className="flex-1">{t('project.move')}</span>
                 <ContextMenuShortcut><Shortcut id="task.moveToProject" /></ContextMenuShortcut>
               </ContextMenuSubTrigger>
               <ContextMenuSubContent className="min-w-52">
@@ -235,23 +236,23 @@ export function TaskContextMenu({ tasks, users, labels, statuses, groupContext, 
           {targets.some((task) => !task.assigneeIds.includes(currentUserId)) ? (
             <ContextMenuItem onClick={() => mutate(assignUpdates(targets, currentUserId))}>
               <UserIcon aria-hidden />
-              Assign to me
+              {t('menu.assignToMe')}
               <ContextMenuShortcut><Shortcut id="task.assignMe" /></ContextMenuShortcut>
             </ContextMenuItem>
           ) : null}
           <ContextMenuItem onClick={() => setDialog('parent')}>
             <Hierarchy2 aria-hidden />
-            Set parent…
+            {t('menu.setParent')}
           </ContextMenuItem>
           {targets.some((task) => task.parentTaskId) ? (
             <ContextMenuItem onClick={() => void parentActions.setParent(targets, null)}>
               <LinkBroken aria-hidden />
-              Remove parent
+              {t('menu.removeParent')}
             </ContextMenuItem>
           ) : null}
           <ContextMenuItem onClick={() => setDialog('duplicate')}>
             <Copy aria-hidden />
-            Mark as duplicate…
+            {t('menu.markDuplicate')}
           </ContextMenuItem>
           <ContextMenuSeparator />
           {/* one task only: these have no form for several tasks */}
@@ -260,23 +261,23 @@ export function TaskContextMenu({ tasks, users, labels, statuses, groupContext, 
               <ContextMenuSub>
                 <ContextMenuSubTrigger>
                   <Clipboard aria-hidden />
-                  <span className="flex-1">Copy</span>
+                  <span className="flex-1">{t('menu.copy')}</span>
                 </ContextMenuSubTrigger>
                 <ContextMenuSubContent className="min-w-45">
-                  <ContextMenuItem onClick={() => copy(first.identifier, 'Copied task ID')}>
-                    ID
+                  <ContextMenuItem onClick={() => copy(first.identifier, t('menu.copiedId'))}>
+                    {t('menu.copyId')}
                     <ContextMenuShortcut><Shortcut id="task.copyId" /></ContextMenuShortcut>
                   </ContextMenuItem>
-                  <ContextMenuItem onClick={() => copy(`${window.location.origin}${taskPath(first)}`, 'Copied task link')}>
-                    Link
+                  <ContextMenuItem onClick={() => copy(`${window.location.origin}${taskPath(first)}`, t('menu.copiedLink'))}>
+                    {t('menu.copyLink')}
                     <ContextMenuShortcut><Shortcut id="task.copyLink" /></ContextMenuShortcut>
                   </ContextMenuItem>
-                  <ContextMenuItem onClick={() => copy(first.title, 'Copied task title')}>Title</ContextMenuItem>
+                  <ContextMenuItem onClick={() => copy(first.title, t('menu.copiedTitle'))}>{t('menu.copyTitle')}</ContextMenuItem>
                 </ContextMenuSubContent>
               </ContextMenuSub>
               <ContextMenuItem onClick={() => window.open(taskPath(first), '_blank', 'noopener')}>
                 <ArrowUpRightSquare aria-hidden />
-                Open in new tab
+                {t('menu.openInNewTab')}
               </ContextMenuItem>
               <ContextMenuSeparator />
             </>
@@ -287,7 +288,7 @@ export function TaskContextMenu({ tasks, users, labels, statuses, groupContext, 
             }}
           >
             <Trash aria-hidden />
-            Move to trash
+            {t('trash.move')}
             <ContextMenuShortcut><Shortcut id="task.trash" /></ContextMenuShortcut>
           </ContextMenuItem>
         </ContextMenuContent>

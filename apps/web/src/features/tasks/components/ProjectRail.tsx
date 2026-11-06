@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { Add as Plus, Setting2 as Settings, TaskSquare as SquareCheck } from 'reicon-react'
 import { useState, type ComponentProps } from 'react'
@@ -16,18 +17,19 @@ interface ProjectRailProps {
 
 /** Second sidebar for Tasks: "All projects" + one row per project (color square, name, settings gear). */
 export function ProjectRail({ projects, projectId, onSelect }: ProjectRailProps) {
+  const { t } = useTranslation('tasks')
   const navigate = useNavigate()
   const [showNewProject, setShowNewProject] = useState(false)
   return (
     <section className="flex h-full min-h-0 w-60 shrink-0 flex-col bg-background">
       {/* the rail keeps its bottom border on phones */}
       <PaneHeader className="max-[899px]:border-b">
-        <PaneTitle>Projects</PaneTitle>
+        <PaneTitle>{t('projectRail.title')}</PaneTitle>
       </PaneHeader>
       <div className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto p-2">
         <RailItem active={projectId === null} onClick={() => onSelect(null)}>
           <SquareCheck className="size-4.5 opacity-90" />
-          <span className="min-w-0 flex-1 truncate">All projects</span>
+          <span className="min-w-0 flex-1 truncate">{t('allProjects')}</span>
         </RailItem>
         {projects.map((project) => (
           <div key={project.id} className="relative flex items-center">
@@ -35,13 +37,13 @@ export function ProjectRail({ projects, projectId, onSelect }: ProjectRailProps)
               <span className="mx-[5px] size-2 shrink-0 rounded-[2px]" style={{ background: project.color }} />
               <span className="min-w-0 flex-1 truncate">{project.name}</span>
             </RailItem>
-            <Tip label="Project settings">
+            <Tip label={t('projectSettings.title')}>
               <Button
                 type="button"
                 variant="ghost"
                 size="icon-xs"
                 className="absolute right-1.5 text-muted-foreground"
-                aria-label={`${project.name} settings`}
+                aria-label={t('projectSettings.titleFor', { name: project.name })}
                 onClick={() => navigate(`/tasks/projects/${project.id}/settings`)}
               >
                 <Settings className="size-3.5" />
@@ -51,7 +53,7 @@ export function ProjectRail({ projects, projectId, onSelect }: ProjectRailProps)
         ))}
         <RailItem onClick={() => setShowNewProject(true)}>
           <Plus className="size-4.5 opacity-90" />
-          <span className="min-w-0 flex-1 truncate">New project</span>
+          <span className="min-w-0 flex-1 truncate">{t('newProject')}</span>
         </RailItem>
       </div>
       {showNewProject ? <NewProjectModal onClose={() => setShowNewProject(false)} onCreated={(project) => { onSelect(project.id); setShowNewProject(false) }} /> : null}

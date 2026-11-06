@@ -1,4 +1,5 @@
 import { useTaskTarget, useVirtualTaskRows } from '@/shortcuts/taskTarget'
+import { useTranslation } from 'react-i18next'
 import { useCommand } from '@/shortcuts/useCommand'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useScrollMemory } from '@/lib/useScrollMemory'
@@ -76,6 +77,7 @@ type Block = { key: string; first: number; last: number; zone: Zone; drop: boole
  * Only the lines near the view are in the DOM (TanStack Virtual); the list has its own scroll.
  */
 export function TaskList({ tasks, users, labels, statuses, projects, display, groupContext, collapseScope, onOpen, onAdd }: TaskListProps) {
+  const { t } = useTranslation('tasks')
   const { workspace } = useWorkspace()
   const [collapsed, toggle] = useCollapsedGroups(`orbit:task_list_collapsed:${workspace.id}:${collapseScope}`)
   // shared with the keyboard: X selects the focused row and task commands act on the selection
@@ -202,7 +204,7 @@ export function TaskList({ tasks, users, labels, statuses, projects, display, gr
   const toggleSelect = (taskId: string) =>
     setSelected((prev) => (prev.includes(taskId) ? prev.filter((id) => id !== taskId) : [...prev, taskId]))
 
-  const selectedTasks = tasks.filter((t) => selected.includes(t.id))
+  const selectedTasks = tasks.filter((task) => selected.includes(task.id))
 
   // with "Show empty groups" the empty group headers stay, so a task can still be added to a group
   if (tasks.length === 0 && sections.every((section) => section.group.field === 'none')) {
@@ -211,8 +213,8 @@ export function TaskList({ tasks, users, labels, statuses, projects, display, gr
       <div className="flex h-full flex-col p-2 *:flex-1">
         <EmptyState
           icon={SquareCheck}
-          title="No tasks found"
-          description="No tasks match the current filters. Try clearing a filter or create a new task."
+          title={t('list.empty')}
+          description={t('list.emptyDescription')}
         />
       </div>
     )
@@ -295,7 +297,7 @@ export function TaskList({ tasks, users, labels, statuses, projects, display, gr
           size="icon-xs"
           className="size-5 text-muted-foreground"
           aria-expanded={!isCollapsed}
-          aria-label={`${isCollapsed ? 'Expand' : 'Collapse'} ${group.label}`}
+          aria-label={t(isCollapsed ? 'list.expand' : 'list.collapse', { group: group.label })}
           onClick={() => toggle(zone)}
         >
           <DisclosureChevron open={!isCollapsed} />
@@ -305,14 +307,14 @@ export function TaskList({ tasks, users, labels, statuses, projects, display, gr
         <span className="font-normal text-muted-foreground/70 tabular-nums">{rowCount(group.tasks)}</span>
         <div className="flex-1" />
         {canAdd ? (
-          <Tip label="New task">
+          <Tip label={t('newTask')}>
             <Button
               type="button"
               variant="ghost"
               size="icon-xs"
               // revealed on hover only where hover is real (fine pointer); touch always shows it
               className="text-muted-foreground hover-fine:opacity-0 hover-fine:group-hover/hdr:opacity-100 focus-visible:opacity-100"
-              aria-label={`New task in ${group.label}`}
+              aria-label={t('list.newTaskIn', { group: group.label })}
               onClick={() => onAdd(values)}
             >
               <Plus />
@@ -447,6 +449,7 @@ function BulkBar({
   /** Shown only while a selected task has a parent. */
   onRemoveParent: () => void
 }) {
+  const { t } = useTranslation('tasks')
   const { workspace } = useWorkspace()
   const bulkTasks = useBulkTasks(workspace.id)
   const bulkSlow = useSlowPending(bulkTasks.isPending)
@@ -486,16 +489,16 @@ function BulkBar({
       <div
         className="pointer-events-auto flex max-w-full items-center gap-0.5 overflow-x-auto rounded-xl border bg-popover p-1 text-popover-foreground shadow-[0_12px_32px_-8px_rgb(0_0_0/0.35),0_2px_6px_-2px_rgb(0_0_0/0.18)] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] animate-in fade-in-0 slide-in-from-bottom-2 zoom-in-97 max-[899px]:w-full [scrollbar-width:none] dark:ring-1 dark:ring-white/5"
         role="toolbar"
-        aria-label="Selected tasks"
+        aria-label={t('bulk.toolbar')}
       >
         <div className="flex h-8 shrink-0 items-center rounded-lg bg-primary/12 pl-3 text-primary dark:bg-primary/25 dark:text-primary-foreground">
-          <span className="text-xs font-semibold whitespace-nowrap tabular-nums">{tasks.length} selected</span>
-          <Tip label="Clear selection (Esc)">
+          <span className="text-xs font-semibold whitespace-nowrap tabular-nums">{t('bulk.selected', { count: tasks.length })}</span>
+          <Tip label={t('bulk.clearHint')}>
             <Button
               variant="ghost"
               size="icon-xs"
               className="mx-1 text-current opacity-70 hover:bg-primary/15 hover:text-current hover:opacity-100 dark:hover:bg-white/10"
-              aria-label="Clear selection"
+              aria-label={t('bulk.clear')}
               onClick={onClear}
             >
               <X />
@@ -504,7 +507,7 @@ function BulkBar({
         </div>
         <div className="mx-1 h-4 w-px shrink-0 bg-border" aria-hidden />
         <DropdownMenu>
-          <DropdownMenuTrigger render={<BulkAction icon={<RecordCircle aria-hidden />} label="Status" />} />
+          <DropdownMenuTrigger render={<BulkAction icon={<RecordCircle aria-hidden />} label={t('menu.status')} />} />
           <DropdownMenuContent side="top" className="w-auto min-w-45">
             {statusOptions.map((group) => (
               <DropdownMenuItem key={group.key} onClick={() => bulkStatus(group.value)}>
@@ -515,7 +518,7 @@ function BulkBar({
           </DropdownMenuContent>
         </DropdownMenu>
         <DropdownMenu>
-          <DropdownMenuTrigger render={<BulkAction icon={<Flag aria-hidden />} label="Priority" />} />
+          <DropdownMenuTrigger render={<BulkAction icon={<Flag aria-hidden />} label={t('menu.priority')} />} />
           <DropdownMenuContent side="top" className="w-auto min-w-45">
             {PRIORITY_ORDER.map((priority) => (
               <DropdownMenuItem key={priority} onClick={() => bulkPriority(priority)}>
@@ -526,10 +529,10 @@ function BulkBar({
           </DropdownMenuContent>
         </DropdownMenu>
         <DropdownMenu>
-          <DropdownMenuTrigger render={<BulkAction icon={<UserAdd aria-hidden />} label="Assignee" />} />
+          <DropdownMenuTrigger render={<BulkAction icon={<UserAdd aria-hidden />} label={t('menu.assignee')} />} />
           <DropdownMenuContent side="top" align="end" className="w-auto min-w-45">
             {users.map((u) => {
-              const everyone = tasks.every((t) => t.assigneeIds.includes(u.id))
+              const everyone = tasks.every((task) => task.assigneeIds.includes(u.id))
               return (
                 <DropdownMenuCheckboxItem key={u.id} checked={everyone} closeOnClick onCheckedChange={() => bulkAssign(u.id)}>
                   <UserAvatar user={u} size={16} />
@@ -541,7 +544,7 @@ function BulkBar({
         </DropdownMenu>
         {/* label toggles keep the menu open (closeOnClick defaults to false on checkbox items) so several can be flipped in a row */}
         <DropdownMenu>
-          <DropdownMenuTrigger render={<BulkAction icon={<Tag aria-hidden />} label="Labels" />} />
+          <DropdownMenuTrigger render={<BulkAction icon={<Tag aria-hidden />} label={t('menu.labels')} />} />
           <DropdownMenuContent side="top" align="end" className="w-auto min-w-45">
             {labelChoices(tasks, labels).map((label) => (
               <DropdownMenuCheckboxItem key={label.id} checked={everyTaskHasLabel(tasks, labels, label)} onCheckedChange={() => bulkLabel(label)}>
@@ -551,7 +554,7 @@ function BulkBar({
           </DropdownMenuContent>
         </DropdownMenu>
         <Popover open={dueOpen} onOpenChange={toggleDue}>
-          <PopoverTrigger render={<BulkAction icon={<Calendar aria-hidden />} label="Due date" />} />
+          <PopoverTrigger render={<BulkAction icon={<Calendar aria-hidden />} label={t('menu.dueDate')} />} />
           <PopoverContent side="top" align="end" className="w-auto gap-0 p-0">
             <DatePicker
               startValue={sameDue ? first.dueStartAt ?? null : null}
@@ -562,21 +565,21 @@ function BulkBar({
             />
           </PopoverContent>
         </Popover>
-        <BulkAction icon={<Copy aria-hidden />} label="Duplicate" aria-label="Mark as duplicate…" title="Mark as duplicate…" onClick={onMarkDuplicate} />
-        <BulkAction icon={<Hierarchy2 aria-hidden />} label="Set parent" aria-label="Set parent…" title="Set parent…" onClick={onSetParent} />
+        <BulkAction icon={<Copy aria-hidden />} label={t('bulk.duplicate')} aria-label={t('menu.markDuplicate')} title={t('menu.markDuplicate')} onClick={onMarkDuplicate} />
+        <BulkAction icon={<Hierarchy2 aria-hidden />} label={t('bulk.setParent')} aria-label={t('menu.setParent')} title={t('menu.setParent')} onClick={onSetParent} />
         {tasks.some((task) => task.parentTaskId) ? (
-          <BulkAction icon={<LinkBroken aria-hidden />} label="Remove parent" aria-label="Remove parent" title="Remove parent" onClick={onRemoveParent} />
+          <BulkAction icon={<LinkBroken aria-hidden />} label={t('menu.removeParent')} aria-label={t('menu.removeParent')} title={t('menu.removeParent')} onClick={onRemoveParent} />
         ) : null}
         {bulkSlow ? (
           <span role="status" className="flex shrink-0 items-center gap-1.5 px-2 text-xs whitespace-nowrap text-muted-foreground">
             <Loader aria-hidden className="size-3.5 animate-spin" />
-            Updating…
+            {t('bulk.updating')}
           </span>
         ) : null}
         {bulkTasks.isError ? (
           <span role="alert" className="flex min-w-0 items-center gap-1.5 rounded-lg bg-destructive/10 py-1 pr-1 pl-2 text-xs text-destructive">
             <Danger aria-hidden className="size-3.5 shrink-0" />
-            {limitError ? `This update includes ${limitError.count} tasks. Select ${MAX_BULK_TASK_UPDATES} or fewer and try again.` : <>Bulk update failed. <Button variant="destructive" size="xs" onClick={bulkTasks.retry}>Retry</Button></>}
+            {limitError ? t('bulk.limit', { count: limitError.count, max: MAX_BULK_TASK_UPDATES }) : <>{t('bulk.failed')} <Button variant="destructive" size="xs" onClick={bulkTasks.retry}>{t('retry')}</Button></>}
           </span>
         ) : null}
       </div>

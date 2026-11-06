@@ -1,5 +1,6 @@
 import { Hierarchy, Xmark as X } from 'reicon-react'
 import { cn } from 'cn'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import type { TaskRelationRecord } from '@orbit/api/generated/types.gen'
@@ -22,22 +23,23 @@ export function DuplicateBanner({ duplicateOf, projects, status, animate, pendin
   onOpen: (taskId: string) => void
   onUnmark: () => void
 }) {
+  const { t } = useTranslation('tasks')
   const identifier = taskIdentifier(duplicateOf.id, projectOf(projects, duplicateOf.projectId), duplicateOf.number)
   return (
     <div
       role="note"
-      aria-label={`Duplicate of ${identifier}`}
+      aria-label={t('relations.duplicateOf', { identifier })}
       className={cn('mb-5 flex min-h-10 min-w-0 items-center gap-2 border-b pb-2 text-[13px] text-muted-foreground', animate && 'animate-relation-enter')}
     >
       <TaskStatusIcon status={status ?? DUPLICATE_FALLBACK} />
-      <span className="shrink-0">Duplicate of</span>
+      <span className="shrink-0">{t('relations.group.duplicate_of')}</span>
       <Button type="button" variant="link" className="h-auto min-w-0 shrink p-0 text-[13px] font-normal text-foreground" onClick={() => onOpen(duplicateOf.id)}>
         <span className="shrink-0 text-muted-foreground tabular-nums">{identifier}</span>
-        <span className="truncate font-medium">{duplicateOf.title || 'Untitled'}</span>
+        <span className="truncate font-medium">{duplicateOf.title || t('untitled')}</span>
       </Button>
       <div className="flex-1" />
       <Button variant="ghost" size="xs" className="shrink-0 text-muted-foreground" disabled={pending} onClick={onUnmark}>
-        Unmark
+        {t('relations.unmark')}
       </Button>
     </div>
   )
@@ -56,13 +58,14 @@ export function TaskRelationsSection({ relations, statuses, projects, newRelatio
   onOpen: (taskId: string) => void
   onRemove: (relationId: string) => void
 }) {
+  const { t } = useTranslation('tasks')
   const groups = groupRelations(relations)
   if (groups.length === 0) return null
   const count = groups.reduce((total, group) => total + group.relations.length, 0)
   return (
-    <section aria-label="Relations" className="mt-6 border-t pt-4">
+    <section aria-label={t('relations.title')} className="mt-6 border-t pt-4">
       <h3 className="mb-2 flex items-baseline gap-1.5 text-xs font-semibold text-muted-foreground">
-        Relations
+        {t('relations.title')}
         <span className="font-normal text-muted-foreground/60 tabular-nums">{count}</span>
       </h3>
       {/* one grid for every row (kind · status · id · title · remove): subgrid rows share its columns, so every title
@@ -91,12 +94,12 @@ export function TaskRelationsSection({ relations, statuses, projects, newRelatio
                     onClick={() => onOpen(relation.task.id)}
                   >
                     <span className="pr-2.5 pl-2 whitespace-nowrap text-muted-foreground tabular-nums">{identifier}</span>
-                    <span className="truncate pr-2 text-foreground">{relation.task.title || 'Untitled'}</span>
+                    <span className="truncate pr-2 text-foreground">{relation.task.title || t('untitled')}</span>
                   </button>
                   <Button
                     variant="ghost"
                     size="icon-xs"
-                    aria-label={`Remove relation to ${identifier}`}
+                    aria-label={t('relations.remove', { identifier })}
                     disabled={removingId === relation.id}
                     className="mr-1 shrink-0 text-muted-foreground hover-fine:opacity-0 hover-fine:group-hover/relation:opacity-100 focus-visible:opacity-100"
                     onClick={() => onRemove(relation.id)}
@@ -120,13 +123,14 @@ export function AddRelationMenu({ open, onOpenChange, onChoose, options = ADD_RE
   onChoose: (kind: RelationKind) => void
   options?: typeof ADD_RELATION_OPTIONS
 }) {
+  const { t } = useTranslation('tasks')
   return (
     <DropdownMenu modal={false} open={open} onOpenChange={onOpenChange}>
       <DropdownMenuTrigger
         render={
           <Button type="button" variant="ghost" className="text-xs text-muted-foreground/70">
             <Hierarchy className="size-3.5" aria-hidden="true" />
-            Add relation
+            {t('relations.add.menu')}
           </Button>
         }
       />

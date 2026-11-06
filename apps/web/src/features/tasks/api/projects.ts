@@ -1,4 +1,5 @@
 import { confirmAction } from '@/components/common/confirmAction'
+import { i18n } from '@/i18n'
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@/api/client'
 import { fetchAllPages } from '@/api/pagination'
@@ -163,7 +164,7 @@ export function useRestoreProject(workspaceId: string) {
       return required(data, 'Restore project response was empty.')
     },
     onError: async (error) => {
-      if (isTaskVersionConflict(error) && await confirmAction({ title: 'Refresh trash?', description: 'This project now conflicts with an active project key. Refresh trash?', confirmLabel: 'Refresh trash' })) {
+      if (isTaskVersionConflict(error) && await confirmAction({ title: i18n.t('tasks:trash.conflictTitle'), description: i18n.t('tasks:trash.conflictDescription'), confirmLabel: i18n.t('tasks:trash.conflictConfirm') })) {
         void queryClient.invalidateQueries({ queryKey: queryKeys.projectTrash(workspaceId) })
       }
     },

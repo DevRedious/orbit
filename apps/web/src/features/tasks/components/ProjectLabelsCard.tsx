@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { LabelRecord } from '@orbit/api/generated/types.gen'
 import { confirmAction } from '@/components/common/confirmAction'
 import { SettingsCard } from '@/components/common/SettingsCard'
@@ -11,6 +12,7 @@ import { LABEL_COLORS, LabelColorPicker, LabelPill } from '@/features/tasks/comp
 import { projectLabels } from '@/features/tasks/taskMeta'
 
 function LabelForm({ initial, submitLabel, pending, onSubmit, onCancel }: { initial?: LabelRecord; submitLabel: string; pending: boolean; onSubmit: (name: string, color: string) => Promise<void>; onCancel?: () => void }) {
+  const { t } = useTranslation('tasks')
   const [name, setName] = useState(initial?.name ?? '')
   const [color, setColor] = useState(initial?.color ?? LABEL_COLORS[0]!)
   const submit = async (event: FormEvent) => {
@@ -26,12 +28,12 @@ function LabelForm({ initial, submitLabel, pending, onSubmit, onCancel }: { init
   }
   return (
     <form className="flex w-full flex-wrap items-center gap-3" onSubmit={(event) => void submit(event)}>
-      <Input className="w-full max-w-[260px]" aria-label="Label name" placeholder="Label name" maxLength={100} value={name} onChange={(event) => setName(event.target.value)} autoFocus={Boolean(initial)} />
+      <Input className="w-full max-w-[260px]" aria-label={t('labels.name')} placeholder={t('labels.name')} maxLength={100} value={name} onChange={(event) => setName(event.target.value)} autoFocus={Boolean(initial)} />
       {/* A color outside the palette (e.g. the GitHub label) shows no selected swatch and is kept unless another is picked. */}
       <LabelColorPicker value={color} onChange={setColor} />
       <div className="flex gap-2">
         <Button type="submit" disabled={!name.trim() || pending}>{submitLabel}</Button>
-        {onCancel ? <Button type="button" variant="ghost" onClick={onCancel}>Cancel</Button> : null}
+        {onCancel ? <Button type="button" variant="ghost" onClick={onCancel}>{t('cancel')}</Button> : null}
       </div>
     </form>
   )
@@ -39,6 +41,7 @@ function LabelForm({ initial, submitLabel, pending, onSubmit, onCancel }: { init
 
 /** The project's labels: create, rename, recolor and delete. Other projects keep their own. */
 export function ProjectLabelsCard({ projectId }: { projectId: string }) {
+  const { t } = useTranslation('tasks')
   const { workspace } = useWorkspace()
   const labels = useLabels(workspace.id)
   const createLabel = useCreateLabel(workspace.id)
@@ -48,31 +51,31 @@ export function ProjectLabelsCard({ projectId }: { projectId: string }) {
   const sorted = projectLabels(labels.data ?? [], projectId).sort((a, b) => a.name.localeCompare(b.name))
 
   const remove = async (label: LabelRecord) => {
-    if (!await confirmAction({ title: `Delete ${label.name}?`, description: 'The label is removed from all tasks of this project. You cannot undo this.', confirmLabel: 'Delete', danger: true })) return
+    if (!await confirmAction({ title: t('labels.deleteTitle', { name: label.name }), description: t('labels.deleteDescription'), confirmLabel: t('delete'), danger: true })) return
     deleteLabel.mutate(label)
   }
 
   return (
-    <SettingsCard title="Labels" description="Labels for the tasks of this project. Each project has its own." flush>
+    <SettingsCard title={t('labels.title')} description={t('labels.settingsDescription')} flush>
       <div className="flex flex-col divide-y">
         <SettingsRow>
-          <LabelForm submitLabel="Create label" pending={createLabel.isPending} onSubmit={async (name, color) => { await createLabel.mutateAsync({ projectId, name, color }) }} />
+          <LabelForm submitLabel={t('labels.create')} pending={createLabel.isPending} onSubmit={async (name, color) => { await createLabel.mutateAsync({ projectId, name, color }) }} />
         </SettingsRow>
-        {createLabel.isError ? <SettingsRow className="text-xs text-destructive" role="alert">The label could not be created.</SettingsRow> : null}
-        {labels.isPending ? <SettingsRow>Loading labels…</SettingsRow> : null}
-        {labels.isError ? <SettingsRow role="alert">Labels could not be loaded.</SettingsRow> : null}
-        {labels.isSuccess && sorted.length === 0 ? <SettingsRow>No labels yet.</SettingsRow> : null}
+        {createLabel.isError ? <SettingsRow className="text-xs text-destructive" role="alert">{t('labels.createFailed')}</SettingsRow> : null}
+        {labels.isPending ? <SettingsRow>{t('labels.loading')}</SettingsRow> : null}
+        {labels.isError ? <SettingsRow role="alert">{t('labels.loadFailed')}</SettingsRow> : null}
+        {labels.isSuccess && sorted.length === 0 ? <SettingsRow>{t('labels.empty')}</SettingsRow> : null}
         {sorted.map((label) => editingId === label.id
           ? <SettingsRow key={label.id}>
-              <LabelForm initial={label} submitLabel="Save" pending={updateLabel.isPending} onCancel={() => setEditingId(undefined)} onSubmit={async (name, color) => { await updateLabel.mutateAsync({ label, name, color }); setEditingId(undefined) }} />
+              <LabelForm initial={label} submitLabel={t('save')} pending={updateLabel.isPending} onCancel={() => setEditingId(undefined)} onSubmit={async (name, color) => { await updateLabel.mutateAsync({ label, name, color }); setEditingId(undefined) }} />
             </SettingsRow>
           : <SettingsRow key={label.id}>
               <div className="min-w-0 flex-1"><LabelPill label={label} /></div>
-              <Button variant="ghost" type="button" aria-label={`Edit ${label.name}`} onClick={() => { updateLabel.reset(); setEditingId(label.id) }}>Edit</Button>
-              <Button variant="ghost" type="button" aria-label={`Delete ${label.name}`} disabled={deleteLabel.isPending} onClick={() => void remove(label)}>Delete</Button>
+              <Button variant="ghost" type="button" aria-label={t('labels.edit', { name: label.name })} onClick={() => { updateLabel.reset(); setEditingId(label.id) }}>{t('edit')}</Button>
+              <Button variant="ghost" type="button" aria-label={t('labels.delete', { name: label.name })} disabled={deleteLabel.isPending} onClick={() => void remove(label)}>{t('delete')}</Button>
             </SettingsRow>)}
-        {updateLabel.isError ? <SettingsRow className="text-xs text-destructive" role="alert">The label could not be saved. It may have been changed by someone else; try again.</SettingsRow> : null}
-        {deleteLabel.isError ? <SettingsRow className="text-xs text-destructive" role="alert">The label could not be deleted.</SettingsRow> : null}
+        {updateLabel.isError ? <SettingsRow className="text-xs text-destructive" role="alert">{t('labels.saveFailed')}</SettingsRow> : null}
+        {deleteLabel.isError ? <SettingsRow className="text-xs text-destructive" role="alert">{t('labels.deleteFailed')}</SettingsRow> : null}
       </div>
     </SettingsCard>
   )

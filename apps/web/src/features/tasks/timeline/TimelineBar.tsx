@@ -1,5 +1,6 @@
 import { taskRowTarget } from '@/shortcuts/taskTarget'
 import type { CSSProperties, KeyboardEvent, PointerEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { cn } from 'cn'
 import { UserAvatar } from '@/components/common/UserAvatar'
 import type { Task, TaskStatusDef } from '@/features/tasks/api/models'
@@ -49,6 +50,7 @@ export interface TimelineBarProps {
 
 /** A task on the timeline: a bar for a date range, a diamond for a due date only, plus an overdue tail. */
 export function TimelineBar({ task, span, range, pxPerDay, color, status, assignee, properties, overdueDays, dragging, onPointerDown, onClick, onKeyDown }: TimelineBarProps) {
+  const { t } = useTranslation('tasks')
   const closed = isClosedCategory(status?.category)
   const left = xOf(range, span.start, pxPerDay)
   const width = (dayIndex(range, span.end) - dayIndex(range, span.start) + 1) * pxPerDay
@@ -57,7 +59,7 @@ export function TimelineBar({ task, span, range, pxPerDay, color, status, assign
   const label = (
     <>
       {properties.includes('status') ? <TaskStatusIcon status={status} size={13} /> : null}
-      <span className="truncate">{task.title || 'Untitled'}</span>
+      <span className="truncate">{task.title || t('untitled')}</span>
       {task.blocked ? <BlockedIndicator /> : null}
     </>
   )
@@ -67,7 +69,7 @@ export function TimelineBar({ task, span, range, pxPerDay, color, status, assign
     'data-dragging': dragging || undefined,
     role: 'button',
     tabIndex: 0,
-    'aria-label': `${task.identifier} ${task.title || 'Untitled'}, ${spanLabel(span)}`,
+    'aria-label': t('timeline.bar', { identifier: task.identifier, title: task.title || t('untitled'), span: spanLabel(span) }),
     onClick,
     onKeyDown,
   }

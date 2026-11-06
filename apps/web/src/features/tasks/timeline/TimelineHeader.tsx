@@ -1,9 +1,10 @@
 import { cn } from 'cn'
-import { format } from 'date-fns'
+import { useTranslation } from 'react-i18next'
 import { dayAt, monthMarks, tickMarks, xOf, type TimeRange } from './timelineLib'
 
 /** Sticky month row + day tick row with the pink "today" pill. */
 export function TimelineHeader({ range, pxPerDay, today }: { range: TimeRange; pxPerDay: number; today: Date }) {
+  const { t, i18n } = useTranslation('tasks')
   const todayX = xOf(range, today, pxPerDay) + pxPerDay / 2
   return (
     <div className="relative h-[52px] shrink-0" style={{ width: range.days * pxPerDay }}>
@@ -25,7 +26,7 @@ export function TimelineHeader({ range, pxPerDay, today }: { range: TimeRange; p
       <span
         className="absolute top-7 mt-0.5 -translate-x-1/2 rounded-full bg-primary px-1.5 text-[11px] leading-5 font-semibold text-primary-foreground tabular-nums"
         style={{ left: todayX }}
-        aria-label={`Today, ${format(today, 'MMM d')}`}
+        aria-label={t('timeline.todayLabel', { date: today.toLocaleDateString(i18n.language, { month: 'short', day: 'numeric' }) })}
       >
         {today.getDate()}
       </span>

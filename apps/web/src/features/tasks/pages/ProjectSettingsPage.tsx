@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Tip } from '@/components/common/Tip'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { useTranslation } from 'react-i18next'
 import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
@@ -34,6 +35,7 @@ type Editor = { mode: 'new'; category: StatusCategory } | { mode: 'edit'; status
 
 /** One-page project configuration (no sub-navigation): general, statuses, danger zone. */
 export function ProjectSettingsPage() {
+  const { t } = useTranslation('tasks')
   const { projectId } = useParams()
   const navigate = useNavigate()
   const { workspace } = useWorkspace()
@@ -58,7 +60,7 @@ export function ProjectSettingsPage() {
   const tasks = tasksQuery.data?.pages.flatMap((page) => page.items) ?? []
   const statuses = project ? projectStatuses(statusQuery.data ?? [], project.id) : []
   const defaultStatus = project ? defaultStatusOf(statusQuery.data ?? [], project.id) : undefined
-  const countFor = (statusId: string) => tasks.filter((t) => t.status_id === statusId).length
+  const countFor = (statusId: string) => tasks.filter((task) => task.status_id === statusId).length
   // the Duplicate status is system-managed: one per project, renamable/recolorable, never deleted or added
   const regularCount = statuses.filter((s) => s.category !== 'duplicate').length
 
@@ -68,33 +70,33 @@ export function ProjectSettingsPage() {
   }
 
   if (projectsQuery.isPending || statusQuery.isPending || tasksQuery.isPending) {
-    return <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden bg-background"><Pane><EmptyState icon={SquareCheck} title="Loading project" description="Loading persisted project settings." /></Pane></div>
+    return <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden bg-background"><Pane><EmptyState icon={SquareCheck} title={t('projectSettings.loading')} description={t('projectSettings.loadingDescription')} /></Pane></div>
   }
   if (loadFailed(projectsQuery) || loadFailed(statusQuery) || loadFailed(tasksQuery)) {
-    return <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden bg-background"><Pane><EmptyState icon={SquareCheck} title="Project unavailable" description="The server could not load this project." /></Pane></div>
+    return <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden bg-background"><Pane><EmptyState icon={SquareCheck} title={t('projectSettings.unavailable')} description={t('projectSettings.unavailableDescription')} /></Pane></div>
   }
 
   return (
     <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden bg-background">
       <Pane className="relative">
         <PaneHeader>
-          <Tip label="Back to tasks" side="bottom">
-            <Button variant="ghost" size="icon-sm" className="text-muted-foreground/70" onClick={() => navigate('/tasks')} aria-label="Back to tasks">
+          <Tip label={t('backToTasks')} side="bottom">
+            <Button variant="ghost" size="icon-sm" className="text-muted-foreground/70" onClick={() => navigate('/tasks')} aria-label={t('backToTasks')}>
               <ArrowLeft className="size-4" />
             </Button>
           </Tip>
-          <PaneTitle>{project ? `${project.name} settings` : 'Project settings'}</PaneTitle>
+          <PaneTitle>{project ? t('projectSettings.titleFor', { name: project.name }) : t('projectSettings.title')}</PaneTitle>
         </PaneHeader>
         {!project ? (
           <div className="min-h-0 flex-1 overflow-y-auto">
-            <EmptyState icon={SquareCheck} title="Project not found" description="This project does not exist or was removed." />
+            <EmptyState icon={SquareCheck} title={t('projectSettings.notFound')} description={t('projectSettings.notFoundDescription')} />
           </div>
         ) : (
           <div className="min-h-0 flex-1 overflow-y-auto">
             <div className="mx-auto flex w-full max-w-[800px] flex-col gap-6 px-10 pt-7 pb-12 max-[899px]:px-5">
               <ProjectGeneralCard key={`${project.id}:${project.name}:${project.key}:${project.color}`} project={project} onPendingChange={setGeneralPending} />
 
-              <SettingsCard title="Statuses" flush>
+              <SettingsCard title={t('projectSettings.statuses')} flush>
                 <div className="flex flex-col py-3 pr-3 pl-[18px]">
                   {CATEGORY_ORDER.map((category) => {
                     const own = statuses.filter((s) => s.category === category)
@@ -103,12 +105,12 @@ export function ProjectSettingsPage() {
                         <div className="flex items-center justify-between rounded-md bg-muted px-3 py-2 text-[13px] text-muted-foreground">
                           <span>{CATEGORY_LABEL[category]}</span>
                           {category === 'duplicate' ? null : (
-                            <Tip label="Add status">
+                            <Tip label={t('projectSettings.addStatus')}>
                               <Button
                                 variant="ghost"
                                 size="icon-sm"
                                 className="size-6 text-muted-foreground/70"
-                                aria-label={`Add ${CATEGORY_LABEL[category].toLowerCase()} status`}
+                                aria-label={t(`projectSettings.addCategoryStatus.${category}`)}
                                 onClick={() => setEditor({ mode: 'new', category })}
                               >
                                 <Plus className="size-3.5" />
@@ -178,13 +180,13 @@ export function ProjectSettingsPage() {
                               <span className="flex flex-col gap-0.5">
                                 <span className="text-sm font-medium text-foreground">
                                   {status.name}
-                                  {status.id === defaultStatus?.id ? <span className="font-normal text-muted-foreground"> · Default</span> : null}
+                                  {status.id === defaultStatus?.id ? <span className="font-normal text-muted-foreground"> · {t('projectSettings.default')}</span> : null}
                                   {status.category === 'duplicate' ? (
                                     <Tooltip>
-                                      <TooltipTrigger render={<span role="img" aria-label="System status" tabIndex={0} className="ml-1.5 inline-flex align-[-1px] text-muted-foreground/70" />}>
+                                      <TooltipTrigger render={<span role="img" aria-label={t('projectSettings.systemStatus')} tabIndex={0} className="ml-1.5 inline-flex align-[-1px] text-muted-foreground/70" />}>
                                         <Lock size={12} aria-hidden="true" />
                                       </TooltipTrigger>
-                                      <TooltipContent>System status</TooltipContent>
+                                      <TooltipContent>{t('projectSettings.systemStatus')}</TooltipContent>
                                     </Tooltip>
                                   ) : null}
                                 </span>
@@ -198,10 +200,10 @@ export function ProjectSettingsPage() {
                               </span>
                               <div className="flex-1" />
                               <DropdownMenu>
-                                <Tip label="Actions">
+                                <Tip label={t('projectSettings.actions')}>
                                   <DropdownMenuTrigger
                                     render={
-                                      <Button variant="ghost" size="icon-sm" className="size-[30px] rounded-full bg-muted transition-opacity duration-150 ease-out focus-visible:opacity-100 aria-expanded:opacity-100 hover-fine:opacity-0 hover-fine:group-hover/row:opacity-100" aria-label={`${status.name} actions`}>
+                                      <Button variant="ghost" size="icon-sm" className="size-[30px] rounded-full bg-muted transition-opacity duration-150 ease-out focus-visible:opacity-100 aria-expanded:opacity-100 hover-fine:opacity-0 hover-fine:group-hover/row:opacity-100" aria-label={t('projectSettings.statusActions', { name: status.name })}>
                                         <MoreHorizontal className="size-4" />
                                       </Button>
                                     }
@@ -210,18 +212,18 @@ export function ProjectSettingsPage() {
                                 <DropdownMenuContent align="end" className="w-auto min-w-45">
                                   <DropdownMenuItem onClick={() => setEditor({ mode: 'edit', statusId: status.id })}>
                                     <Pencil className="size-3.5" />
-                                    Edit
+                                    {t('edit')}
                                   </DropdownMenuItem>
                                   {/* data-danger (not variant="destructive"): the menu popup forces destructive items to the accent colour */}
                                   <DropdownMenuItem
                                     className="text-destructive focus:bg-destructive/10 focus:text-destructive *:[svg]:text-destructive"
                                     data-danger="true"
-                                    title={status.category === 'duplicate' ? 'System status' : undefined}
+                                    title={status.category === 'duplicate' ? t('projectSettings.systemStatus') : undefined}
                                     disabled={status.category === 'duplicate' || regularCount === 1}
                                     onClick={() => setDeleteTarget(status)}
                                   >
                                     <Trash2 className="size-3.5" />
-                                    Delete
+                                    {t('delete')}
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
@@ -242,11 +244,11 @@ export function ProjectSettingsPage() {
                     )
                   })}
                 </div>
-                {createStatus.isError ? <p role="alert" className="text-destructive">Status creation failed. <Button variant="ghost" onClick={() => createStatus.variables && createStatus.mutate(createStatus.variables)}>Retry</Button></p> : null}
-                {updateStatus.isError ? <p role="alert" className="text-destructive">Status update failed. <Button variant="ghost" onClick={() => updateStatus.variables && updateStatus.mutate(updateStatus.variables)}>Retry</Button></p> : null}
-                {deleteStatus.isError ? <p role="alert" className="text-destructive">Status deletion failed. <Button variant="ghost" onClick={() => deleteStatus.variables && deleteStatus.mutate(deleteStatus.variables)}>Retry</Button></p> : null}
-                {reorderStatuses.isError ? <p role="alert" className="text-destructive">Status reorder failed. <Button variant="ghost" onClick={() => reorderStatuses.variables && reorderStatuses.mutate(reorderStatuses.variables)}>Retry</Button></p> : null}
-                {statusesSaving ? <p role="status">Saving statuses…</p> : null}
+                {createStatus.isError ? <p role="alert" className="text-destructive">{t('projectSettings.statusCreateFailed')} <Button variant="ghost" onClick={() => createStatus.variables && createStatus.mutate(createStatus.variables)}>{t('retry')}</Button></p> : null}
+                {updateStatus.isError ? <p role="alert" className="text-destructive">{t('projectSettings.statusUpdateFailed')} <Button variant="ghost" onClick={() => updateStatus.variables && updateStatus.mutate(updateStatus.variables)}>{t('retry')}</Button></p> : null}
+                {deleteStatus.isError ? <p role="alert" className="text-destructive">{t('projectSettings.statusDeleteFailed')} <Button variant="ghost" onClick={() => deleteStatus.variables && deleteStatus.mutate(deleteStatus.variables)}>{t('retry')}</Button></p> : null}
+                {reorderStatuses.isError ? <p role="alert" className="text-destructive">{t('projectSettings.statusReorderFailed')} <Button variant="ghost" onClick={() => reorderStatuses.variables && reorderStatuses.mutate(reorderStatuses.variables)}>{t('retry')}</Button></p> : null}
+                {statusesSaving ? <p role="status">{t('projectSettings.savingStatuses')}</p> : null}
               </SettingsCard>
 
               <ProjectLabelsCard projectId={project.id} />
@@ -255,11 +257,11 @@ export function ProjectSettingsPage() {
 
               <SubIssueSettingsCard project={project} />
 
-              <SettingsCard title="Danger zone" description="Deleting a project moves the project and all of its tasks to trash.">
+              <SettingsCard title={t('projectSettings.dangerZone')} description={t('projectSettings.dangerZoneDescription')}>
                 <Button variant="destructive" onClick={() => setConfirmDelete(true)}>
-                  Delete project
+                  {t('projectSettings.deleteProject')}
                 </Button>
-                {deleteProject.isError ? <p role="alert" className="text-destructive">Project deletion failed. <Button variant="ghost" onClick={() => deleteProject.variables && deleteProject.mutate(deleteProject.variables, { onSuccess: () => navigate('/tasks') })}>Retry</Button></p> : null}
+                {deleteProject.isError ? <p role="alert" className="text-destructive">{t('projectSettings.deleteProjectFailed')} <Button variant="ghost" onClick={() => deleteProject.variables && deleteProject.mutate(deleteProject.variables, { onSuccess: () => navigate('/tasks') })}>{t('retry')}</Button></p> : null}
               </SettingsCard>
             </div>
           </div>
@@ -273,11 +275,11 @@ export function ProjectSettingsPage() {
 
       {deleteTarget && project ? (
         <ConfirmDeleteModal
-          title={`Delete "${deleteTarget.name}"?`}
+          title={t('projectSettings.deleteStatusTitle', { name: deleteTarget.name })}
           description={
             countFor(deleteTarget.id) > 0
-              ? `${countFor(deleteTarget.id)} ${countFor(deleteTarget.id) === 1 ? 'task uses' : 'tasks use'} this status. They will move to the next status of the project.`
-              : 'This status is not used by any task.'
+              ? t('projectSettings.statusInUse', { count: countFor(deleteTarget.id) })
+              : t('projectSettings.statusUnused')
           }
           onClose={() => setDeleteTarget(null)}
           onConfirm={() => {
@@ -289,8 +291,8 @@ export function ProjectSettingsPage() {
 
       {confirmDelete && project ? (
         <ConfirmDeleteModal
-          title="Delete project?"
-          description={`This will move "${project.name}" and its ${tasks.length} ${tasks.length === 1 ? 'task' : 'tasks'} to trash.`}
+          title={t('projectSettings.deleteProjectTitle')}
+          description={t('projectSettings.deleteProjectDescription', { name: project.name, count: tasks.length })}
           onClose={() => setConfirmDelete(false)}
           onConfirm={() => {
             deleteProject.mutate({ projectId: project.id, version: project.version }, { onSuccess: () => navigate('/tasks') })
@@ -307,6 +309,7 @@ export function ProjectSettingsPage() {
  * keys this component by the saved values, so a fresh draft is created after each save.
  */
 function ProjectGeneralCard({ project, onPendingChange }: { project: Project; onPendingChange: (pending: PendingProjectSave | null) => void }) {
+  const { t } = useTranslation('tasks')
   const { workspace } = useWorkspace()
   const updateProject = useUpdateProject(workspace.id, project.id)
   const saveProject = updateProject.mutate
@@ -325,18 +328,18 @@ function ProjectGeneralCard({ project, onPendingChange }: { project: Project; on
 
   return (
     <>
-      <SettingsCard title="General">
+      <SettingsCard title={t('projectSettings.general')}>
         <div className="grid grid-cols-2 gap-4 max-[899px]:grid-cols-1">
           <div className="w-full min-w-0">
             <Label className="mb-1.5 text-[13px] text-muted-foreground" htmlFor="project-name">
-              Name
+              {t('projectSettings.name')}
             </Label>
             <Input id="project-name" value={draft.name} onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))} />
           </div>
           <div className="w-full min-w-0">
             <Label className="mb-1.5 text-[13px] text-muted-foreground" htmlFor="project-key">
-              Tag
-              <InfoTip text={`Short prefix used in task ids, for example ${project.key}-101.`} />
+              {t('projectSettings.tag')}
+              <InfoTip text={t('projectSettings.tagHint', { key: project.key })} />
             </Label>
             <Input
               id="project-key"
@@ -347,14 +350,14 @@ function ProjectGeneralCard({ project, onPendingChange }: { project: Project; on
             />
           </div>
           <div className="col-span-2 w-full min-w-0 max-[899px]:col-span-1">
-            <span className="mb-1.5 flex text-[13px] leading-none font-medium text-muted-foreground">Color</span>
+            <span className="mb-1.5 flex text-[13px] leading-none font-medium text-muted-foreground">{t('projectSettings.color')}</span>
             <div className="flex flex-wrap items-center gap-2 pt-1.5">
               {PROJECT_COLORS.map((color) => (
                 <ColorSwatch
                   key={color}
                   color={color}
                   title={color}
-                  aria-label={`Color ${color}`}
+                  aria-label={t('colorSwatch', { color })}
                   aria-pressed={draft.color.toLowerCase() === color}
                   onClick={() => setDraft((d) => ({ ...d, color }))}
                 >
@@ -367,14 +370,14 @@ function ProjectGeneralCard({ project, onPendingChange }: { project: Project; on
           </div>
         </div>
       </SettingsCard>
-      {updateProject.isError ? <p role="alert" className="text-destructive">Project update failed. <Button variant="ghost" onClick={() => updateProject.variables && updateProject.mutate(updateProject.variables)}>Retry</Button></p> : null}
+      {updateProject.isError ? <p role="alert" className="text-destructive">{t('projectSettings.updateFailed')} <Button variant="ghost" onClick={() => updateProject.variables && updateProject.mutate(updateProject.variables)}>{t('retry')}</Button></p> : null}
     </>
   )
 }
 
 const SUB_ISSUE_SETTINGS = [
-  { field: 'auto_close_parent', label: 'Close parent when all sub-issues are done', description: 'When every sub-issue is closed and at least one is done, the parent moves to its first done status.' },
-  { field: 'auto_close_sub_issues', label: 'Close open sub-issues when parent is closed', description: 'Open sub-issues at every level move to done, or to cancelled when the parent is cancelled.' },
+  { field: 'auto_close_parent', label: 'projectSettings.autoCloseParent', description: 'projectSettings.autoCloseParentDescription' },
+  { field: 'auto_close_sub_issues', label: 'projectSettings.autoCloseSubIssues', description: 'projectSettings.autoCloseSubIssuesDescription' },
 ] as const
 
 type SubIssueSettingField = (typeof SUB_ISSUE_SETTINGS)[number]['field']
@@ -391,6 +394,7 @@ const savedSubIssueSettings = (record: Project): SubIssueSettingValues => ({
  * time, each carrying the version the previous PATCH returned, so a quick second toggle is queued, not lost.
  */
 function SubIssueSettingsCard({ project }: { project: Project }) {
+  const { t } = useTranslation('tasks')
   const { workspace } = useWorkspace()
   const updateProject = useUpdateProject(workspace.id, project.id)
   const saveProject = updateProject.mutateAsync
@@ -433,22 +437,22 @@ function SubIssueSettingsCard({ project }: { project: Project }) {
     if (failed) request({ auto_close_parent: failed.auto_close_parent ?? true, auto_close_sub_issues: failed.auto_close_sub_issues ?? true })
   }
   return (
-    <SettingsCard title="Sub-issues" description="Automations that run when a task or its sub-issues close.">
+    <SettingsCard title={t('subIssues.title')} description={t('projectSettings.subIssuesDescription')}>
       <div className="flex flex-col divide-y divide-border">
         {SUB_ISSUE_SETTINGS.map((setting) => (
           <div key={setting.field} className="flex items-start justify-between gap-4 py-3 first:pt-0 last:pb-0">
             <div className="flex min-w-0 flex-col gap-0.5">
-              <span className="text-sm font-medium text-foreground">{setting.label}</span>
-              <span className="text-xs text-muted-foreground">{setting.description}</span>
+              <span className="text-sm font-medium text-foreground">{t(setting.label)}</span>
+              <span className="text-xs text-muted-foreground">{t(setting.description)}</span>
             </div>
-            <Switch aria-label={setting.label} checked={value(setting.field)} onCheckedChange={(checked: boolean) => save(setting.field, checked)} />
+            <Switch aria-label={t(setting.label)} checked={value(setting.field)} onCheckedChange={(checked: boolean) => save(setting.field, checked)} />
           </div>
         ))}
       </div>
       {updateProject.isError && !desired ? (
         <p role="alert" className="mt-2 text-xs text-destructive">
           {/* Retry goes through the queue, so it carries the current project version, not the failed attempt's (e.g. after a 409). */}
-          Couldn’t save the sub-issue settings. <Button variant="ghost" size="xs" onClick={retry}>Retry</Button>
+          {t('projectSettings.subIssuesSaveFailed')} <Button variant="ghost" size="xs" onClick={retry}>{t('retry')}</Button>
         </p>
       ) : null}
     </SettingsCard>
@@ -467,6 +471,7 @@ function StatusEditor({
   onCancel: () => void
   onSave: (values: { name: string; description: string; color: string }) => void
 }) {
+  const { t } = useTranslation('tasks')
   const [name, setName] = useState(initial?.name ?? '')
   const [description, setDescription] = useState(initial?.description ?? '')
   const [color, setColor] = useState(initial?.color ?? STATUS_COLORS[0])
@@ -481,10 +486,10 @@ function StatusEditor({
       }}
     >
       <Popover>
-        <Tip label="Color">
+        <Tip label={t('projectSettings.color')}>
           <PopoverTrigger
             render={
-              <Button type="button" variant="secondary" size="icon-lg" className="size-10" aria-label="Status color">
+              <Button type="button" variant="secondary" size="icon-lg" className="size-10" aria-label={t('projectSettings.statusColor')}>
                 <TaskStatusIcon status={{ category, color }} size={16} />
               </Button>
             }
@@ -495,7 +500,7 @@ function StatusEditor({
             <ColorSwatch
               key={preset}
               color={preset}
-              aria-label={`Color ${preset}`}
+              aria-label={t('colorSwatch', { color: preset })}
               aria-pressed={color === preset}
               onClick={() => setColor(preset)}
             >
@@ -508,8 +513,8 @@ function StatusEditor({
       </Popover>
       <Input
         className="h-9 w-[200px]"
-        placeholder="Status name"
-        aria-label="Status name"
+        placeholder={t('projectSettings.statusName')}
+        aria-label={t('projectSettings.statusName')}
         value={name}
         autoFocus
         onChange={(e) => setName(e.target.value)}
@@ -519,8 +524,8 @@ function StatusEditor({
       />
       <Input
         className="h-9 min-w-0 flex-1"
-        placeholder="Description…"
-        aria-label="Description"
+        placeholder={t('projectSettings.descriptionPlaceholder')}
+        aria-label={t('text.description')}
         value={description}
         onChange={(e) => setDescription(e.target.value)}
         onKeyDown={(e) => {
@@ -528,10 +533,10 @@ function StatusEditor({
         }}
       />
       <Button type="button" variant="ghost" onClick={onCancel}>
-        Cancel
+        {t('cancel')}
       </Button>
       <Button type="submit" disabled={!canSave}>
-        Save
+        {t('save')}
       </Button>
     </form>
   )

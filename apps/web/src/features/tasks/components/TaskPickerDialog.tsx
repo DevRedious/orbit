@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import type { Task, TaskStatusDef } from '@/features/tasks/api/models'
@@ -24,6 +25,7 @@ export interface TaskPickerDialogProps {
  * plays the exit animation first and reports `onOpenChange(false)` once it has finished, so the caller unmounts it then.
  */
 export function TaskPickerDialog({ open, onOpenChange, title, statuses, excludeIds = [], excludeDuplicates = false, onSelect }: TaskPickerDialogProps) {
+  const { t } = useTranslation('tasks')
   const { workspace } = useWorkspace()
   const projects = useProjects(workspace.id)
   const [query, setQuery] = useState('')
@@ -42,12 +44,12 @@ export function TaskPickerDialog({ open, onOpenChange, title, statuses, excludeI
         className="top-[12vh] max-h-[min(60vh,28rem)] translate-y-0 gap-0 overflow-hidden p-0 sm:max-w-[576px]"
       >
         <DialogTitle className="px-3.5 pt-3 pb-1.5 text-[13px] font-medium text-muted-foreground">{title}</DialogTitle>
-        <DialogDescription className="sr-only">Search tasks by title or identifier.</DialogDescription>
+        <DialogDescription className="sr-only">{t('picker.description')}</DialogDescription>
         {/* the list is filtered here (server search + client identifier match); cmdk owns highlight and keys */}
         <Command shouldFilter={false} className="min-h-0 bg-transparent p-0">
-          <CommandInput autoFocus placeholder="Search tasks…" value={query} onValueChange={setQuery} />
+          <CommandInput autoFocus placeholder={t('picker.placeholder')} value={query} onValueChange={setQuery} />
           <CommandList className="mx-1.5 mt-1 mb-1.5 max-h-none min-h-0 flex-1 rounded-lg bg-background p-1 ring-1 ring-border">
-            <CommandEmpty className="p-6 text-[13px] text-muted-foreground">{loading ? 'Searching…' : 'No matching tasks'}</CommandEmpty>
+            <CommandEmpty className="p-6 text-[13px] text-muted-foreground">{loading ? t('picker.searching') : t('picker.empty')}</CommandEmpty>
             <CommandGroup className="p-0">
               {candidates.map((task) => (
                 <CommandItem
@@ -63,7 +65,7 @@ export function TaskPickerDialog({ open, onOpenChange, title, statuses, excludeI
                 >
                   <TaskStatusIcon status={statuses.find((status) => status.id === task.statusId)} />
                   <span className="w-[76px] shrink-0 text-xs text-muted-foreground/70 tabular-nums">{task.identifier}</span>
-                  <span className="min-w-0 flex-1 truncate">{task.title || 'Untitled'}</span>
+                  <span className="min-w-0 flex-1 truncate">{task.title || t('untitled')}</span>
                   <span className="max-w-[140px] shrink-0 truncate text-xs text-muted-foreground/70">{projectName(task.projectId)}</span>
                 </CommandItem>
               ))}

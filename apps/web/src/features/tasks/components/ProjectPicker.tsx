@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { ColorDot } from '@/components/common/ColorDot'
 import { Button } from '@/components/ui/button'
 import { Tip } from '@/components/common/Tip'
@@ -12,6 +13,7 @@ import { ProjectChip } from './TaskPropertyChips'
  * number; a task the server keeps in its project (synced with GitHub) stays, with a toast that says why.
  */
 export function ProjectPicker({ task, projects, className }: { task: Pick<Task, 'id' | 'version' | 'projectId'>; projects: Project[]; className?: string }) {
+  const { t } = useTranslation('tasks')
   const { workspace } = useWorkspace()
   const moveToProject = useMoveToProject(workspace.id)
   const project = projects.find((item) => item.id === task.projectId)
@@ -19,10 +21,10 @@ export function ProjectPicker({ task, projects, className }: { task: Pick<Task, 
   return (
     <div className={className} onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
       <DropdownMenu modal={false}>
-        <Tip label="Move to project">
+        <Tip label={t('project.move')}>
           <DropdownMenuTrigger
             render={
-              <Button type="button" variant="link" className="h-auto min-w-0 p-0 text-[length:inherit] font-normal" aria-label={`Project: ${project?.name ?? 'none'}`}>
+              <Button type="button" variant="link" className="h-auto min-w-0 p-0 text-[length:inherit] font-normal" aria-label={project ? t('project.current', { name: project.name }) : t('project.currentNone')}>
                 <ProjectChip project={project} className="hover:text-foreground" />
               </Button>
             }
@@ -30,7 +32,7 @@ export function ProjectPicker({ task, projects, className }: { task: Pick<Task, 
         </Tip>
         <DropdownMenuContent className="w-auto min-w-52">
           <DropdownMenuGroup>
-            <DropdownMenuLabel>Move to project</DropdownMenuLabel>
+            <DropdownMenuLabel>{t('project.move')}</DropdownMenuLabel>
             {projects.map((item) => (
               <DropdownMenuItem
                 key={item.id}

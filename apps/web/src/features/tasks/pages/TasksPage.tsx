@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import { useTranslation } from 'react-i18next'
 import { UNDO_TOAST_DURATION } from '@/lib/toast'
 import { loadFailed } from '@/lib/connection'
 import { useScrollMemory } from '@/lib/useScrollMemory'
@@ -86,13 +87,13 @@ const lastOpenTask = new Map<string, string>()
  * previous history entry is another task (closing then returns to it). */
 type TaskOrigin = { originProject: string | null; fromTask?: boolean }
 
-const PRESET_TITLE: Record<TaskPreset, string> = {
-  mine: 'My tasks',
-  overdue: 'Overdue',
-  due_soon: 'Due soon',
-  current_week: 'This week',
-  my_week: 'My week',
-}
+const PRESET_TITLE = {
+  mine: 'preset.mine',
+  overdue: 'preset.overdue',
+  due_soon: 'preset.dueSoon',
+  current_week: 'preset.currentWeek',
+  my_week: 'preset.myWeek',
+} as const satisfies Record<TaskPreset, string>
 
 export function TasksPage() {
   const { workspace } = useWorkspace()
@@ -107,6 +108,7 @@ export function TasksPage() {
 }
 
 function WorkspaceTasksPage() {
+  const { t } = useTranslation('tasks')
   const { workspace } = useWorkspace()
   const { taskId: taskParam, viewId } = useParams()
   const taskRoute = useTaskRouteId(workspace.id, taskParam)
@@ -343,7 +345,7 @@ function WorkspaceTasksPage() {
 
   useCreateTaskDefaults({ defaults: newTaskDefaults, onOpenTask: (task) => openTask(task.id) })
   const openNewTask = useOpenNewTask()
-  const newTaskTitle = useShortcutTitle('task.create', 'New task')
+  const newTaskTitle = useShortcutTitle('task.create', t('newTask'))
 
   const activeProject = projects.find((project) => project.id === projectFilter)
   // the user's own conditions (a preset page's chip is not one): only then can they be cleared or saved as a view.
@@ -353,36 +355,36 @@ function WorkspaceTasksPage() {
   const clearFilters = () => {
     const previous = viewState.state.filter
     viewState.setFilter(emptyFilter())
-    toast('Filters cleared', { duration: UNDO_TOAST_DURATION, action: { label: 'Undo', onClick: () => viewState.setFilter(previous) } })
+    toast(t('page.filtersCleared'), { duration: UNDO_TOAST_DURATION, action: { label: t('undo'), onClick: () => viewState.setFilter(previous) } })
   }
-  const viewTitle = preset ? PRESET_TITLE[preset] : 'All tasks'
+  const viewTitle = preset ? t(PRESET_TITLE[preset]) : t('preset.all')
 
   if (viewUnavailable) {
     // a 404 is a deleted view or someone else's personal view; any other error keeps the generic boundary
     if (savedView.error instanceof ApiProblem && savedView.error.status === 404) return <ViewNotFound />
-    return <TaskBoundary title="View unavailable" description="The server could not load this view." />
+    return <TaskBoundary title={t('page.viewUnavailable')} description={t('page.viewUnavailableDescription')} />
   }
   if (loadFailed(preference)) {
-    return <TaskBoundary title="Tasks unavailable" description="The server could not load the settings for this page." />
+    return <TaskBoundary title={t('page.tasksUnavailable')} description={t('page.settingsUnavailableDescription')} />
   }
   // On a list, the task query loads and fails inside the list area, so the filter stays reachable to fix it.
   if (taskRoute.error) {
-    return <TaskBoundary title="Task unavailable" description={taskUnavailableDescription(taskRoute.error)} />
+    return <TaskBoundary title={t('page.taskUnavailable')} description={taskUnavailableDescription(taskRoute.error)} />
   }
   // a task opens straight from a blank canvas: a loading message in between reads as a flicker
   if (detailOpen && (!taskId || pending || tasksQuery.isLoading || detailLoading)) return <div className="flex-1 bg-background" />
   if (pending) {
-    return <TaskBoundary title="Loading tasks" description="Loading persisted workspace tasks." />
+    return <TaskBoundary title={t('page.loading')} description={t('page.loadingDescription')} />
   }
   // With the task from before, a refetch that could not reach the server keeps it on screen; a 4xx (deleted, no access) does not.
   if (loadFailed(detailQuery)) {
-    return <TaskBoundary title="Task unavailable" description={taskUnavailableDescription(detailQuery.error)} />
+    return <TaskBoundary title={t('page.taskUnavailable')} description={taskUnavailableDescription(detailQuery.error)} />
   }
   if (taskId && (loadFailed(commentsQuery) || loadFailed(activityQuery) || loadFailed(attachmentsQuery) || commentAttachments.isError)) {
-    return <TaskBoundary title="Task unavailable" description="The server could not load this task." />
+    return <TaskBoundary title={t('page.taskUnavailable')} description={t('availability.failed')} />
   }
   if (loadFailed(projectsQuery) || statusesQuery.isError || loadFailed(membersQuery) || loadFailed(labelsQuery) || (detailOpen && tasksQuery.error)) {
-    return <TaskBoundary title="Tasks unavailable" description="The server could not load this workspace." />
+    return <TaskBoundary title={t('page.tasksUnavailable')} description={t('page.workspaceUnavailableDescription')} />
   }
 
   return (
@@ -406,23 +408,23 @@ function WorkspaceTasksPage() {
                 <DropdownMenu>
                   <DropdownMenuTrigger
                     render={
-                      <Button type="button" variant="ghost" className="min-w-0 gap-[7px] px-[7px] font-normal text-muted-foreground max-[899px]:max-w-[30vw]" aria-label="Select project">
+                      <Button type="button" variant="ghost" className="min-w-0 gap-[7px] px-[7px] font-normal text-muted-foreground max-[899px]:max-w-[30vw]" aria-label={t('page.selectProject')}>
                         {activeProject ? <ColorDot color={activeProject.color} /> : null}
-                        <span className="truncate">{activeProject?.name ?? 'All projects'}</span><ChevronDown className="size-3.5 shrink-0" />
+                        <span className="truncate">{activeProject?.name ?? t('allProjects')}</span><ChevronDown className="size-3.5 shrink-0" />
                       </Button>
                     }
                   />
                   <DropdownMenuContent className="w-auto min-w-[190px]">
-                    <DropdownMenuItem className="data-active:bg-accent data-active:font-medium" data-active={projectFilter === null || undefined} onClick={() => setProjectFilter(null)}><SquareCheck />All projects</DropdownMenuItem>
+                    <DropdownMenuItem className="data-active:bg-accent data-active:font-medium" data-active={projectFilter === null || undefined} onClick={() => setProjectFilter(null)}><SquareCheck />{t('allProjects')}</DropdownMenuItem>
                     {projects.map((project) => <div key={project.id} className="relative flex items-center">
                       <DropdownMenuItem className="min-w-0 flex-1 pr-8 data-active:bg-accent data-active:font-medium" data-active={project.id === projectFilter || undefined} onClick={() => setProjectFilter(project.id)}>
                         <ColorDot color={project.color} />
                         <span className="min-w-0 flex-1 truncate">{project.name}</span>
                       </DropdownMenuItem>
-                      <Tip label="Project settings" side="right"><DropdownMenuItem className="absolute right-1 size-6 justify-center p-0 text-muted-foreground" aria-label={`${project.name} settings`} onClick={() => navigate(`/tasks/projects/${project.id}/settings`)}><Settings className="size-3.5" /></DropdownMenuItem></Tip>
+                      <Tip label={t('projectSettings.title')} side="right"><DropdownMenuItem className="absolute right-1 size-6 justify-center p-0 text-muted-foreground" aria-label={t('projectSettings.titleFor', { name: project.name })} onClick={() => navigate(`/tasks/projects/${project.id}/settings`)}><Settings className="size-3.5" /></DropdownMenuItem></Tip>
                     </div>)}
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => setShowNewProject(true)}><Plus />New project</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setShowNewProject(true)}><Plus />{t('newProject')}</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
                 <PaneTitle className="max-[899px]:min-w-0 max-[899px]:flex-1 max-[899px]:basis-0">{viewTitle}</PaneTitle>
@@ -438,7 +440,7 @@ function WorkspaceTasksPage() {
               defaultDisplay={viewState.view?.state ? normalizeViewState(viewState.view.state).display : DEFAULT_DISPLAY}
               onChange={viewState.setDisplay}
             />
-            <Tip label={newTaskTitle} side="bottom"><Button aria-label="New task" className="max-[899px]:w-8 max-[899px]:px-0" onClick={() => openNewTask()}><Plus className="size-4" /><span className="max-[899px]:hidden">New task</span></Button></Tip>
+            <Tip label={newTaskTitle} side="bottom"><Button aria-label={t('newTask')} className="max-[899px]:w-8 max-[899px]:px-0" onClick={() => openNewTask()}><Plus className="size-4" /><span className="max-[899px]:hidden">{t('newTask')}</span></Button></Tip>
           </PaneHeader>
           {viewState.stateError ? <ViewStateBanner /> : null}
           <FilterBar
@@ -456,11 +458,11 @@ function WorkspaceTasksPage() {
             ) : filtered ? (
               <>
                 <Button type="button" variant="ghost" size="sm" className="animate-view-bar-enter text-muted-foreground" onClick={clearFilters}>
-                  Clear all
+                  {t('page.clearAll')}
                 </Button>
                 <Button type="button" variant="outline" size="sm" className="animate-view-bar-enter" onClick={() => openSaveDialog('create')}>
                   <Bookmark className="size-3.5" />
-                  Save view
+                  {t('page.saveView')}
                 </Button>
               </>
             ) : undefined}
@@ -496,8 +498,8 @@ function WorkspaceTasksPage() {
             {tasksQuery.error || tasksQuery.isLoading ? (
               <div className="flex h-full flex-col p-2 *:flex-1">
                 {tasksQuery.error
-                  ? <EmptyState icon={SquareCheck} title="Tasks unavailable" description="The server could not load tasks for this view. Change the filter or try again." action={<Button type="button" variant="outline" onClick={tasksQuery.retry}>Retry</Button>} />
-                  : <EmptyState icon={SquareCheck} title="Loading tasks" description="Loading persisted workspace tasks." />}
+                  ? <EmptyState icon={SquareCheck} title={t('page.tasksUnavailable')} description={t('page.viewTasksUnavailableDescription')} action={<Button type="button" variant="outline" onClick={tasksQuery.retry}>{t('retry')}</Button>} />
+                  : <EmptyState icon={SquareCheck} title={t('page.loading')} description={t('page.loadingDescription')} />}
               </div>
             ) : (
                 <TaskContextMenu tasks={visibleTasks} users={users} labels={labels} statuses={statusesQuery.data} groupContext={groupContext} currentUserId={currentUser.data?.id ?? ''}>

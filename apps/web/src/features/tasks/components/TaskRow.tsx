@@ -1,4 +1,5 @@
 import { taskRowTarget } from '@/shortcuts/taskTarget'
+import { useTranslation } from 'react-i18next'
 import { cn } from 'cn'
 import { Button } from '@/components/ui/button'
 import { Tip } from '@/components/common/Tip'
@@ -59,6 +60,7 @@ interface TaskRowProps {
 
 /** List row: [checkbox] priority · id · [tree gutter] status · [parent ›] title … labels · progress · project · due · assignee · created · updated. */
 export function TaskRow({ task, statuses, labels, users, assignees, project, properties, selected, dragging, draggable, dropEdge, onOpen, onToggleSelect, onDragStart, onDragEnd, onRequestDuplicate, tree, showParent, nest }: TaskRowProps) {
+  const { t } = useTranslation('tasks')
   const status = statuses.find((s) => s.id === task.statusId)
   const has = (property: TaskProperty) => properties.includes(property)
   return (
@@ -95,7 +97,7 @@ export function TaskRow({ task, statuses, labels, users, assignees, project, pro
         {/* the ::after overlay stretches the hit area over the whole 28px strip (the old label click target) */}
         <Checkbox
           checked={selected}
-          aria-label={`Select ${task.identifier}`}
+          aria-label={t('row.select', { identifier: task.identifier })}
           onCheckedChange={() => onToggleSelect(task.id)}
           className="absolute top-1/2 left-3 -translate-y-1/2 cursor-pointer opacity-0 transition-opacity group-hover/row:opacity-100 group-data-selected/row:opacity-100 after:-top-3 after:-bottom-3 after:-left-3 after:right-0 focus-visible:opacity-100"
         />
@@ -123,7 +125,7 @@ export function TaskRow({ task, statuses, labels, users, assignees, project, pro
       {!has('id') && task.blocked ? <BlockedIndicator /> : null}
       {showParent && task.parent ? (
         <span className="flex min-w-0 flex-1 items-center gap-1.5 text-[13px]">
-          <Tip label={`Open ${refIdentifier(task.parent)}`}>
+          <Tip label={t('openTask', { identifier: refIdentifier(task.parent) })}>
             <Button
               type="button"
               variant="link"
@@ -133,14 +135,14 @@ export function TaskRow({ task, statuses, labels, users, assignees, project, pro
                 onOpen(task.parent!.id)
               }}
             >
-              <span className="truncate">{task.parent.title || 'Untitled'}</span>
+              <span className="truncate">{task.parent.title || t('untitled')}</span>
             </Button>
           </Tip>
           <span aria-hidden className="shrink-0 text-muted-foreground/50">›</span>
-          <span className="min-w-0 flex-1 truncate font-medium"><LinkifiedText text={task.title || 'Untitled'} /></span>
+          <span className="min-w-0 flex-1 truncate font-medium"><LinkifiedText text={task.title || t('untitled')} /></span>
         </span>
       ) : (
-        <span className="min-w-0 flex-1 truncate text-[13px] font-medium"><LinkifiedText text={task.title || 'Untitled'} /></span>
+        <span className="min-w-0 flex-1 truncate text-[13px] font-medium"><LinkifiedText text={task.title || t('untitled')} /></span>
       )}
       {has('labels') && task.labels.length > 0 ? (
         <span className="flex shrink-0 gap-1 max-[1099px]:hidden">

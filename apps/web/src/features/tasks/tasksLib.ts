@@ -1,5 +1,6 @@
 import type { StatusCategory, Task, TaskActivity, TaskChange, TaskComment, TaskPriority, TaskStatusDef, TaskViewState } from '@/features/tasks/api/models'
 import { relativeTime, shortDate } from '@/lib/format'
+import { i18n } from '@/i18n'
 import { defaultStatusOf, PRIORITY_LABEL, sortStatuses, statusKeyOf } from './taskMeta'
 
 /** Local quick search (never saved): title, description or identifier contains the text. */
@@ -51,11 +52,12 @@ export function commentThreads(task: Task): CommentThread[] {
     .map((root) => ({ root, replies: task.comments.filter((c) => c.parentId === root.id).sort(byTime) }))
 }
 
-/** "2d ago" style label; falls back to a short date for older items. */
+/** "2d ago" style label; falls back to a short date for older items (the cut-offs of `relativeTime`). */
 export function agoLabel(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime()
+  if (diff < 60_000) return i18n.t('tasks:activity.justNow')
   const label = relativeTime(iso)
-  if (label === 'now') return 'just now'
-  return /^\d+[mhd]$/.test(label) ? `${label} ago` : label
+  return diff < 7 * 86_400_000 ? i18n.t('tasks:activity.ago', { time: label }) : label
 }
 
 export type FeedEntry = { kind: 'activity'; at: string; items: TaskActivity[] } | { kind: 'thread'; at: string; thread: CommentThread }
@@ -87,35 +89,41 @@ export function activityChangeText(change: TaskChange, state: Pick<TaskViewState
   const names = (ids: string[], all: Array<{ id: string; name: string }>, unknown: string) =>
     ids.map((id) => all.find((item) => item.id === id)?.name ?? unknown).join(', ')
   // "assigned Ada and unassigned Bo"
-  const both = (added: string, removed: string) => [added, removed].filter(Boolean).join(' and ')
+  const both = (added: string, removed: string) => added && removed ? i18n.t('tasks:activity.change.both', { first: added, second: removed }) : added || removed
   switch (change.field) {
     case 'status': {
       const from = state.statuses.find((status) => status.id === change.from)?.name
-      const to = state.statuses.find((status) => status.id === change.to)?.name ?? 'another status'
-      return from ? `changed status from ${from} to ${to}` : `changed status to ${to}`
+      const to = state.statuses.find((status) => status.id === change.to)?.name ?? i18n.t('tasks:activity.change.anotherStatus')
+      return from ? i18n.t('tasks:activity.change.status', { from, to }) : i18n.t('tasks:activity.change.statusTo', { to })
     }
     case 'priority':
-      return change.to === 'none' ? 'removed priority' : `set priority to ${PRIORITY_LABEL[change.to as TaskPriority] ?? change.to}`
-    case 'assignees':
+      return change.to === 'none' ? i18n.t('tasks:activity.change.priorityRemoved') : i18n.t('tasks:activity.change.priority', { priority: PRIORITY_LABEL[change.to as TaskPriority] ?? change.to })
+    case 'assignees': {
+      const someone = i18n.t('tasks:activity.change.someone')
       return both(
-        change.added.length > 0 ? `assigned ${names(change.added, state.users, 'someone')}` : '',
-        change.removed.length > 0 ? `unassigned ${names(change.removed, state.users, 'someone')}` : '',
+        change.added.length > 0 ? i18n.t('tasks:activity.change.assigned', { names: names(change.added, state.users, someone) }) : '',
+        change.removed.length > 0 ? i18n.t('tasks:activity.change.unassigned', { names: names(change.removed, state.users, someone) }) : '',
       )
-    case 'labels':
+    }
+    case 'labels': {
+      const deleted = i18n.t('tasks:activity.change.deletedLabel')
       return both(
-        change.added.length > 0 ? `added label${change.added.length > 1 ? 's' : ''} ${names(change.added, state.labels, 'a deleted label')}` : '',
-        change.removed.length > 0 ? `removed label${change.removed.length > 1 ? 's' : ''} ${names(change.removed, state.labels, 'a deleted label')}` : '',
+        change.added.length > 0 ? i18n.t('tasks:activity.change.labelsAdded', { count: change.added.length, names: names(change.added, state.labels, deleted) }) : '',
+        change.removed.length > 0 ? i18n.t('tasks:activity.change.labelsRemoved', { count: change.removed.length, names: names(change.removed, state.labels, deleted) }) : '',
       )
+    }
     case 'due':
-      if (!change.end) return 'removed due date'
-      return `set due date to ${change.start ? `${shortDate(change.start)} – ` : ''}${shortDate(change.end)}`
+      if (!change.end) return i18n.t('tasks:activity.change.dueRemoved')
+      return change.start
+        ? i18n.t('tasks:activity.change.dueRange', { start: shortDate(change.start), end: shortDate(change.end) })
+        : i18n.t('tasks:activity.change.due', { date: shortDate(change.end) })
     case 'title':
-      return `changed title from "${change.from}" to "${change.to}"`
+      return i18n.t('tasks:activity.change.title', { from: change.from, to: change.to })
     case 'project':
-      return `moved from ${change.from} to ${change.to}`
+      return i18n.t('tasks:activity.change.project', { from: change.from, to: change.to })
     case 'description':
-      return 'updated the description'
+      return i18n.t('tasks:activity.change.description')
     case 'source_url':
-      return 'updated the source link'
+      return i18n.t('tasks:activity.change.sourceUrl')
   }
 }

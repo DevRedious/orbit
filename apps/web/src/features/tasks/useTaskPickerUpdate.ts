@@ -3,6 +3,7 @@ import type { TaskUpdateBody } from '@orbit/api/generated/types.gen'
 import { isTaskVersionConflict } from '@/features/tasks/api/conflicts'
 import { useUpdateTask } from '@/features/tasks/api/tasks'
 import { useWorkspace } from '@/features/workspaces/workspaceContext'
+import { i18n } from '@/i18n'
 
 export type TaskChanges = Omit<TaskUpdateBody, 'expected_version'>
 
@@ -30,7 +31,7 @@ function send(key: string, taskId: string, version: number, changes: TaskChanges
     },
     (error: Error) => {
       queues.delete(key)
-      if (!isTaskVersionConflict(error)) toast.error(entry.failure, { action: { label: 'Retry', onClick: () => updateTask.mutate(variables) } })
+      if (!isTaskVersionConflict(error)) toast.error(entry.failure, { action: { label: i18n.t('tasks:retry'), onClick: () => updateTask.mutate(variables) } })
     },
   )
 }

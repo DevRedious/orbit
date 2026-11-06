@@ -6,6 +6,7 @@ import { cn } from 'cn'
 import { differenceInCalendarDays } from 'date-fns'
 import { TaskSquare as SquareCheck } from 'reicon-react'
 import { toast } from 'sonner'
+import { useTranslation } from 'react-i18next'
 import { EmptyState } from '@/components/common/EmptyState'
 import { isTaskVersionConflict } from '@/features/tasks/api/conflicts'
 import type { Project, Task, TaskStatusDef } from '@/features/tasks/api/models'
@@ -52,6 +53,7 @@ export interface TaskTimelineProps {
 
 /** Roadmap timeline: one row per task, bars span due_start_at → due_at. */
 export function TaskTimeline({ tasks, projects, statuses, users, groupBy, properties, groupContext, pxPerDay, onZoomChange, onOpen, today: todayProp, ref }: TaskTimelineProps & { ref?: Ref<TimelineHandle> }) {
+  const { t } = useTranslation('tasks')
   const [today] = useState(() => todayProp ?? new Date())
   const [overrides, setOverrides] = useState<Record<string, boolean>>({})
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -116,7 +118,7 @@ export function TaskTimeline({ tasks, projects, statuses, users, groupBy, proper
     updateTask
       .mutateAsync({ taskId: task.id, body: { due_start_at: edit.dueStartAt, due_at: edit.dueAt, expected_version: task.version } })
       // useUpdateTask already rolls back and handles 409 with "Refresh task?"
-      .catch((error: unknown) => { if (!isTaskVersionConflict(error)) toast.error('Could not save the new dates.') })
+      .catch((error: unknown) => { if (!isTaskVersionConflict(error)) toast.error(t('timeline.saveFailed')) })
       .finally(() => {
         pendingSaves.current.delete(task.id)
         setCommitted((current) => (current?.taskId === task.id ? null : current))
@@ -221,7 +223,7 @@ export function TaskTimeline({ tasks, projects, statuses, users, groupBy, proper
   useCommand('timeline.today', scrollToToday)
 
   if (empty) {
-    return <EmptyState icon={SquareCheck} title="No tasks match these filters" description="Change the filters or add a task." />
+    return <EmptyState icon={SquareCheck} title={t('timeline.empty')} description={t('timeline.emptyDescription')} />
   }
 
   // Monday lines and weekend shading are repeating gradients: no DOM per day

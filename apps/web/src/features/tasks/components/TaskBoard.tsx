@@ -1,4 +1,5 @@
 import { focusAdjacentColumn, taskRowTarget } from '@/shortcuts/taskTarget'
+import { useTranslation } from 'react-i18next'
 import { useState } from 'react'
 import { cn } from 'cn'
 import { Button } from '@/components/ui/button'
@@ -44,6 +45,7 @@ export interface TaskBoardProps {
 const COLUMN_WIDTH = 320
 /** Kanban: columns from the grouping, optional swim lanes from the sub-grouping; drops rewrite both fields. */
 export function TaskBoard({ tasks, users, labels, statuses, projects, display, groupContext, collapseScope, activeTaskId, onOpen }: TaskBoardProps) {
+  const { t } = useTranslation('tasks')
   const { workspace } = useWorkspace()
   const duplicates = useDuplicateActions(workspace.id)
   const [duplicateTask, setDuplicateTask] = useState<Task | null>(null)
@@ -164,11 +166,11 @@ export function TaskBoard({ tasks, users, labels, statuses, projects, display, g
               onOpen(task.parent!.id)
             }}
           >
-            <span className="truncate">{task.parent.title || 'Untitled'}</span>
+            <span className="truncate">{task.parent.title || t('untitled')}</span>
             <span aria-hidden className="shrink-0 text-muted-foreground/50">›</span>
           </Button>
         ) : null}
-        <h3 className="text-[13px] leading-[18px] font-medium text-foreground">{task.title || 'Untitled'}</h3>
+        <h3 className="text-[13px] leading-[18px] font-medium text-foreground">{task.title || t('untitled')}</h3>
         {cardLabels.length > 0 ? (
           <div className="flex flex-wrap gap-1">
             {cardLabels.map((label) => <LabelPill key={label.id} label={label} />)}
@@ -209,7 +211,7 @@ export function TaskBoard({ tasks, users, labels, statuses, projects, display, g
           )
         })}
         {placeholderIndex !== null && placeholderIndex >= others.length ? placeholder : null}
-        {emptyLabel && others.length === 0 && drop?.zone !== zone ? <div className="flex h-[72px] items-center justify-center text-xs text-muted-foreground/70">No tasks</div> : null}
+        {emptyLabel && others.length === 0 && drop?.zone !== zone ? <div className="flex h-[72px] items-center justify-center text-xs text-muted-foreground/70">{t('noTasks')}</div> : null}
       </>
     )
   }
@@ -277,7 +279,7 @@ export function TaskBoard({ tasks, users, labels, statuses, projects, display, g
                 // sticks to the left edge while the board scrolls sideways, so the lane name stays in view
                 className="sticky left-3 gap-2 px-1.5 text-xs font-semibold text-muted-foreground group-data-drop-over/lane:text-primary"
                 aria-expanded={open}
-                aria-label={`${open ? 'Collapse' : 'Expand'} ${lane.label}`}
+                aria-label={t(open ? 'list.collapse' : 'list.expand', { group: lane.label })}
                 onClick={() => toggle(laneId)}
               >
                 <DisclosureChevron open={open} />

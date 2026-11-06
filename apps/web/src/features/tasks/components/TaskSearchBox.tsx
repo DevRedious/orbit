@@ -1,8 +1,11 @@
+import { useTranslation } from 'react-i18next'
 import { Search4 as Search } from 'reicon-react'
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/input-group'
 
 /** Quick search: local to the page, never saved into a view (a saved text filter is `text contains`). */
-export function TaskSearchBox({ value, onChange, label = 'Search tasks' }: { value: string; onChange: (value: string) => void; label?: string }) {
+export function TaskSearchBox({ value, onChange, label }: { value: string; onChange: (value: string) => void; label?: string }) {
+  const { t } = useTranslation('tasks')
+  const text = label ?? t('searchTasks')
   return (
     // content-sized (InputGroup carries w-full, see lessons); on phones it drops to its own full-width row
     <InputGroup className="w-auto min-w-45 max-[899px]:order-10 max-[899px]:mt-1 max-[899px]:h-[34px] max-[899px]:min-w-0 max-[899px]:basis-full">
@@ -11,8 +14,8 @@ export function TaskSearchBox({ value, onChange, label = 'Search tasks' }: { val
       </InputGroupAddon>
       <InputGroupInput
         type="search"
-        aria-label={label}
-        placeholder={label}
+        aria-label={text}
+        placeholder={text}
         value={value}
         onChange={(event) => onChange(event.target.value)}
       />

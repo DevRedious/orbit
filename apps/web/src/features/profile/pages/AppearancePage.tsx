@@ -1,8 +1,11 @@
 import { useState, type ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Setting2 as Settings, TickCircle, User } from 'reicon-react'
 import { cn } from 'cn'
 import { SettingsCard } from '@/components/common/SettingsCard'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { LANGUAGE_LABELS, LANGUAGES, setLanguage, type Language } from '@/i18n'
 import {
   APP_SECTIONS,
   DEFAULT_APP_LOOKS,
@@ -63,6 +66,8 @@ export function AppearancePage() {
 
   return (
     <>
+      <LanguageCard />
+
       <SettingsCard title="Color theme" description="Choose the color scheme used in this browser.">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           {THEMES.map((option) => (
@@ -238,6 +243,32 @@ export function AppearancePage() {
         />
       ) : null}
     </>
+  )
+}
+
+// Each language is listed in its own name, so anyone can find theirs whatever the UI language is.
+const LANGUAGE_OPTIONS = LANGUAGES.map((value) => ({ value, label: LANGUAGE_LABELS[value] }))
+
+/** The UI language for this browser. Hidden until a second language ships. */
+function LanguageCard() {
+  const { t, i18n } = useTranslation('profile')
+  if (LANGUAGE_OPTIONS.length < 2) return null
+  return (
+    <SettingsCard title={t('appearance.language.title')} description={t('appearance.language.description')}>
+      {/* `items` lets SelectValue show the option label instead of the raw value. */}
+      <Select items={LANGUAGE_OPTIONS} value={i18n.resolvedLanguage} onValueChange={(value) => setLanguage(value as Language)}>
+        <SelectTrigger aria-label={t('appearance.language.title')} className="w-full sm:w-64">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {LANGUAGE_OPTIONS.map((option) => (
+            <SelectItem key={option.value} value={option.value} lang={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </SettingsCard>
   )
 }
 

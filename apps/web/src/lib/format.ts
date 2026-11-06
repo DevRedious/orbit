@@ -1,22 +1,24 @@
+import { i18n } from '@/i18n'
+
 const MINUTE = 60_000
 const HOUR = 60 * MINUTE
 const DAY = 24 * HOUR
 
 export function relativeTime(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime()
-  if (diff < MINUTE) return 'now'
-  if (diff < HOUR) return `${Math.floor(diff / MINUTE)}m`
-  if (diff < DAY) return `${Math.floor(diff / HOUR)}h`
-  if (diff < 7 * DAY) return `${Math.floor(diff / DAY)}d`
+  if (diff < MINUTE) return i18n.t('common:now')
+  if (diff < HOUR) return i18n.t('common:minutesShort', { count: Math.floor(diff / MINUTE) })
+  if (diff < DAY) return i18n.t('common:hoursShort', { count: Math.floor(diff / HOUR) })
+  if (diff < 7 * DAY) return i18n.t('common:daysShort', { count: Math.floor(diff / DAY) })
   return shortDate(iso)
 }
 
 export function shortDate(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+  return new Date(iso).toLocaleDateString(i18n.language, { month: 'short', day: 'numeric' })
 }
 
 export function fullDate(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, {
+  return new Date(iso).toLocaleDateString(i18n.language, {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
@@ -25,7 +27,7 @@ export function fullDate(iso: string): string {
 }
 
 export function timeOfDay(iso: string): string {
-  return new Date(iso).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+  return new Date(iso).toLocaleTimeString(i18n.language, { hour: '2-digit', minute: '2-digit' })
 }
 
 /** "Today", "Yesterday", or a short date — for message group separators. */
@@ -33,8 +35,8 @@ export function dayLabel(iso: string): string {
   const date = new Date(iso)
   const today = new Date()
   const yesterday = new Date(today.getTime() - DAY)
-  if (date.toDateString() === today.toDateString()) return 'Today'
-  if (date.toDateString() === yesterday.toDateString()) return 'Yesterday'
+  if (date.toDateString() === today.toDateString()) return i18n.t('common:today')
+  if (date.toDateString() === yesterday.toDateString()) return i18n.t('common:yesterday')
   return fullDate(iso)
 }
 

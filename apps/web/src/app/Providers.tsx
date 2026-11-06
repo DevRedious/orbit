@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useState, type ReactNode } from 'react'
+import { Fragment, useEffect, useState, type ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { BrowserRouter, useNavigate } from 'react-router'
 import { toast } from 'sonner'
 import { PAYMENT_REQUIRED_EVENT, UNAUTHORIZED_EVENT } from '@/api/client'
@@ -44,6 +45,12 @@ function PaymentRequiredHandler() {
   return null
 }
 
+/** Remounts the UI when the language changes, so text formatted outside hooks (dates, module-level labels) follows it. */
+function LanguageBoundary({ children }: { children: ReactNode }) {
+  const { i18n } = useTranslation()
+  return <Fragment key={i18n.resolvedLanguage}>{children}</Fragment>
+}
+
 export function Providers({ children }: { children: ReactNode }) {
   const [queryClient] = useState(
     () =>
@@ -62,7 +69,9 @@ export function Providers({ children }: { children: ReactNode }) {
           <BrowserRouter>
             <UnauthorizedSessionHandler />
             <PaymentRequiredHandler />
-            <TooltipProvider>{children}</TooltipProvider>
+            <TooltipProvider>
+              <LanguageBoundary>{children}</LanguageBoundary>
+            </TooltipProvider>
           </BrowserRouter>
         </QueryClientProvider>
       </ThemeProvider>

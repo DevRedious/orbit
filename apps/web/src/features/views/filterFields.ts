@@ -89,15 +89,6 @@ export function presetLabel(preset: TaskPreset): string {
   return i18n.t(`views:filter.presets.${preset}`)
 }
 
-/** Kept for callers that index by preset: each read translates at that moment, never at import. */
-export const PRESET_LABEL: Readonly<Record<TaskPreset, string>> = {
-  get mine() { return presetLabel('mine') },
-  get overdue() { return presetLabel('overdue') },
-  get due_soon() { return presetLabel('due_soon') },
-  get current_week() { return presetLabel('current_week') },
-  get my_week() { return presetLabel('my_week') },
-}
-
 export type Glyph =
   | { kind: 'status'; status: Pick<TaskStatusDef, 'category' | 'color'> }
   | { kind: 'dot'; color: string }

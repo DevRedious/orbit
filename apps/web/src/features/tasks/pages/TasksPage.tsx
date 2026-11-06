@@ -70,7 +70,7 @@ import { FilterBar, FilterButton } from '@/features/views/components/FilterBar'
 import { SaveViewDialog, type SaveViewMode } from '@/features/views/components/SaveViewDialog'
 import { ViewChanges } from '@/features/views/components/ViewChanges'
 import { ViewHeader, ViewNotFound, ViewStateBanner } from '@/features/views/components/ViewHeader'
-import { PRESET_LABEL, type FilterOptions } from '@/features/views/filterFields'
+import { presetLabel as presetName, type FilterOptions } from '@/features/views/filterFields'
 import { useCommand } from '@/shortcuts/useCommand'
 import { useCreateTaskDefaults, useOpenNewTask } from '@/features/tasks/newTask'
 import { rebaseViewSessionEdit, useViewState, type ViewSource } from '@/features/views/useViewState'
@@ -216,7 +216,7 @@ function WorkspaceTasksPage() {
     currentUserId: currentUser.data?.id ?? '',
     taskRefs,
   }
-  const presetLabel = source.kind === 'page' && source.preset ? PRESET_LABEL[source.preset] : null
+  const presetLabel = source.kind === 'page' && source.preset ? presetName(source.preset) : null
   const state = {
     currentUserId: currentUser.data?.id ?? '',
     users,

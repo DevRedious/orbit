@@ -1,4 +1,5 @@
 import { cloneElement, use, type FocusEvent, type HTMLAttributes, type KeyboardEvent, type MouseEvent, type PointerEvent, type ReactElement, type ReactNode, type Ref } from 'react'
+import { useTranslation } from 'react-i18next'
 import { cn } from 'cn'
 import { ProfilePopoverContext, PROFILE_TRIGGER_ATTRIBUTE, type ProfileAction } from './profilePopover'
 
@@ -43,6 +44,7 @@ function withChildren(element: ReactElement<ElementProps>, props: ElementProps, 
  */
 export function ProfileTrigger({ userId, name, kind = 'name', inText = false, action, render, tabIndex, className, children, ...rest }: ProfileTriggerProps) {
   const control = use(ProfilePopoverContext)
+  const { t } = useTranslation('shell')
 
   if (!control || !userId) {
     const plain = { ...rest, tabIndex, className: cn(render?.props.className, className) }
@@ -54,7 +56,7 @@ export function ProfileTrigger({ userId, name, kind = 'name', inText = false, ac
     ...rest,
     [PROFILE_TRIGGER_ATTRIBUTE]: kind,
     // a trigger inside running text (a mention) reads as its text
-    ...(inText ? {} : { 'aria-label': `Open profile of ${name}` }),
+    ...(inText ? {} : { 'aria-label': t('profileTrigger.open', { name }) }),
     'aria-haspopup': 'dialog' as const,
     tabIndex: tabIndex ?? (nativeButton ? undefined : inText ? -1 : 0),
     className: cn(

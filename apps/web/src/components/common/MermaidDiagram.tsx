@@ -1,6 +1,8 @@
 // A Mermaid diagram drawn from its source text (code blocks of tasks, comments, chat and docs). The library is large,
 // so it loads only when the first diagram shows.
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { useTranslation } from 'react-i18next'
+import { i18n } from '@/i18n'
 
 function subscribeTheme(onChange: () => void) {
   const observer = new MutationObserver(onChange)
@@ -93,6 +95,7 @@ async function renderDiagram(code: string, dark: boolean): Promise<Drawing> {
 }
 
 export function MermaidDiagram({ code }: { code: string }) {
+  const { t } = useTranslation('shell')
   const dark = useSyncExternalStore(subscribeTheme, isDark)
   const source = code.trim()
   const [drawing, setDrawing] = useState(() => drawings.get(`${dark}:${source}`))
@@ -120,7 +123,7 @@ export function MermaidDiagram({ code }: { code: string }) {
           (cause: unknown) => {
             // A parse error ends with a long "Expecting …" list of token names, and an unknown diagram type with the
             // whole text; the first part is enough.
-            if (!cancelled) setError(cause instanceof Error ? cause.message.replace(/(\nExpecting | for text: )[\s\S]*$/, '') : 'Could not draw the diagram.')
+            if (!cancelled) setError(cause instanceof Error ? cause.message.replace(/(\nExpecting | for text: )[\s\S]*$/, '') : i18n.t('shell:mermaid.failed'))
           },
         )
       },
@@ -146,9 +149,9 @@ export function MermaidDiagram({ code }: { code: string }) {
     <div data-slot="mermaid-diagram" className="max-w-full overflow-x-auto">
       {svg ? (
         // Mermaid's own output; with `securityLevel: 'strict'` it is sanitized (DOMPurify) and has no scripts or click handlers.
-        <div role="img" aria-label="Diagram" className="[&>svg]:mx-auto [&>svg]:block [&>svg]:h-auto" dangerouslySetInnerHTML={{ __html: svg }} />
+        <div role="img" aria-label={t('mermaid.label')} className="[&>svg]:mx-auto [&>svg]:block [&>svg]:h-auto" dangerouslySetInnerHTML={{ __html: svg }} />
       ) : !error ? (
-        <p className="text-xs text-muted-foreground">{source ? 'Drawing the diagram…' : 'The diagram is empty.'}</p>
+        <p className="text-xs text-muted-foreground">{source ? t('mermaid.drawing') : t('mermaid.empty')}</p>
       ) : null}
       {error ? (
         <p role="alert" className="font-mono text-xs whitespace-pre-wrap text-destructive">

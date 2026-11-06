@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { useTranslation } from "react-i18next"
 import { cn } from "cn"
 import {
   DayPicker,
@@ -9,6 +10,7 @@ import {
   type Locale,
 } from "react-day-picker"
 
+import { calendarLocale } from "@/i18n/dateLocale"
 import { Button, buttonVariants } from "./button"
 import { ChevronLeft as ChevronLeftIcon, ChevronRight as ChevronRightIcon, ChevronDown as ChevronDownIcon } from 'reicon-react'
 
@@ -18,7 +20,7 @@ function Calendar({
   showOutsideDays = true,
   captionLayout = "label",
   buttonVariant = "ghost",
-  locale,
+  locale: localeProp,
   formatters,
   components,
   ...props
@@ -26,6 +28,9 @@ function Calendar({
   buttonVariant?: React.ComponentProps<typeof Button>["variant"]
 }) {
   const defaultClassNames = getDefaultClassNames()
+  // the UI language, unless the caller picks a locale: month names, labels and the first day of the week follow it
+  const { i18n } = useTranslation()
+  const locale = localeProp ?? calendarLocale(i18n.language)
 
   return (
     <DayPicker

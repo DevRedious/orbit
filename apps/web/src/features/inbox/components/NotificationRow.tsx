@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { Check, Import } from 'reicon-react'
 import type { NotificationRecord } from '@orbit/api/generated/types.gen'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -12,6 +13,7 @@ type Rows = ReturnType<typeof useNotificationRows>
 
 /** One notification: unread dot, actor, what happened and when. On hover, an unread row offers "Mark as read". */
 export function NotificationRow({ notification, rows, onOpen }: { notification: NotificationRecord; rows: Rows; /** After the row opens its target (the popover closes). */ onOpen?: () => void }) {
+  const { t } = useTranslation('shell')
   const actor = rows.actor(notification)
   const copy = notificationCopy(notification, rows.pageTitle(notification), actor?.name)
   const unread = !notification.read_at
@@ -34,7 +36,7 @@ export function NotificationRow({ notification, rows, onOpen }: { notification: 
           <span className="truncate text-[0.8125rem] text-foreground data-unread:font-semibold" data-unread={unread || undefined}>
             {copy.title}
           </span>
-          <span className="truncate text-xs text-muted-foreground/70">{actor && !notification.import_id ? `${actor.name} · ${copy.body}` : copy.body}</span>
+          <span className="truncate text-xs text-muted-foreground/70">{actor && !notification.import_id ? t('inbox.rowBody', { actor: actor.name, body: copy.body }) : copy.body}</span>
         </span>
         <span
           className="shrink-0 text-xs text-muted-foreground/70 tabular-nums transition-opacity duration-100 group-has-[[data-slot=notification-read]:focus-visible]/row:opacity-0 data-unread:hover-fine:group-hover/row:opacity-0"
@@ -49,7 +51,7 @@ export function NotificationRow({ notification, rows, onOpen }: { notification: 
           <Import className="size-4 text-muted-foreground" />
         </span>
       ) : (
-        <ProfileTrigger userId={actor?.id} name={actor?.name ?? 'Unknown'} kind="avatar" className="absolute top-1/2 left-[30px] flex -translate-y-1/2">
+        <ProfileTrigger userId={actor?.id} name={actor?.name ?? t('inbox.unknownActor')} kind="avatar" className="absolute top-1/2 left-[30px] flex -translate-y-1/2">
           <Avatar className="size-7">
             <AvatarFallback>{(actor?.name ?? '?').charAt(0).toUpperCase()}</AvatarFallback>
           </Avatar>

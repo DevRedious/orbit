@@ -2,6 +2,7 @@
 // hovered or the button has keyboard focus; on touch it is always visible.
 import { toast } from 'sonner'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Copy } from 'reicon-react'
 import { Button } from '@/components/ui/button'
 import { Tip } from '@/components/common/Tip'
@@ -23,6 +24,7 @@ function copyTextFallback(text: string) {
 }
 
 export function CopyCodeButton({ getText, className }: { getText: () => string; className?: string }) {
+  const { t } = useTranslation('shell')
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle')
 
   async function copyCode() {
@@ -31,22 +33,22 @@ export function CopyCodeButton({ getText, className }: { getText: () => string; 
       if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(text)
       else copyTextFallback(text)
       setCopyState('copied')
-      toast('Code copied')
+      toast(t('codeBlock.codeCopied'))
     } catch {
       try {
         copyTextFallback(text)
         setCopyState('copied')
-        toast('Code copied')
+        toast(t('codeBlock.codeCopied'))
       } catch {
         setCopyState('failed')
-        toast.error('Could not copy the code.')
+        toast.error(t('codeBlock.copyFailed'))
       }
     }
     setTimeout(() => setCopyState('idle'), 1600)
   }
 
   return (
-    <Tip label="Copy code">
+    <Tip label={t('codeBlock.copyCode')}>
       <Button
         type="button"
         variant="outline"
@@ -58,7 +60,7 @@ export function CopyCodeButton({ getText, className }: { getText: () => string; 
         onClick={copyCode}
       >
         <Copy className="size-3.5" />
-        {copyState === 'copied' ? 'Copied' : copyState === 'failed' ? 'Failed' : 'Copy'}
+        {copyState === 'copied' ? t('codeBlock.copied') : copyState === 'failed' ? t('codeBlock.failed') : t('codeBlock.copy')}
       </Button>
     </Tip>
   )

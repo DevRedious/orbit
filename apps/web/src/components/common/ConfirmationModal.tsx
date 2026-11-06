@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { registerConfirmationHandler, type ConfirmationOptions } from './confirmAction'
@@ -12,6 +13,7 @@ interface ConfirmationRequest extends ConfirmationOptions {
     A choice resolves at once; the dialog keeps showing that request while it plays its exit,
     then the next queued request opens in a fresh dialog (focus starts on Cancel again). */
 export function ConfirmationModalHost() {
+  const { t } = useTranslation('common')
   const queue = useRef<ConfirmationRequest[]>([])
   const nextId = useRef(0)
   const [request, setRequest] = useState<ConfirmationRequest>()
@@ -75,10 +77,10 @@ export function ConfirmationModalHost() {
         </DialogHeader>
         <DialogFooter>
           <Button variant="outline" onClick={cancel}>
-            {request.cancelLabel ?? 'Cancel'}
+            {request.cancelLabel ?? t('cancel')}
           </Button>
           <Button variant={request.danger ? 'destructive' : 'default'} onClick={() => settle(true)}>
-            {request.confirmLabel ?? 'Confirm'}
+            {request.confirmLabel ?? t('confirm')}
           </Button>
         </DialogFooter>
       </DialogContent>

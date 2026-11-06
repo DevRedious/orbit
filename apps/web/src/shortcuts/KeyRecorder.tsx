@@ -1,5 +1,6 @@
 import { detectPlatform, useHotkeySequenceRecorder } from '@tanstack/react-hotkeys'
 import { useEffect, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { fromRecorded } from './bindings'
 import { ShortcutKeys } from './Shortcut'
 import { useSuspendShortcuts } from './useCommand'
@@ -11,6 +12,7 @@ const SECOND_KEY_WAIT_MS = 1000
  *  Esc cancels; Backspace asks for "no shortcut". Every other shortcut is off while it listens. */
 export function KeyRecorder({ onRecord, onCancel, onClear }: { onRecord: (keys: string) => void; onCancel: () => void; onClear: () => void }) {
   useSuspendShortcuts()
+  const { t } = useTranslation('shell')
   const mac = detectPlatform() === 'mac'
   const recorder = useHotkeySequenceRecorder({
     recordBy: 'code',
@@ -37,8 +39,8 @@ export function KeyRecorder({ onRecord, onCancel, onClear }: { onRecord: (keys: 
   }, [steps.length])
 
   return (
-    <button type="button" autoFocus data-slot="key-recorder" aria-label="Press the new keys" onBlur={onCancel} className="flex h-7 min-w-28 items-center justify-center rounded-md px-2 text-xs text-muted-foreground ring-2 ring-primary outline-none">
-      {steps.length > 0 ? <ShortcutKeys keys={fromRecorded(steps, mac)} /> : 'Press keys…'}
+    <button type="button" autoFocus data-slot="key-recorder" aria-label={t('shortcuts.pressNewKeys')} onBlur={onCancel} className="flex h-7 min-w-28 items-center justify-center rounded-md px-2 text-xs text-muted-foreground ring-2 ring-primary outline-none">
+      {steps.length > 0 ? <ShortcutKeys keys={fromRecorded(steps, mac)} /> : t('shortcuts.pressKeys')}
     </button>
   )
 }

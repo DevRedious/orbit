@@ -1,4 +1,5 @@
 // Plain-text previews of markdown message content, for lists and thread cards.
+import { i18n } from '@/i18n'
 
 /** Plain one-line preview of a markdown message (the chat reference extractPreview) for thread cards and lists. */
 export function extractPreview(content: string): string {
@@ -24,5 +25,5 @@ export function extractPreview(content: string): string {
  * message has text, a sticker or files).
  */
 export function wordlessPreview(sticker: boolean): string {
-  return sticker ? 'Sticker' : 'Sent a file'
+  return sticker ? i18n.t('shell:messagePreview.sticker') : i18n.t('shell:messagePreview.file')
 }

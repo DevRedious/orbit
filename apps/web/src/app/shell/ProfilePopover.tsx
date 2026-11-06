@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { useLocation, useNavigate } from 'react-router'
 import { toast } from 'sonner'
 import { Clock, Envelope, Phone, ShieldUser } from 'reicon-react'
@@ -25,6 +26,9 @@ import { useMembers } from '@/features/workspaces/api'
 import { useWorkspace } from '@/features/workspaces/workspaceContext'
 import { GuestBadge } from '@/components/common/GuestBadge'
 
+/** The `common:role` key of each workspace role. */
+const ROLE_KEYS = { Owner: 'common:role.owner', Admin: 'common:role.admin', Member: 'common:role.member' } as const
+
 interface ProfileTarget {
   open: boolean
   userId: string
@@ -39,6 +43,7 @@ interface ProfileTarget {
  * shell because it shows workspace, presence and account data and starts a direct message; a trigger knows none of that.
  */
 export function ProfilePopoverProvider({ children }: { children: ReactNode }) {
+  const { t } = useTranslation('shell')
   const workspaceId = useWorkspace().workspace.id
   const queryClient = useQueryClient()
   const [target, setTarget] = useState<ProfileTarget | null>(null)
@@ -100,7 +105,7 @@ export function ProfilePopoverProvider({ children }: { children: ReactNode }) {
             side="right"
             align="start"
             finalFocus={anchor}
-            aria-label={`Profile of ${target.name}`}
+            aria-label={t('profilePopover.label', { name: target.name })}
             {...(target.instant && { 'data-instant': '' })}
             // a floating comment thread of a page closes on a press outside it, except in a popup with this mark
             // (`COMMENT_POPUP_ATTR`; the docs editor is a lazy chunk, so the shell does not import it)
@@ -143,6 +148,7 @@ function DetailRow({ icon, children }: { icon: ReactNode; children: ReactNode })
 }
 
 function ProfileCard({ userId, name, action, onClose }: { userId: string; name: string; action?: ProfileAction; onClose: () => void }) {
+  const { t } = useTranslation(['shell', 'common'])
   const workspaceId = useWorkspace().workspace.id
   const navigate = useNavigate()
   const me = useCurrentUser().data
@@ -160,7 +166,7 @@ function ProfileCard({ userId, name, action, onClose }: { userId: string; name: 
     return (
       <div data-slot="profile-card" className="flex flex-col gap-0.5 p-4">
         <p className="text-base font-semibold wrap-anywhere">{member?.name ?? name}</p>
-        <p className="text-[0.8125rem] text-muted-foreground">No longer in this workspace</p>
+        <p className="text-[0.8125rem] text-muted-foreground">{t('profilePopover.notInWorkspace')}</p>
       </div>
     )
   }
@@ -170,7 +176,7 @@ function ProfileCard({ userId, name, action, onClose }: { userId: string; name: 
   const status = own ? mine.presence : others.status
   const custom = own ? mine : others
   const localTime = localTimeLabel(profile?.timezone, now)
-  const copyEmail = () => void navigator.clipboard.writeText(member.email).then(() => toast('Email copied'), () => toast.error('Could not copy to the clipboard.'))
+  const copyEmail = () => void navigator.clipboard.writeText(member.email).then(() => toast(t('profilePopover.emailCopied')), () => toast.error(t('profilePopover.copyFailed')))
 
   return (
     <div data-slot="profile-card" className="flex flex-col gap-3 p-4">
@@ -199,7 +205,7 @@ function ProfileCard({ userId, name, action, onClose }: { userId: string; name: 
             <button
               type="button"
               className="min-w-0 cursor-pointer truncate rounded-sm text-left outline-none focus-visible:ring-2 focus-visible:ring-ring/50 hover-fine:hover:underline"
-              aria-label={`Copy email address ${member.email}`}
+              aria-label={t('profilePopover.copyEmail', { email: member.email })}
               onClick={copyEmail}
             >
               {member.email}
@@ -211,13 +217,13 @@ function ProfileCard({ userId, name, action, onClose }: { userId: string; name: 
             <a
               href={phoneHref(profile.phone)}
               className="min-w-0 truncate rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 hover-fine:hover:underline"
-              aria-label={`Call ${profile.phone}`}
+              aria-label={t('profilePopover.call', { phone: profile.phone })}
             >
               {profile.phone}
             </a>
           </DetailRow>
         ) : null}
-        <DetailRow icon={<ShieldUser aria-hidden="true" />}>{member.role === 'Guest' ? <GuestBadge /> : member.role}</DetailRow>
+        <DetailRow icon={<ShieldUser aria-hidden="true" />}>{member.role === 'Guest' ? <GuestBadge /> : t(ROLE_KEYS[member.role])}</DetailRow>
       </ul>
 
       {profile?.bio ? <p data-slot="profile-bio" className="max-h-32 overflow-y-auto text-[0.8125rem] wrap-anywhere whitespace-pre-wrap text-foreground/85">{profile.bio}</p> : null}
@@ -231,7 +237,7 @@ function ProfileCard({ userId, name, action, onClose }: { userId: string; name: 
             navigate('/profile')
           }}
         >
-          Edit profile
+          {t('profilePopover.editProfile')}
         </Button>
       ) : (
         <div className="flex gap-2 *:flex-1">
@@ -259,6 +265,7 @@ function ProfileCard({ userId, name, action, onClose }: { userId: string; name: 
 
 /** "Message": opens the direct message with the member (the server makes it when there is none), then closes the popover. */
 function MessageAction({ userId, name, onDone }: { userId: string; name: string; onDone: () => void }) {
+  const { t } = useTranslation('shell')
   const client = useChatClient()
   const openDm = useOpenDm()
   const { openConversation } = useChatNavigation()
@@ -273,11 +280,11 @@ function MessageAction({ userId, name, onDone }: { userId: string; name: string;
             onDone()
             openConversation(dm.id)
           },
-          onError: (error) => toast.error(dmErrorMessage(error, `Could not open the conversation with ${name}. Try again.`)),
+          onError: (error) => toast.error(dmErrorMessage(error, t('profilePopover.openConversationFailed', { name }))),
         })
       }
     >
-      Message
+      {t('profilePopover.message')}
     </Button>
   )
 }
@@ -311,6 +318,7 @@ function BlockAction({ userId, name, onDone }: { userId: string; name: string; o
  * it has the focus is what keeps a refetch of the profile from racing the text.
  */
 function ProfileNote({ workspaceId, userId, name, saved }: { workspaceId: string; userId: string; name: string; saved: string }) {
+  const { t } = useTranslation('shell')
   const queryClient = useQueryClient()
   // `null` until the user types: the field then shows the saved note
   const [draft, setDraft] = useState<string | null>(null)
@@ -330,8 +338,8 @@ function ProfileNote({ workspaceId, userId, name, saved }: { workspaceId: string
   return (
     <Textarea
       data-slot="profile-note"
-      aria-label={`Private note about ${name}`}
-      placeholder="Add a note. Only you can see it."
+      aria-label={t('profilePopover.noteLabel', { name })}
+      placeholder={t('profilePopover.notePlaceholder')}
       maxLength={PROFILE_LIMITS.note}
       rows={2}
       value={draft ?? saved}

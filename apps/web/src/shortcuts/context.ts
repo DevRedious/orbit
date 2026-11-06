@@ -1,6 +1,8 @@
 import { createContext } from 'react'
 import { toast } from 'sonner'
 import { resolveBindings, type Bindings } from './bindings'
+import { i18n } from '@/i18n'
+import { commandTitle } from './commandText'
 import { COMMANDS, type Command } from './commands'
 
 const ALL_COMMANDS: readonly Command[] = COMMANDS
@@ -48,7 +50,8 @@ export class CommandStore {
       handler.run()
     } catch (error) {
       console.error(error)
-      toast.error(`Could not run "${ALL_COMMANDS.find((command) => command.id === id)?.title ?? id}".`)
+      const command = ALL_COMMANDS.find((item) => item.id === id)
+      toast.error(i18n.t('shell:shortcuts.runFailed', { command: command ? commandTitle(command) : id }))
     }
     return true
   }

@@ -5,6 +5,7 @@ import { billingCheckout, billingPortal, getAccountTrial, getBilling } from '@or
 import type { AccountTrial } from '@orbit/api/generated/types.gen'
 import { fullDate } from '@/lib/format'
 import { useAuthOptions } from '@/features/auth/api'
+import { i18n } from '@/i18n'
 import { useWorkspace } from './workspaceContext'
 
 /** Orbit Cloud: workspaces need a subscription to be writable. Off on a self-hosted server. */
@@ -65,7 +66,7 @@ export function useWorkspaceReadOnly(): boolean {
  * one toast, and the billing state is fetched again, so the editors turn read-only before they reconnect.
  */
 export function announceWorkspaceReadOnly(): void {
-  const detail = 'This workspace became read-only because it has no active subscription. Your editor is now read-only.'
+  const detail = i18n.t('shell:billing.becameReadOnly')
   window.dispatchEvent(new CustomEvent(PAYMENT_REQUIRED_EVENT, { detail }))
 }
 

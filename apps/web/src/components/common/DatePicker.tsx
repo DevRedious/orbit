@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { DateRange } from 'react-day-picker'
 import { Clock } from 'reicon-react'
 import { Button } from '@/components/ui/button'
@@ -31,6 +32,7 @@ interface DatePickerProps {
  * extends it to a range and a third starts over.
  */
 export function DatePicker({ startValue, value, clearable = !!value, onClear, onChange }: DatePickerProps) {
+  const { t } = useTranslation(['shell', 'common'])
   const initialEnd = value ? new Date(value) : undefined
   const [range, setRange] = useState<DateRange | undefined>(() => initialEnd
     ? { from: startValue ? new Date(startValue) : initialEnd, to: startValue ? initialEnd : undefined }
@@ -64,8 +66,8 @@ export function DatePicker({ startValue, value, clearable = !!value, onClear, on
   return (
     <div className="flex max-h-(--available-height) flex-col gap-3 overflow-y-auto overscroll-contain p-3">
       <div className="grid grid-cols-2 gap-2">
-        <Button type="button" variant="secondary" onClick={() => selectWeek(0)}>This week</Button>
-        <Button type="button" variant="secondary" onClick={() => selectWeek(1)}>Next week</Button>
+        <Button type="button" variant="secondary" onClick={() => selectWeek(0)}>{t('datePicker.thisWeek')}</Button>
+        <Button type="button" variant="secondary" onClick={() => selectWeek(1)}>{t('datePicker.nextWeek')}</Button>
       </div>
       {/* resetOnSelect: a click on a full range starts a new single date; clicking the selected day again (undefined) keeps it */}
       <Calendar
@@ -86,14 +88,14 @@ export function DatePicker({ startValue, value, clearable = !!value, onClear, on
             commit(range, next)
           }}
         >
-          <SelectTrigger aria-label="Time" className="flex-1">
+          <SelectTrigger aria-label={t('datePicker.time')} className="flex-1">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             {timeOptions.map((option) => <SelectItem key={option} value={option}>{option}</SelectItem>)}
           </SelectContent>
         </Select>
-        <Button variant="ghost" onClick={clear} disabled={!clearable && !committed}>Clear</Button>
+        <Button variant="ghost" onClick={clear} disabled={!clearable && !committed}>{t('common:clear')}</Button>
       </div>
     </div>
   )

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link, useLocation } from 'react-router'
 import { ArrowRight, Bell, Notification as BellOutline } from 'reicon-react'
 import { cn } from 'cn'
@@ -41,6 +42,7 @@ function useActivityPath(tab: PanelTab = 'all') {
  * unread. In the sidebar it opens a popover with the newest notifications; on a phone's top bar it opens the page.
  */
 export function ActivityBell({ unread = false, topbar = false }: { unread?: boolean; /** The phone top bar's look: page colours instead of the sidebar's. */ topbar?: boolean }) {
+  const { t } = useTranslation('shell')
   const { pathname, key } = useLocation()
   const to = useActivityPath()
   // the popover belongs to the page it opened on: any navigation (a row, a shortcut, Back) closes it
@@ -48,8 +50,8 @@ export function ActivityBell({ unread = false, topbar = false }: { unread?: bool
   const open = openOn === key
   const setOpen = (next: boolean) => setOpenOn(next ? key : null)
   const onPage = pathname === '/activity' || pathname.startsWith('/activity/')
-  const name = unread ? 'Activity, unread' : 'Activity'
-  const tip = useShortcutTitle('nav.inbox', 'Activity')
+  const name = unread ? t('activity.unread') : t('activity.label')
+  const tip = useShortcutTitle('nav.inbox', t('activity.label'))
   const className = cn(
     'relative flex shrink-0 items-center justify-center rounded-md transition-colors outline-none focus-visible:outline-1 focus-visible:outline-primary',
     topbar
@@ -66,7 +68,7 @@ export function ActivityBell({ unread = false, topbar = false }: { unread?: bool
   // a phone has room for the whole page, and no room for a popover beside it
   if (topbar) {
     return (
-      <Tip label="Activity" side="bottom">
+      <Tip label={t('activity.label')} side="bottom">
         <Link data-slot="activity-bell" data-active={onPage} aria-current={onPage ? 'page' : undefined} aria-label={name} to={to} className={className}>
           {content}
         </Link>

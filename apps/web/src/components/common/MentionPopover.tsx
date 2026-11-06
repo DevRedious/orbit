@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Hashtag as Hash, User } from 'reicon-react'
 import type { MentionSuggestion } from '@/lib/useMentionAutocomplete'
 import { Button } from '@/components/ui/button'
@@ -7,7 +8,8 @@ import { TaskStatusIcon } from '@/features/tasks/components/TaskStatusIcon'
 import { UserAvatar } from './UserAvatar'
 import { cn } from 'cn'
 
-const SECTION: Record<MentionSuggestion['kind'], string> = { user: 'People', channel: 'Channels', task: 'Tasks' }
+// each kind's heading, a key of `shell:mentionPopover` translated at render
+const SECTION = { user: 'people', channel: 'channels', task: 'tasks' } as const satisfies Record<MentionSuggestion['kind'], string>
 
 /**
  * the chat reference mention popup: people (avatar, @label, handle), tasks (status, ID, title, project) and channels,
@@ -35,6 +37,7 @@ export function MentionPopover({
   /** A search is still running: the rows (the last hits) dim under a spinner, so the popup keeps its size. */
   loading?: boolean
 }) {
+  const { t } = useTranslation('shell')
   const list = useRef<HTMLDivElement>(null)
   // ↑/↓ can move the highlight out of view: scroll the list to keep it visible
   useEffect(() => {
@@ -69,7 +72,7 @@ export function MentionPopover({
             <div key={suggestion.id} className={cn(heading && index > 0 && 'mt-1.5')}>
               {heading ? (
                 <div className="flex items-center gap-1.5 px-3 pb-1 text-xs font-bold tracking-wider text-muted-foreground uppercase">
-                  {section}
+                  {t(`mentionPopover.${section}`)}
                   {spinner ? <Spinner className="size-3" /> : null}
                 </div>
               ) : null}

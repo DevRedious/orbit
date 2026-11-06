@@ -1,14 +1,9 @@
+import { i18n } from '@/i18n'
+
 /** What a member shows as; `invisible` is only ever the signed-in user's own choice. */
 export type MemberStatus = 'online' | 'idle' | 'dnd' | 'offline' | 'invisible'
 
-const LABELS: Record<MemberStatus, string> = {
-  online: 'Online',
-  idle: 'Idle',
-  dnd: 'Do not disturb',
-  offline: 'Offline',
-  invisible: 'Invisible',
-}
-
+/** The status as words, in the UI language. */
 export function statusLabel(status: MemberStatus): string {
-  return LABELS[status]
+  return i18n.t(`shell:presence.${status}`)
 }

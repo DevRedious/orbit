@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog"
+import { useTranslation } from "react-i18next"
 import { cn } from "cn"
 
 import { Button } from "./button"
@@ -50,6 +51,7 @@ function DialogContent({
   /** No open/close animation, for a dialog opened from the keyboard in the middle of another action (save view). */
   instant?: boolean
 }) {
+  const { t } = useTranslation("common")
   return (
     <DialogPortal>
       <DialogOverlay data-instant={instant || undefined} />
@@ -76,7 +78,7 @@ function DialogContent({
           >
             <XIcon
             />
-            <span className="sr-only">Close</span>
+            <span className="sr-only">{t("close")}</span>
           </DialogPrimitive.Close>
         )}
       </DialogPrimitive.Popup>

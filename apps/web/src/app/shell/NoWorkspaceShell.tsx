@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link, Outlet, useLocation } from 'react-router'
 import { Add, SidebarRight2 } from 'reicon-react'
 import { cn } from 'cn'
@@ -17,6 +18,7 @@ import { UserMenu } from './UserMenu'
  * their profile, where they can delete the account. "Create workspace" opens the onboarding.
  */
 export function NoWorkspaceShell() {
+  const { t } = useTranslation('shell')
   const isOperator = useIsInstallationAdmin()
   const home = isOperator ? '/admin' : '/profile'
   const sidebarTheme = useAppSidebarTheme()
@@ -30,7 +32,7 @@ export function NoWorkspaceShell() {
     setDrawerOpen(false)
   }
   const links = (
-    <nav aria-label="Settings" data-slot="sidebar-nav" className="group/sidebar-nav -mx-1 flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto overscroll-contain px-1 pb-2">
+    <nav aria-label={t('nav.settings')} data-slot="sidebar-nav" className="group/sidebar-nav -mx-1 flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto overscroll-contain px-1 pb-2">
       {isOperator ? <SettingsAreaLinks area="admin" /> : null}
       <SettingsAreaLinks area="profile" profileOnly={!isOperator} />
     </nav>
@@ -39,7 +41,7 @@ export function NoWorkspaceShell() {
     <div className="px-1 pb-3">
       <Link to="/onboarding" className={cn(buttonVariants({ variant: 'outline' }), 'w-full gap-1.5')}>
         <Add className="size-4" />
-        Create workspace
+        {t('noWorkspace.createWorkspace')}
       </Link>
     </div>
   )
@@ -72,7 +74,7 @@ export function NoWorkspaceShell() {
           </Link>
           <div className="flex shrink-0 items-center gap-1">
             <UserMenu topbar />
-            <Button variant="ghost" size="icon-lg" className="-mr-1 text-muted-foreground" aria-label="Open sidebar" onClick={() => setDrawerOpen(true)}>
+            <Button variant="ghost" size="icon-lg" className="-mr-1 text-muted-foreground" aria-label={t('sidebar.open')} onClick={() => setDrawerOpen(true)}>
               <SidebarRight2 className="size-5" />
             </Button>
           </div>
@@ -84,7 +86,7 @@ export function NoWorkspaceShell() {
       <SideSheet open={drawerOpen} onOpenChange={setDrawerOpen}>
         <SideSheetContent
           side="right"
-          aria-label="Navigation"
+          aria-label={t('nav.navigation')}
           className={cn(sidebarTheme.scheme, 'z-[41] flex w-[min(280px,84vw)] flex-col overflow-hidden rounded-l-2xl border-l border-sidebar-edge bg-sidebar bg-linear-to-b from-sidebar-wash to-transparent to-[520px] px-3 pt-[calc(12px+env(safe-area-inset-top,0px))] pb-[calc(12px+env(safe-area-inset-bottom,0px))] text-sidebar-foreground')}
           style={sidebarTheme.style}
         >

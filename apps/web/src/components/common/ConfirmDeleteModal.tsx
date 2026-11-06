@@ -1,4 +1,5 @@
 // Generic destructive-confirm dialog (the chat reference ConfirmDelete modal) used across features.
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { Button } from '@/components/ui/button'
 import { DialogFooter, DialogClose } from '@/components/ui/dialog'
@@ -19,13 +20,14 @@ export function ConfirmDeleteModal({
   navigateAwayFrom?: string | null
   activeChannelId?: string | null
 }) {
+  const { t } = useTranslation('common')
   const navigate = useNavigate()
   return (
     <Modal title={title} onClose={onClose} className="sm:max-w-sm">
       <p className="text-sm leading-5 text-muted-foreground">{description}</p>
       <DialogFooter>
         <DialogClose render={<Button type="button" variant="outline" />}>
-          Cancel
+          {t('cancel')}
         </DialogClose>
         <Button
           type="button"
@@ -35,7 +37,7 @@ export function ConfirmDeleteModal({
             if (navigateAwayFrom && navigateAwayFrom === activeChannelId) navigate('/chat')
           }}
         >
-          Delete
+          {t('delete')}
         </Button>
       </DialogFooter>
     </Modal>

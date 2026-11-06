@@ -1,7 +1,9 @@
 import { useState, type ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 
 /** `||text||` in markdown: a dark bar until the reader clicks it or presses Enter or Space on it, then the text. */
 export function Spoiler({ children }: { children: ReactNode }) {
+  const { t } = useTranslation('shell')
   const [revealed, setRevealed] = useState(false)
 
   return (
@@ -10,7 +12,7 @@ export function Spoiler({ children }: { children: ReactNode }) {
       data-revealed={revealed ? '' : undefined}
       role={revealed ? undefined : 'button'}
       tabIndex={revealed ? undefined : 0}
-      aria-label={revealed ? undefined : 'Spoiler'}
+      aria-label={revealed ? undefined : t('spoiler')}
       className="cursor-pointer rounded-sm bg-foreground/80 text-transparent select-none data-revealed:cursor-auto data-revealed:bg-muted data-revealed:text-inherit data-revealed:select-auto"
       onClick={() => setRevealed(true)}
       onKeyDown={(e) => {

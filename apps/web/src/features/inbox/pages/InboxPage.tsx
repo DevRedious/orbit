@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router'
 import { Notification as Bell } from 'reicon-react'
 import { Badge } from '@/components/ui/badge'
@@ -17,6 +18,7 @@ const TABS = ['all', 'unread', 'mentions'] as const
 type InboxTab = (typeof TABS)[number]
 
 export function InboxPage() {
+  const { t } = useTranslation(['shell', 'common'])
   const { workspace } = useWorkspace()
   // the tab is in the URL: back from a notification's task, the same tab shows at the same scroll position
   const [searchParams, setSearchParams] = useSearchParams()
@@ -43,7 +45,7 @@ export function InboxPage() {
     <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden bg-background">
       <Pane>
         <PaneHeader>
-          <PaneTitle>Activity</PaneTitle>
+          <PaneTitle>{t('inbox.title')}</PaneTitle>
           {unreadCount > 0 ? <Badge className="h-4 min-w-4 px-1 text-[0.625rem] tabular-nums">{unreadCount}</Badge> : null}
           <span className="flex-1" />
           <Button
@@ -52,7 +54,7 @@ export function InboxPage() {
             disabled={unreadCount === 0 || markAll.isPending}
             onClick={() => markAll.mutate()}
           >
-            {marking ? 'Marking…' : 'Mark all read'}
+            {marking ? t('inbox.marking') : t('inbox.markAllRead')}
           </Button>
         </PaneHeader>
         <Tabs className="shrink-0 gap-0" value={tab} onValueChange={(value) => setTab(value as InboxTab)}>
@@ -63,7 +65,7 @@ export function InboxPage() {
                 value={item}
                 className="h-7 flex-none px-2.5 text-[0.8125rem]"
               >
-                {item === 'all' ? 'All' : item === 'unread' ? 'Unread' : 'Mentions'}
+                {t(`inbox.tabs.${item}`)}
               </TabsTrigger>
             ))}
           </TabsList>
@@ -71,14 +73,14 @@ export function InboxPage() {
         {allQuery.isPending || items.length === 0 ? (
           <div className="min-h-0 flex-1 overflow-y-auto">
             {allQuery.isPending ? (
-              <EmptyState icon={Bell} title="Loading activity" description="Loading your notifications." />
+              <EmptyState icon={Bell} title={t('inbox.loadingTitle')} description={t('inbox.loadingDescription')} />
             ) : loadFailed(allQuery) ? (
               <div className="flex h-full flex-col items-center justify-center">
-                <EmptyState icon={Bell} title="Activity unavailable" description="Notifications could not be loaded." />
-                <Button variant="outline" type="button" onClick={() => void allQuery.refetch()}>Retry</Button>
+                <EmptyState icon={Bell} title={t('inbox.unavailableTitle')} description={t('inbox.unavailableDescription')} />
+                <Button variant="outline" type="button" onClick={() => void allQuery.refetch()}>{t('common:retry')}</Button>
               </div>
             ) : (
-              <EmptyState icon={Bell} title="You're all caught up" description="Assignments and mentions appear here." />
+              <EmptyState icon={Bell} title={t('inbox.emptyTitle')} description={t('inbox.emptyDescription')} />
             )}
           </div>
         ) : (

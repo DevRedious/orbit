@@ -1,8 +1,10 @@
+import { useTranslation } from "react-i18next"
 import { cn } from "cn"
 
 function Spinner({ className, ...props }: React.ComponentProps<"svg">) {
+  const { t } = useTranslation("common")
   return (
-    <svg data-slot="spinner" role="status" aria-label="Loading" viewBox="0 0 24 24" fill="none" className={cn("size-4 shrink-0", className)} {...props}>
+    <svg data-slot="spinner" role="status" aria-label={t("loading")} viewBox="0 0 24 24" fill="none" className={cn("size-4 shrink-0", className)} {...props}>
       <circle cx="12" cy="12" r="9.5" stroke="currentColor" strokeWidth="2.5" opacity="0.2" />
       {/* Spin the arc inside the viewBox, not the <svg> box: a box on a fractional pixel (rem text sizes) wobbles as it turns */}
       <path className="origin-center animate-spin" d="M21.5 12a9.5 9.5 0 0 0-9.5-9.5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />

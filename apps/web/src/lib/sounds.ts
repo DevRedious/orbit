@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react'
+import { i18n } from '@/i18n'
 
 export type SoundKind = 'message' | 'mention'
 export type SoundSet = 'pop' | 'knock' | 'chime'
@@ -19,11 +20,17 @@ interface Sound {
   notes: readonly Note[]
 }
 
+/** The sound sets; `label` is the English name, `soundSetLabel` gives it in the UI language. */
 export const SOUND_SETS: { value: SoundSet; label: string }[] = [
   { value: 'pop', label: 'Pop' },
   { value: 'knock', label: 'Knock' },
   { value: 'chime', label: 'Chime' },
 ]
+
+/** The name of a sound set in the UI language. */
+export function soundSetLabel(set: SoundSet): string {
+  return i18n.t(`shell:soundSets.${set}`)
+}
 
 const SOUNDS: Record<SoundSet, Record<SoundKind, Sound>> = {
   // Soft and low: a short upward blip into a held note. The mention adds a third, higher note.

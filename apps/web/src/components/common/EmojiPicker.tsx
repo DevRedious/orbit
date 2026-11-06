@@ -1,6 +1,8 @@
 import { EmojiPicker as Frimousse, type EmojiPickerListCategoryHeaderProps, type EmojiPickerListEmojiProps, type EmojiPickerListRowProps } from 'frimousse'
 import { useContext, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Search4 as Search } from 'reicon-react'
+import { DEFAULT_LANGUAGE, isLanguage } from '@orbit/i18n/languages'
 import { Button } from '@/components/ui/button'
 import { Tip } from '@/components/common/Tip'
 import { Spinner } from '@/components/ui/spinner'
@@ -39,6 +41,7 @@ function EmojiButton({ emoji, ...props }: EmojiPickerListEmojiProps) {
  * `:name:`. Frimousse has no place for entries that are not characters, so the group is ours and the search filters it.
  */
 export function EmojiPicker({ onPick, onRemove, custom = false }: { onPick: (emoji: string) => void; onRemove?: () => void; custom?: boolean }) {
+  const { t, i18n } = useTranslation(['shell', 'common'])
   const customEmoji = useContext(CustomEmojiContext)
   const [search, setSearch] = useState('')
   const query = search.trim().toLowerCase()
@@ -47,7 +50,8 @@ export function EmojiPicker({ onPick, onRemove, custom = false }: { onPick: (emo
     <Frimousse.Root
       data-slot="emoji-picker"
       columns={9}
-      locale="en"
+      // the emoji names and categories follow the UI (Orbit serves the data of every UI language, see `vite.config.ts`)
+      locale={isLanguage(i18n.language) ? i18n.language : DEFAULT_LANGUAGE}
       emojiVersion={EMOJI_VERSION}
       emojibaseUrl={EMOJIBASE_PATH}
       className="isolate flex h-[380px] w-fit flex-col"
@@ -56,17 +60,17 @@ export function EmojiPicker({ onPick, onRemove, custom = false }: { onPick: (emo
       <div className="flex items-center gap-2 p-2 pb-0">
         <label className="flex h-8 min-w-0 flex-1 items-center gap-2 rounded-md bg-secondary/60 px-2.5 text-muted-foreground ring-ring/50 ring-inset focus-within:ring-1">
           <Search className="size-3.5 shrink-0" aria-hidden="true" />
-          <Frimousse.Search autoFocus placeholder="Search emoji" aria-label="Search emoji" onChange={(event) => setSearch(event.target.value)} className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground" />
+          <Frimousse.Search autoFocus placeholder={t('emojiPicker.search')} aria-label={t('emojiPicker.search')} onChange={(event) => setSearch(event.target.value)} className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground" />
         </label>
         {onRemove ? (
           <Button type="button" variant="ghost" size="sm" onClick={onRemove}>
-            Remove
+            {t('common:remove')}
           </Button>
         ) : null}
       </div>
       {customNames.length > 0 ? (
-        <div data-slot="emoji-custom" role="group" aria-label="Custom" className="max-h-[7.5rem] shrink-0 overflow-y-auto overscroll-contain border-b pb-1.5">
-          <div data-slot="emoji-category" className="sticky top-0 bg-popover px-3 pt-3 pb-1.5 text-xs font-medium text-muted-foreground">Custom</div>
+        <div data-slot="emoji-custom" role="group" aria-label={t('emojiPicker.custom')} className="max-h-[7.5rem] shrink-0 overflow-y-auto overscroll-contain border-b pb-1.5">
+          <div data-slot="emoji-category" className="sticky top-0 bg-popover px-3 pt-3 pb-1.5 text-xs font-medium text-muted-foreground">{t('emojiPicker.custom')}</div>
           {/* a grid of nine, as wide as a row of the list: it must not widen the panel */}
           <div className="grid grid-cols-9 px-1.5">
             {customNames.map((name) => (
@@ -88,7 +92,7 @@ export function EmojiPicker({ onPick, onRemove, custom = false }: { onPick: (emo
         <Frimousse.Loading className="absolute inset-0 flex items-center justify-center">
           <Spinner className="text-muted-foreground" />
         </Frimousse.Loading>
-        <Frimousse.Empty className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">No emoji found</Frimousse.Empty>
+        <Frimousse.Empty className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">{t('emojiPicker.empty')}</Frimousse.Empty>
         <Frimousse.List className="pb-1.5 select-none" components={{ CategoryHeader, Row, Emoji: EmojiButton }} />
       </Frimousse.Viewport>
       <div className="flex h-11 shrink-0 items-center gap-2 border-t px-3">
@@ -102,7 +106,7 @@ export function EmojiPicker({ onPick, onRemove, custom = false }: { onPick: (emo
                 <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">{emoji.label}</span>
               </>
             ) : (
-              <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">Pick an emoji</span>
+              <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">{t('emojiPicker.pick')}</span>
             )
           }
         </Frimousse.ActiveEmoji>
@@ -113,8 +117,8 @@ export function EmojiPicker({ onPick, onRemove, custom = false }: { onPick: (emo
             const next = skinToneVariations[(index + 1) % skinToneVariations.length]
             if (!current || !next) return null
             return (
-              <Tip label="Change skin tone">
-                <Button type="button" variant="ghost" size="icon-sm" className="text-base" aria-label={`Skin tone: ${skinTone}. Change skin tone`} onClick={() => setSkinTone(next.skinTone)}>
+              <Tip label={t('emojiPicker.changeSkinTone')}>
+                <Button type="button" variant="ghost" size="icon-sm" className="text-base" aria-label={t('emojiPicker.skinTone', { tone: t(`emojiPicker.skinTones.${skinTone}`) })} onClick={() => setSkinTone(next.skinTone)}>
                   <Emoji value={current.emoji} />
                 </Button>
               </Tip>

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { useAuthOptions, useCurrentUser } from '@/features/auth/api'
 
@@ -6,6 +7,7 @@ import { useAuthOptions, useCurrentUser } from '@/features/auth/api'
  * they save one. Customers see nothing.
  */
 export function MailServerBanner() {
+  const { t } = useTranslation('shell')
   const options = useAuthOptions().data
   const admin = useCurrentUser().data?.installation_admin ?? false
   if (!admin || !options?.billing_enabled || options.email_enabled) return null
@@ -15,11 +17,9 @@ export function MailServerBanner() {
       role="alert"
       className="flex min-h-8 shrink-0 flex-wrap items-center justify-center gap-x-2 border-b border-destructive/20 bg-destructive/10 px-3 py-1 text-center text-xs text-destructive dark:bg-destructive/20"
     >
-      <span className="font-medium">
-        Orbit Cloud has no mail server. Email change, invitations by email, password reset and sign-up do not work.
-      </span>
+      <span className="font-medium">{t('mailServer.missing')}</span>
       <Link to="/admin/email" className="shrink-0 font-semibold text-destructive underline underline-offset-4">
-        Set it in Admin → Email
+        {t('mailServer.setIt')}
       </Link>
     </div>
   )

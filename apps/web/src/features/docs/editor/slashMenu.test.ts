@@ -3,6 +3,8 @@ import { BlockNoteEditor } from '@blocknote/core'
 import { getPageSlashMenuItems, getTaskSlashMenuItems, mergeSlashItems, preferTitleMatches } from './slashMenu'
 import { FILE_BLOCK_TYPES, REMOVED_BLOCK_TYPES } from '@orbit/editor/schema'
 import { EDITOR_BLOCK_TYPES, pageEditorSchema, taskEditorSchema } from './schema'
+import { i18n } from '@/i18n'
+import { blockNoteDictionary } from '../comments/dictionary'
 
 const BASIC_BLOCKS = 'Basic blocks'
 
@@ -87,6 +89,15 @@ describe('getPageSlashMenuItems', () => {
     const subpage = items.find((item) => item.title === 'Sub-page')
     expect(subpage?.group).toBe(BASIC_BLOCKS)
     expect(subpage?.icon).toBeDefined()
+  })
+
+  test('in French, the page items join BlockNote\'s own "Blocs de base" group', async () => {
+    await i18n.changeLanguage('fr')
+    const items = getPageSlashMenuItems(BlockNoteEditor.create({ schema: pageEditorSchema, dictionary: blockNoteDictionary() }), actions, '')
+    const subpage = items.find((item) => item.title === 'Sous-page')
+    expect(subpage?.group).toBe('Blocs de base')
+    const groupRuns = items.map((item) => item.group).filter((group, index, all) => group !== all[index - 1])
+    expect(groupRuns.filter((group) => group === 'Blocs de base')).toHaveLength(1)
   })
 
   test('filters by title and aliases and runs the matching action', () => {

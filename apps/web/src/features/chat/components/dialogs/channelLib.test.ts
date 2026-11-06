@@ -1,6 +1,7 @@
 import { expect, test } from 'bun:test'
 import { ApiProblem } from '@orbit/api/problem'
 import { CHAT_CLIENT_MESSAGES, ChatError } from '@/features/chat/api/types'
+import { i18n } from '@/i18n'
 import { addablePeople, canAddPeople, canManageChannel, channelNameFinal, channelNameInput, chatErrorMessage, chatErrorReason, dmErrorMessage, matchPeople, messageablePeople, pickablePeople } from './channelLib'
 
 test('a channel name is lowercase and spaces become hyphens while it is typed', () => {
@@ -118,13 +119,21 @@ test('a refused direct message shows the reason that the server gave', () => {
   expect(dmErrorMessage(new Error('network'), fallback)).toBe(fallback)
 })
 
-test('a failure reason is a client failure or the server detail', () => {
+test('a failure reason follows the UI language: client failures and known server details', async () => {
   const unreachable = new ChatError('offline', CHAT_CLIENT_MESSAGES.unreachable, true)
   const cancelled = new ChatError('upload_failed', CHAT_CLIENT_MESSAGES.uploadCancelled)
   const detail = 'You do not have permission to do this.'
   const problem = new ApiProblem({ type: 'about:blank', title: 'Forbidden', status: 403, code: 'brand_new_code', detail, instance: '/', request_id: 'test' })
+  const server = new ChatError('forbidden', detail, false, problem)
   expect(chatErrorReason(unreachable)).toBe('The server could not be reached.')
-  expect(chatErrorReason(cancelled)).toBe('The upload was cancelled.')
-  // a code the catalog does not know keeps the server text
-  expect(chatErrorReason(new ChatError('forbidden', detail, false, problem))).toBe(detail)
+  expect(chatErrorReason(server)).toBe(detail)
+  try {
+    await i18n.changeLanguage('fr')
+    expect(chatErrorReason(unreachable)).toBe('Le serveur est injoignable.')
+    expect(chatErrorReason(cancelled)).toBe('L’envoi du fichier a été annulé.')
+    // a code the catalog does not know keeps the server text
+    expect(chatErrorReason(server)).toBe(detail)
+  } finally {
+    await i18n.changeLanguage('en')
+  }
 })

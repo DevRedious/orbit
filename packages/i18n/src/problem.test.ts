@@ -20,3 +20,9 @@ test('inherited object keys are not codes', () => {
   expect(problemKey('toString', 'Inherited keys are not codes.')).toBeNull()
   expect(problemKey('constructor', 'x')).toBeNull()
 })
+
+test('a code that became a set of wordings keeps matching its first wording', () => {
+  expect(problemKey('invalid_two_factor_code', 'The code is not correct.')).toBe('invalid_two_factor_code.signIn')
+  expect(problemKey('storage_quota_exceeded', 'The restored files would take the workspace over its storage quota.')).toBe('storage_quota_exceeded.restore')
+  expect(problemKey('chat_forbidden', "Only the channel's creator and workspace owners and admins can do this.")).toBe('chat_forbidden.creator')
+})

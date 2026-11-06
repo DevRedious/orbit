@@ -1,3 +1,4 @@
+import { i18n } from '@/i18n'
 import { dayLabel, fullDate, relativeTime, timeOfDay } from '@/lib/format'
 
 const iso = (ms: number) => new Date(ms).toISOString()
@@ -20,9 +21,11 @@ export function dayChip(ms: number): string {
 
 /** "just now", "2m ago", "3h ago", "2d ago", then a short date: last reply and last activity. */
 export function relativeAgo(ms: number): string {
-  if (Date.now() - ms >= 7 * 24 * 60 * 60_000) return relativeTime(iso(ms))
-  const short = relativeTime(iso(ms))
-  return short === 'now' ? 'just now' : `${short} ago`
+  const age = Date.now() - ms
+  if (age >= 7 * 24 * 60 * 60_000) return relativeTime(iso(ms))
+  // the same threshold as `relativeTime`'s "now"
+  if (age < 60_000) return i18n.t('chat:conversation.time.justNow')
+  return i18n.t('chat:conversation.time.ago', { time: relativeTime(iso(ms)) })
 }
 
 /** Date and time, for tooltips and the accessible name of a time. */

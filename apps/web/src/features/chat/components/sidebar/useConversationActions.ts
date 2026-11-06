@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { confirmAction } from '@/components/common/confirmAction'
 import { useChatContext } from '@/features/chat/api/chatContext'
@@ -19,6 +20,7 @@ export function useIsChatAdmin(): boolean {
  * toast with the action's name; the optimistic change rolls back in the mutation.
  */
 export function useConversationActions(conversation: Conversation) {
+  const { t } = useTranslation('chat')
   const { currentUserId } = useChatContext()
   const admin = useIsChatAdmin()
   const state = useConversationState(conversation.id).data
@@ -31,7 +33,7 @@ export function useConversationActions(conversation: Conversation) {
   const id = conversation.id
   const channel = conversation.kind !== 'dm'
   const canManage = channel && !conversation.archived && (admin || conversation.createdBy === currentUserId)
-  const failed = (action: string) => () => void toast.error(`Could not ${action}. Try again.`)
+  const failed = (message: string) => () => void toast.error(message)
 
   return {
     state,
@@ -40,36 +42,40 @@ export function useConversationActions(conversation: Conversation) {
     canArchive: canManage && !conversation.isDefault,
     // every workspace member is in a public channel (#general too): only a private one can be left
     canLeave: conversation.kind === 'private' && conversation.isMember,
-    markRead: () => markRead.mutate(id, { onError: failed('mark as read') }),
-    toggleFavorite: () => setFavorite.mutate({ conversationId: id, favorite: !state?.favorite }, { onError: failed(state?.favorite ? 'remove the star' : 'add the star') }),
-    setNotify: (notify: NotifyLevel) => setNotify.mutate({ conversationId: id, notify }, { onError: failed('change the notification setting') }),
+    markRead: () => markRead.mutate(id, { onError: failed(t('sidebar.actions.markReadFailed')) }),
+    toggleFavorite: () =>
+      setFavorite.mutate(
+        { conversationId: id, favorite: !state?.favorite },
+        { onError: failed(state?.favorite ? t('sidebar.actions.removeStarFailed') : t('sidebar.actions.addStarFailed')) },
+      ),
+    setNotify: (notify: NotifyLevel) => setNotify.mutate({ conversationId: id, notify }, { onError: failed(t('sidebar.actions.notifyFailed')) }),
     copyLink: () => {
       navigator.clipboard
         .writeText(`${window.location.origin}${conversationPath(id)}`)
-        .then(() => toast.success('Link copied'))
-        .catch(failed('copy the link'))
+        .then(() => toast.success(t('sidebar.actions.linkCopied')))
+        .catch(failed(t('sidebar.actions.copyLinkFailed')))
     },
     leave: async () => {
       // leaving a private channel removes it for the user: they need an invitation to come back
       if (conversation.kind === 'private') {
         const confirmed = await confirmAction({
-          title: `Leave ${conversation.name}?`,
-          description: 'This is a private channel. To come back, a member has to add you again.',
-          confirmLabel: 'Leave channel',
+          title: t('sidebar.actions.leaveTitle', { name: conversation.name }),
+          description: t('sidebar.actions.leaveDescription'),
+          confirmLabel: t('sidebar.menu.leaveChannel'),
           danger: true,
         })
         if (!confirmed) return
       }
-      leaveChannel.mutate(id, { onError: failed('leave the channel') })
+      leaveChannel.mutate(id, { onError: failed(t('sidebar.actions.leaveFailed')) })
     },
     archive: async () => {
       const confirmed = await confirmAction({
-        title: `Archive #${conversation.name}?`,
-        description: 'The channel becomes read-only and leaves the sidebar for everyone. Its messages stay searchable.',
-        confirmLabel: 'Archive channel',
+        title: t('sidebar.actions.archiveTitle', { name: conversation.name }),
+        description: t('sidebar.actions.archiveDescription'),
+        confirmLabel: t('sidebar.menu.archiveChannel'),
         danger: true,
       })
-      if (confirmed) archiveChannel.mutate(id, { onError: failed('archive the channel') })
+      if (confirmed) archiveChannel.mutate(id, { onError: failed(t('sidebar.actions.archiveFailed')) })
     },
   }
 }

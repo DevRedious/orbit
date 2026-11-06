@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Navigate, useNavigate } from 'react-router'
 import { Lock, Message } from 'reicon-react'
 import { EmptyState } from '@/components/common/EmptyState'
@@ -41,7 +42,14 @@ import { openedByPointer, useElementWidth, useInputModality, useIsPhone } from '
 import { loadFailed } from '@/lib/connection'
 import { useIsGuest } from '@/features/workspaces/permissions'
 
-const PANE_LABEL: Record<RightPane['kind'], string> = { thread: 'Thread', search: 'Search', members: 'Members', pins: 'Pinned messages', files: 'Files', threads: 'Threads' }
+const PANE_LABEL = {
+  thread: 'conversation.page.panes.thread',
+  search: 'conversation.page.panes.search',
+  members: 'conversation.page.panes.members',
+  pins: 'conversation.page.panes.pins',
+  files: 'conversation.page.panes.files',
+  threads: 'conversation.page.panes.threads',
+} as const satisfies Record<RightPane['kind'], string>
 
 /** The content of the right pane. Each pane brings its own 48px header, close button and accessible name. */
 function PaneContent({ conversationId, pane }: { conversationId: string; pane: RightPane }) {
@@ -67,6 +75,7 @@ function PaneContent({ conversationId, pane }: { conversationId: string; pane: R
  * and it never animates out.
  */
 function InlinePane({ width, onResize, children }: { width: number; onResize: (width: number) => void; children: ReactNode }) {
+  const { t } = useTranslation('chat')
   const [fade] = useState(openedByPointer)
   return (
     <div
@@ -75,7 +84,7 @@ function InlinePane({ width, onResize, children }: { width: number; onResize: (w
       className="relative flex min-h-0 shrink-0 flex-col border-l bg-background motion-reduce:transition-none data-fade:transition-opacity data-fade:duration-150 data-fade:ease-out data-fade:starting:opacity-0"
       style={{ width }}
     >
-      <ResizeHandle edge="left" width={width} range={PANE_WIDTH} label="Resize the right pane" onResize={onResize} />
+      <ResizeHandle edge="left" width={width} range={PANE_WIDTH} label={t('conversation.page.resizePane')} onResize={onResize} />
       {children}
     </div>
   )
@@ -83,6 +92,7 @@ function InlinePane({ width, onResize, children }: { width: number; onResize: (w
 
 /** A pane as a sheet from the right: on a phone, and when the window cannot fit the pane beside the message column. */
 function PaneSheet({ conversationId, pane, onClose }: { conversationId: string | null; pane: RightPane | null; onClose: () => void }) {
+  const { t } = useTranslation('chat')
   // the last pane stays rendered while the sheet plays its exit
   const key = pane && conversationId ? `${conversationId}:${JSON.stringify(pane)}` : null
   const [kept, setKept] = useState<{ key: string; conversationId: string; pane: RightPane } | null>(null)
@@ -96,7 +106,7 @@ function PaneSheet({ conversationId, pane, onClose }: { conversationId: string |
     >
       <SideSheetContent
         side="right"
-        aria-label={kept ? PANE_LABEL[kept.pane.kind] : 'Pane'}
+        aria-label={kept ? t(PANE_LABEL[kept.pane.kind]) : t('conversation.page.pane')}
         className="w-[min(420px,100vw)] border-l bg-card pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)]"
       >
         {kept ? <PaneContent conversationId={kept.conversationId} pane={kept.pane} /> : null}
@@ -168,6 +178,7 @@ function ChatCommands() {
  * Nothing here is transformed or animated except the opacity of a pane that the pointer opened.
  */
 export function ChatPage() {
+  const { t } = useTranslation('chat')
   const location = useChatLocation()
   const theme = useCustomTheme()
   const navigation = useChatNavigation()
@@ -205,10 +216,10 @@ export function ChatPage() {
     createTask: guest ? undefined : (message: ChatMessage) => {
       const source = conversations.data?.find((candidate) => candidate.id === message.conversationId)
       const text = decodeMentions(message.body, people ?? [], conversations.data ?? [])
-      const where = source && source.kind !== 'dm' ? `a message in #${source.name}` : 'a direct message'
+      const url = `${window.location.origin}${messagePath(message)}`
       openNewTask({
         title: taskTitleFromMessage(text),
-        description: `Created from [${where}](${window.location.origin}${messagePath(message)}).`,
+        description: source && source.kind !== 'dm' ? t('conversation.page.taskFromChannel', { channel: source.name, url }) : t('conversation.page.taskFromDm', { url }),
       })
     },
   }
@@ -228,7 +239,7 @@ export function ChatPage() {
   const sheetPane = conversation && urlPane && !fits && urlPane.kind !== 'thread' ? urlPane : null
   const browseAction = (
     <Button type="button" onClick={() => setBrowseOpen(true)}>
-      Browse channels
+      {t('conversation.page.browseChannels')}
     </Button>
   )
 
@@ -241,9 +252,9 @@ export function ChatPage() {
     main = (
       <Pane>
         <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-[0.8125rem] text-muted-foreground" role="alert">
-          Could not load chat.
+          {t('conversation.page.loadFailed')}
           <Button type="button" variant="outline" size="sm" onClick={() => void conversations.refetch()}>
-            Try again
+            {t('conversation.page.retry')}
           </Button>
         </div>
       </Pane>
@@ -256,9 +267,9 @@ export function ChatPage() {
       <Pane>
         <div className="flex flex-1 flex-col p-6">
           {guest ? (
-            <EmptyState icon={Message} title="No conversations yet" description="As a guest, you see only the channels that you are added to. Ask a channel manager to add you to a channel." />
+            <EmptyState icon={Message} title={t('conversation.page.emptyTitle')} description="As a guest, you see only the channels that you are added to. Ask a channel manager to add you to a channel." />
           ) : (
-            <EmptyState icon={Message} title="No conversations yet" description="Join a channel to start reading and writing messages." action={browseAction} />
+            <EmptyState icon={Message} title={t('conversation.page.emptyTitle')} description={t('conversation.page.emptyDescription')} action={browseAction} />
           )}
         </div>
       </Pane>
@@ -269,12 +280,8 @@ export function ChatPage() {
         <div className="flex flex-1 flex-col p-6">
           <EmptyState
             icon={Lock}
-            title="This conversation is not available"
-            description={
-              guest
-                ? 'It is private or it does not exist. Select a conversation in the sidebar, or ask a channel manager to add you.'
-                : 'It is private or it does not exist. You can find every public channel in Browse channels.'
-            }
+            title={t('conversation.page.unavailableTitle')}
+            description={guest ? 'It is private or it does not exist. Select a conversation in the sidebar, or ask a channel manager to add you.' : t('conversation.page.unavailableDescription')}
             action={guest ? undefined : browseAction}
           />
         </div>

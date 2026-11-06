@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { Xmark } from 'reicon-react'
 import { Attachments } from '@/components/common/Attachments'
 import { Button } from '@/components/ui/button'
@@ -13,6 +14,7 @@ export function ComposerUploads({
   onRemove: (id: string) => void
   onRetry: (id: string) => void
 }) {
+  const { t } = useTranslation('chat')
   if (uploads.length === 0) return null
   const done = uploads.flatMap((upload) => (upload.attachment ? [upload.attachment] : []))
   const pending = uploads.filter((upload) => upload.status !== 'done')
@@ -34,11 +36,11 @@ export function ComposerUploads({
           data-status={upload.status}
           className="flex max-w-md items-center gap-2 rounded-md border border-border py-1 pr-1 pl-2.5 text-xs data-[status=failed]:border-destructive/40"
         >
-          <span className="min-w-0 flex-1 truncate font-medium">{upload.file.name || 'Pasted file'}</span>
+          <span className="min-w-0 flex-1 truncate font-medium">{upload.file.name || t('composer.uploads.pastedFile')}</span>
           {upload.status === 'uploading' ? (
             <span
               role="progressbar"
-              aria-label={`Uploading ${upload.file.name}`}
+              aria-label={t('composer.uploads.uploading', { name: upload.file.name })}
               aria-valuemin={0}
               aria-valuemax={100}
               aria-valuenow={Math.round(upload.progress * 100)}
@@ -48,16 +50,16 @@ export function ComposerUploads({
             </span>
           ) : (
             <span role="alert" className="flex shrink-0 items-center gap-1.5 text-destructive">
-              {upload.storageFull ? 'The workspace storage is full.' : 'Upload failed.'}
+              {upload.storageFull ? t('composer.uploads.storageFull') : t('composer.uploads.failed')}
               <Button variant="link" size="xs" className="h-6 px-0 text-destructive" onClick={() => onRetry(upload.id)}>
-                Try again
+                {t('composer.uploads.tryAgain')}
               </Button>
             </span>
           )}
           <Button
             variant="ghost"
             size="icon-xs"
-            aria-label={upload.status === 'uploading' ? `Cancel upload of ${upload.file.name}` : `Remove ${upload.file.name}`}
+            aria-label={upload.status === 'uploading' ? t('composer.uploads.cancel', { name: upload.file.name }) : t('composer.uploads.remove', { name: upload.file.name })}
             onClick={() => onRemove(upload.id)}
           >
             <Xmark />

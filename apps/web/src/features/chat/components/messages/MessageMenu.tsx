@@ -1,4 +1,5 @@
 import { Fragment } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Emoji } from '@/components/common/Emoji'
 import { Button } from '@/components/ui/button'
 import { SideSheet, SideSheetContent } from '@/components/common/SideSheet'
@@ -65,10 +66,11 @@ export function MessageActionSheet({
   onReact?: (emoji: string) => void
   actions: MessageAction[]
 }) {
+  const { t } = useTranslation('chat')
   return (
     <SideSheet open={open} onOpenChange={onOpenChange}>
       <SideSheetContent
-        aria-label="Message actions"
+        aria-label={t('messages.toolbar.label')}
         data-slot="message-action-sheet"
         // The list puts focus on the message row; "Edit" then moves it into the edit field.
         finalFocus={false}
@@ -82,7 +84,7 @@ export function MessageActionSheet({
                 variant="secondary"
                 size="icon-lg"
                 className="size-11 rounded-full text-xl"
-                aria-label={`React with ${emoji}`}
+                aria-label={t('messages.toolbar.reactWith', { emoji })}
                 onClick={() => {
                   onReact(emoji)
                   onOpenChange(false)

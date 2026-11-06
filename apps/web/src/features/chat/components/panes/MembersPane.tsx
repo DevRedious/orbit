@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Crown, People, User as UserIcon, UserAdd } from 'reicon-react'
 import { ProfileTrigger } from '@/components/common/ProfileTrigger'
@@ -21,11 +22,20 @@ import type { User } from '@/features/workspaces/models'
 import { RightPane, RightPaneBody, RightPaneEmpty, RightPaneError, RightPaneLoading } from './RightPane'
 import { GuestBadge } from '@/components/common/GuestBadge'
 
+const GROUP_LABEL = {
+  Owner: 'panes.members.groups.owner',
+  Admin: 'panes.members.groups.admin',
+  Online: 'panes.members.groups.online',
+  Guests: 'panes.members.groups.guests',
+  Offline: 'panes.members.groups.offline',
+} as const
+
 /**
  * The people in a conversation, laid out like Discord's member list: online people under their role, offline people
  * dimmed at the end. A click on a person opens the direct message with them.
  */
 export function MembersPane({ conversationId }: { conversationId: string }) {
+  const { t } = useTranslation('chat')
   const { workspaceId, currentUserId } = useChatContext()
   const conversationQuery = useConversation(conversationId)
   const membersQuery = useMembers(workspaceId)
@@ -46,7 +56,7 @@ export function MembersPane({ conversationId }: { conversationId: string }) {
     if (openDm.isPending) return
     openDm.mutate(person.id === currentUserId ? [] : [person.id], {
       onSuccess: (dm) => openConversation(dm.id),
-      onError: (error) => toast.error(dmErrorMessage(error, `Could not open the conversation with ${person.name}. Try again.`)),
+      onError: (error) => toast.error(dmErrorMessage(error, t('panes.members.openDmFailed', { name: person.name }))),
     })
   }
 
@@ -55,14 +65,14 @@ export function MembersPane({ conversationId }: { conversationId: string }) {
       { conversationId, userId: person.id },
       {
         onError: (error) =>
-          toast.error(chatErrorMessage(error, `Could not remove ${person.name}. Try again.`, { forbidden: 'Only the channel creator and workspace owners and admins can remove people.' })),
+          toast.error(chatErrorMessage(error, t('panes.members.removeFailed', { name: person.name }), { forbidden: t('panes.members.removeForbidden') })),
       },
     )
   }
 
   return (
     <RightPane
-      title="Members"
+      title={t('panes.members.title')}
       actions={conversation && canAddPeople(conversation, currentUser) ? <AddPeople conversation={conversation} people={addablePeople(conversation, members, currentUserId)} /> : null}
     >
       <RightPaneBody className="pt-0">
@@ -70,19 +80,19 @@ export function MembersPane({ conversationId }: { conversationId: string }) {
           <RightPaneLoading />
         ) : conversationQuery.isError || membersQuery.isError ? (
           <RightPaneError
-            title="The members could not be loaded."
+            title={t('panes.members.loadFailed')}
             onRetry={() => {
               void conversationQuery.refetch()
               void membersQuery.refetch()
             }}
           />
         ) : people.length === 0 ? (
-          <RightPaneEmpty icon={People} title="No members to show" description="Open a conversation from the sidebar to see who is in it." />
+          <RightPaneEmpty icon={People} title={t('panes.members.emptyTitle')} description={t('panes.members.emptyDescription')} />
         ) : (
           groups.map((group) => (
-            <section key={group.label} aria-label={`${group.label}, ${group.people.length}`} data-online={group.online} className="group/members">
+            <section key={group.label} aria-label={t('panes.members.groupLabel', { group: t(GROUP_LABEL[group.label]), count: group.people.length })} data-online={group.online} className="group/members">
               <h3 className="px-2 pt-4 pb-1 text-xs font-semibold text-muted-foreground">
-                {group.label} — {group.people.length}
+                {t(GROUP_LABEL[group.label])} — {group.people.length}
               </h3>
               <ul className="flex flex-col gap-px">
                 {group.people.map((person) => {
@@ -92,7 +102,7 @@ export function MembersPane({ conversationId }: { conversationId: string }) {
                       key={person.id}
                       className="group flex items-center gap-1 rounded-md transition-colors duration-150 ease-out focus-within:bg-muted hover-fine:hover:bg-muted group-data-[online=false]/members:opacity-40 group-data-[online=false]/members:focus-within:opacity-100 group-data-[online=false]/members:hover-fine:hover:opacity-100"
                     >
-                      <Tip label={person.id === currentUserId ? 'Message yourself' : `Message ${person.name}`}>
+                      <Tip label={person.id === currentUserId ? t('panes.members.messageYourself') : t('panes.members.messagePerson', { name: person.name })}>
                         <Button
                           variant="ghost"
                           className="h-[42px] min-w-0 flex-1 justify-start gap-3 px-2 text-[0.9375rem] font-medium text-muted-foreground group-focus-within:text-foreground hover:bg-transparent hover-fine:group-hover:text-foreground dark:hover:bg-transparent"
@@ -105,7 +115,7 @@ export function MembersPane({ conversationId }: { conversationId: string }) {
                               {person.role === 'Owner' ? (
                                 <>
                                   <Crown className="size-3.5 shrink-0 text-amber-500" aria-hidden="true" />
-                                  <span className="sr-only">Workspace owner</span>
+                                  <span className="sr-only">{t('panes.members.workspaceOwner')}</span>
                                 </>
                               ) : person.role === 'Guest' ? (
                                 <GuestBadge />
@@ -119,7 +129,7 @@ export function MembersPane({ conversationId }: { conversationId: string }) {
                           </span>
                         </Button>
                       </Tip>
-                      <Tip label="View profile">
+                      <Tip label={t('panes.members.viewProfile')}>
                         <ProfileTrigger
                           userId={person.id}
                           name={person.name}
@@ -128,7 +138,7 @@ export function MembersPane({ conversationId }: { conversationId: string }) {
                             <Button
                               variant="ghost"
                               size="icon-sm"
-                              aria-label="View profile"
+                              aria-label={t('panes.members.viewProfile')}
                               className="mr-1 shrink-0 text-muted-foreground focus-visible:opacity-100 hover-fine:opacity-0 hover-fine:group-hover:opacity-100 hover-fine:group-focus-within:opacity-100"
                             />
                           }
@@ -141,11 +151,11 @@ export function MembersPane({ conversationId }: { conversationId: string }) {
                           variant="ghost"
                           size="sm"
                           className="mr-1 text-muted-foreground focus-visible:opacity-100 hover-fine:opacity-0 hover-fine:group-hover:opacity-100 hover-fine:group-focus-within:opacity-100"
-                          aria-label={`Remove ${person.name}`}
+                          aria-label={t('panes.members.removePerson', { name: person.name })}
                           disabled={removeMember.isPending}
                           onClick={() => remove(person)}
                         >
-                          Remove
+                          {t('panes.members.remove')}
                         </Button>
                       ) : null}
                     </li>
@@ -162,6 +172,7 @@ export function MembersPane({ conversationId }: { conversationId: string }) {
 
 /** "Add people": a popover with the picker. The people on offer are workspace members who are not in the channel yet. */
 function AddPeople({ conversation, people }: { conversation: Conversation; people: User[] }) {
+  const { t } = useTranslation('chat')
   const addMembers = useAddMembers()
   const [open, setOpen] = useState(false)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
@@ -177,9 +188,9 @@ function AddPeople({ conversation, people }: { conversation: Conversation; peopl
         },
         onError: (error) =>
           toast.error(
-            chatErrorMessage(error, 'Could not add people. Try again.', {
-              forbidden: 'Only the channel creator and workspace owners and admins can add people to a private channel.',
-              not_found: 'One of these people is no longer in the workspace.',
+            chatErrorMessage(error, t('panes.members.addFailed'), {
+              forbidden: t('panes.members.addForbidden'),
+              not_found: t('panes.members.addNotFound'),
             }),
           ),
       },
@@ -194,19 +205,19 @@ function AddPeople({ conversation, people }: { conversation: Conversation; peopl
         if (!next) setSelectedIds([])
       }}
     >
-      <Tip label="Add people" side="bottom">
+      <Tip label={t('panes.members.addPeople')} side="bottom">
         <PopoverTrigger
           render={
-            <Button variant="ghost" size="icon" aria-label="Add people">
+            <Button variant="ghost" size="icon" aria-label={t('panes.members.addPeople')}>
               <UserAdd className="size-5" />
             </Button>
           }
         />
       </Tip>
       <PopoverContent align="end" className="w-80">
-        <MemberPicker autoFocus label={`Add people to #${conversation.name}`} people={people} selectedIds={selectedIds} onChange={setSelectedIds} />
+        <MemberPicker autoFocus label={t('panes.members.addPeopleTo', { channel: conversation.name })} people={people} selectedIds={selectedIds} onChange={setSelectedIds} />
         <Button disabled={selectedIds.length === 0 || addMembers.isPending} onClick={submit}>
-          {selectedIds.length > 1 ? `Add ${selectedIds.length} people` : 'Add people'}
+          {selectedIds.length > 1 ? t('panes.members.addCount', { count: selectedIds.length }) : t('panes.members.addPeople')}
         </Button>
       </PopoverContent>
     </Popover>

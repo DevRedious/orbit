@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
+import { Trans, useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Kbd } from '@/components/ui/kbd'
 import { Textarea } from '@/components/ui/textarea'
@@ -11,6 +12,7 @@ import { useMessageList } from './messageListContext'
 
 /** Edits a message in place. `Enter` saves, `Esc` cancels (and goes no further: it does not close the pane). */
 export function MessageEditor({ message }: { message: Message }) {
+  const { t } = useTranslation('chat')
   const { people, saveEdit, endEdit } = useMessageList()
   const [text, setText] = useState(() => decodeMentions(message.body, people.members, people.channels))
   const input = useRef<HTMLTextAreaElement>(null)
@@ -54,7 +56,7 @@ export function MessageEditor({ message }: { message: Message }) {
         ref={input}
         value={text}
         rows={1}
-        aria-label="Edit message"
+        aria-label={t('messages.editor.label')}
         aria-invalid={tooLong || undefined}
         className="max-h-[40cqh] min-h-9 resize-none bg-background focus-visible:border-input focus-visible:ring-0"
         onChange={(event) => setText(event.target.value)}
@@ -62,16 +64,16 @@ export function MessageEditor({ message }: { message: Message }) {
       />
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
         <Button size="sm" disabled={!canSave} onClick={save}>
-          Save
+          {t('messages.editor.save')}
         </Button>
         <Button size="sm" variant="ghost" onClick={endEdit}>
-          Cancel
+          {t('messages.editor.cancel')}
         </Button>
         {tooLong ? (
-          <span className="text-destructive">{body.length - MESSAGE_MAX_LENGTH} characters over the limit</span>
+          <span className="text-destructive">{t('messages.editor.overLimit', { count: body.length - MESSAGE_MAX_LENGTH })}</span>
         ) : (
           <span className="max-[899px]:hidden">
-            <Kbd>Enter</Kbd> to save, <Kbd>Esc</Kbd> to cancel
+            <Trans t={t} i18nKey="messages.editor.hint" components={{ enter: <Kbd>Enter</Kbd>, esc: <Kbd>Esc</Kbd> }} />
           </span>
         )}
       </div>

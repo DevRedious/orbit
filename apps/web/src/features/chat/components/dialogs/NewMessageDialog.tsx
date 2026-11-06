@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { useChatContext } from '@/features/chat/api/chatContext'
@@ -19,12 +20,13 @@ interface NewMessageDialogProps {
  * only yourself opens the DM with yourself, a place for notes.
  */
 export function NewMessageDialog({ open, onOpenChange }: NewMessageDialogProps) {
+  const { t } = useTranslation('chat')
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>New message</DialogTitle>
-          <DialogDescription>Choose one person, several for a group conversation, or yourself for notes.</DialogDescription>
+          <DialogTitle>{t('dialogs.newMessage.title')}</DialogTitle>
+          <DialogDescription>{t('dialogs.newMessage.description')}</DialogDescription>
         </DialogHeader>
         <NewMessageForm onDone={() => onOpenChange(false)} />
       </DialogContent>
@@ -33,6 +35,7 @@ export function NewMessageDialog({ open, onOpenChange }: NewMessageDialogProps) 
 }
 
 function NewMessageForm({ onDone }: { onDone: () => void }) {
+  const { t } = useTranslation('chat')
   const { workspaceId, currentUserId } = useChatContext()
   const members = useMembers(workspaceId).data ?? []
   const conversations = useConversations().data ?? []
@@ -62,7 +65,7 @@ function NewMessageForm({ onDone }: { onDone: () => void }) {
     >
       <MemberPicker
         autoFocus
-        label="To"
+        label={t('dialogs.newMessage.to')}
         people={messageablePeople(members, conversations, currentUserId)}
         selectedIds={selectedIds}
         onChange={(ids) => {
@@ -72,13 +75,13 @@ function NewMessageForm({ onDone }: { onDone: () => void }) {
       />
       {openDm.isError ? (
         <p role="alert" className="text-sm text-destructive">
-          {dmErrorMessage(openDm.error, 'The conversation was not opened. Try again.', { not_found: 'One of these people is no longer in the workspace.' })}
+          {dmErrorMessage(openDm.error, t('dialogs.newMessage.openFailed'), { not_found: t('dialogs.newMessage.notFound') })}
         </p>
       ) : null}
       <DialogFooter>
-        <DialogClose render={<Button type="button" variant="outline" />}>Cancel</DialogClose>
+        <DialogClose render={<Button type="button" variant="outline" />}>{t('dialogs.cancel')}</DialogClose>
         <Button type="submit" disabled={selectedIds.length === 0 || openDm.isPending}>
-          Open conversation
+          {t('dialogs.newMessage.open')}
         </Button>
       </DialogFooter>
     </form>

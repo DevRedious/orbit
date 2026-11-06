@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { Emoji } from '@/components/common/Emoji'
 import { Button } from '@/components/ui/button'
 import type { EmojiShortcode } from '../../lib/emojiSearch'
@@ -21,13 +22,14 @@ export function EmojiSuggestions({
   onSelect: (suggestion: EmojiShortcode) => void
   onHover: (index: number) => void
 }) {
+  const { t } = useTranslation('chat')
   return (
     <div
       data-slot="emoji-suggestions"
       className="absolute right-0 bottom-full left-0 z-50 mb-3 max-h-80 overflow-y-auto overscroll-contain rounded-lg border border-border bg-popover py-2 text-popover-foreground shadow-xl"
     >
-      <div aria-hidden="true" className="px-3 pb-1 text-xs font-medium text-muted-foreground">Emoji matching :{query}</div>
-      <div id={id} role="listbox" aria-label={`Emoji matching ${query}`}>
+      <div aria-hidden="true" className="px-3 pb-1 text-xs font-medium text-muted-foreground">{t('composer.emoji.heading', { query })}</div>
+      <div id={id} role="listbox" aria-label={t('composer.emoji.label', { query })}>
       {suggestions.map((suggestion, index) => (
         <Button
           key={suggestion.emoji}

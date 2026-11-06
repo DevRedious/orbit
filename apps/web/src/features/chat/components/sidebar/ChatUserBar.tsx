@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { User } from 'reicon-react'
 import { statusLabel } from '@/components/common/memberStatus'
@@ -17,6 +18,7 @@ import { userColor } from '@/features/workspaces/api'
  * such). The whole row opens the status menu.
  */
 export function ChatUserBar() {
+  const { t } = useTranslation('chat')
   const me = useCurrentUser().data
   const status = useOwnStatus()
   const navigate = useNavigate()
@@ -29,7 +31,7 @@ export function ChatUserBar() {
     <div data-slot="chat-user-bar" className="flex h-12 shrink-0 items-center border-t px-2">
       <DropdownMenu>
         <DropdownMenuTrigger
-          render={<Button type="button" variant="ghost" className="h-9 w-full min-w-0 justify-start gap-2 px-1.5 font-normal transition-none" aria-label={`Status menu for ${name}`} />}
+          render={<Button type="button" variant="ghost" className="h-9 w-full min-w-0 justify-start gap-2 px-1.5 font-normal transition-none" aria-label={t('sidebar.userBar.statusMenu', { name })} />}
         >
           <UserAvatar user={{ name, color: userColor(me.id), avatarUrl: me.avatar_url }} size={28} status={status.presence} />
           <span className="flex min-w-0 flex-1 flex-col text-left leading-tight">
@@ -44,7 +46,7 @@ export function ChatUserBar() {
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => navigate('/profile')}>
             <User />
-            Account settings
+            {t('sidebar.userBar.accountSettings')}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

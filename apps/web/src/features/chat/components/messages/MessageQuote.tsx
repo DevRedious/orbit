@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { EmojiText } from '@/components/common/Emoji'
 import { UserAvatar } from '@/components/common/UserAvatar'
 import { extractPreview, wordlessPreview } from '@/lib/messagePreview'
@@ -12,6 +13,7 @@ import { authorName } from './people'
  * plain text. A click jumps to the message. When the message was deleted the line says so and does nothing.
  */
 export function MessageQuote({ message, active }: { message: Message; active: boolean }) {
+  const { t } = useTranslation('chat')
   const { people, openQuoted } = useMessageList()
   const quote = message.replyTo ?? null
   const author = quote ? people.byId.get(quote.authorId) : undefined
@@ -32,13 +34,13 @@ export function MessageQuote({ message, active }: { message: Message; active: bo
           onClick={() => openQuoted(message)}
         >
           {quote.botName ? <BotAvatar bot={{ name: quote.botName, iconUrl: null }} size={16} /> : <UserAvatar user={author} name="?" size={16} />}
-          <span className="shrink-0 font-medium text-foreground/90">{authorName(people, quote.authorId, quote.botName)}</span>
+          <span className="shrink-0 font-medium text-foreground/90">{authorName(people, quote.authorId, quote.botName, t('messages.unknown'))}</span>
           <span className="truncate text-[0.8125rem]">
             <EmojiText text={text || wordlessPreview(quote.sticker === true)} />
           </span>
         </button>
       ) : (
-        <span className="truncate leading-5 italic">Original message was deleted</span>
+        <span className="truncate leading-5 italic">{t('messages.quote.deleted')}</span>
       )}
     </div>
   )

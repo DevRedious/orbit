@@ -1,4 +1,5 @@
 import { useEffect, useState, type ComponentProps, type ComponentType, type ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { cn } from 'cn'
 import { Xmark } from 'reicon-react'
 import { PaneHeader, PaneTitle } from '@/components/common/Pane'
@@ -17,6 +18,7 @@ interface RightPaneProps {
 
 /** The frame of a right pane: 48px header with the title and a close button, and Escape closes the pane. */
 function RightPane({ title, actions, children }: RightPaneProps) {
+  const { t } = useTranslation('chat')
   const { closePane } = useChatNavigation()
   return (
     <section
@@ -35,8 +37,8 @@ function RightPane({ title, actions, children }: RightPaneProps) {
         <PaneTitle render={<h2 />}>{title}</PaneTitle>
         <div className="ml-auto flex items-center gap-2">
           {actions}
-          <Tip label="Close" side="bottom">
-            <Button variant="ghost" size="icon" aria-label={`Close ${title.toLowerCase()}`} onClick={closePane}>
+          <Tip label={t('panes.close')} side="bottom">
+            <Button variant="ghost" size="icon" aria-label={t('panes.closePane', { pane: title.toLowerCase() })} onClick={closePane}>
               <Xmark className="size-5" />
             </Button>
           </Tip>
@@ -68,15 +70,16 @@ function RightPaneLoading() {
 
 /** A failed read: what failed, and "Try again". */
 function RightPaneError({ title, onRetry }: { title: string; onRetry: () => void }) {
+  const { t } = useTranslation('chat')
   return (
     <Empty role="alert">
       <EmptyHeader>
         <EmptyTitle>{title}</EmptyTitle>
-        <EmptyDescription>Check your connection and try again.</EmptyDescription>
+        <EmptyDescription>{t('panes.error.description')}</EmptyDescription>
       </EmptyHeader>
       <EmptyContent>
         <Button variant="outline" size="sm" onClick={onRetry}>
-          Try again
+          {t('panes.error.retry')}
         </Button>
       </EmptyContent>
     </Empty>

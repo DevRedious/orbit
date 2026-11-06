@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { UserAvatar } from '@/components/common/UserAvatar'
 import type { Message } from '@/features/chat/api/types'
 import { BotAvatar, BotBadge } from '@/features/chat/components/messages/BotAvatar'
@@ -21,8 +22,10 @@ interface MessageBylineProps {
  * sit inside a button.
  */
 export function MessageByline({ message, members, children, profile = false }: MessageBylineProps) {
+  const { t } = useTranslation('chat')
   const author = members.find((member) => member.id === message.authorId)
   const bot = message.bot ?? null
+  const name = author?.name ?? t('panes.unknownAuthor')
   return (
     <span data-slot="message-byline" className="flex min-w-0 items-center gap-1.5 text-[0.8125rem]">
       {bot ? (
@@ -35,11 +38,11 @@ export function MessageByline({ message, members, children, profile = false }: M
         </>
       ) : (
         <>
-          <ProfileTrigger userId={profile ? author?.id : null} name={author?.name ?? 'Unknown'} kind="avatar" tabIndex={-1} className="flex shrink-0">
+          <ProfileTrigger userId={profile ? author?.id : null} name={name} kind="avatar" tabIndex={-1} className="flex shrink-0">
             <UserAvatar user={author} name="?" size={20} />
           </ProfileTrigger>
-          <ProfileTrigger userId={profile ? author?.id : null} name={author?.name ?? 'Unknown'} className="truncate font-medium text-foreground">
-            {author?.name ?? 'Unknown'}
+          <ProfileTrigger userId={profile ? author?.id : null} name={name} className="truncate font-medium text-foreground">
+            {name}
           </ProfileTrigger>
           {author?.role === 'Guest' ? <GuestBadge /> : null}
         </>

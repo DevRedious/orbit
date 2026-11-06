@@ -9,6 +9,7 @@ import {
   type Ref,
   useId,
 } from 'react'
+import { Trans, useTranslation } from 'react-i18next'
 import { At, Hashtag, Paperclip2, Send2, SmileCircle, Sticker, Xmark } from 'reicon-react'
 import type { CustomStickerRecord } from '@orbit/api/generated/types.gen'
 import { confirmAction } from '@/components/common/confirmAction'
@@ -77,6 +78,7 @@ interface ComposerProps {
  * in `localStorage`, and the typing signal. `Enter` sends (a new line on a touch screen, and in an open code block), `Shift+Enter` is a new line.
  */
 export function Composer({ ref, conversation, threadRootId = null, replyTo = null, onClearReply, autoFocus = false, onEditLast, onFocusList, onSent }: ComposerProps) {
+  const { t } = useTranslation('chat')
   const { workspaceId, currentUserId } = useChatContext()
   const people = useChatPeople()
   const coarse = useCoarsePointer()
@@ -109,8 +111,8 @@ export function Composer({ ref, conversation, threadRootId = null, replyTo = nul
   const everyone = inThread
     ? []
     : [
-        { id: '!channel', name: 'channel', handle: 'everyone here' },
-        { id: '!here', name: 'here', handle: 'everyone online' },
+        { id: '!channel', name: 'channel', handle: t('composer.everyoneHere') },
+        { id: '!here', name: 'here', handle: t('composer.everyoneOnline') },
       ]
   const { taskKeys } = useChatHost()
   const mention = useMentionAutocomplete([...candidates, ...everyone], text, setText, input, undefined, undefined, people.channels, workspaceId)
@@ -139,9 +141,9 @@ export function Composer({ ref, conversation, threadRootId = null, replyTo = nul
     const mentions = extractMentions(body)
     if (!inThread && (mentions.channel || mentions.here) && conversation.memberIds.length >= CONFIRM_FROM_MEMBERS) {
       const confirmed = await confirmAction({
-        title: `Notify ${conversation.memberIds.length} people?`,
-        description: `${mentions.channel ? '@channel' : '@here'} sends a notification to everyone in ${title}${mentions.channel ? '' : ' who is online'}.`,
-        confirmLabel: 'Send',
+        title: t('composer.notify.title', { number: conversation.memberIds.length }),
+        description: mentions.channel ? t('composer.notify.channel', { title }) : t('composer.notify.here', { title }),
+        confirmLabel: t('composer.notify.confirm'),
       })
       if (!confirmed) {
         input.current?.focus()
@@ -280,13 +282,18 @@ export function Composer({ ref, conversation, threadRootId = null, replyTo = nul
             className="flex items-center gap-2 rounded-t-lg border border-b-0 border-input bg-muted/40 pl-3 text-xs text-muted-foreground"
           >
             <span className="min-w-0 flex-1 truncate">
-              Replying to <span className="font-medium text-foreground">{authorName(people, replyTo.authorId, replyTo.bot?.name)}</span>
+              <Trans
+                t={t}
+                i18nKey="composer.replyingTo"
+                values={{ name: authorName(people, replyTo.authorId, replyTo.bot?.name, t('composer.unknownAuthor')) }}
+                components={{ name: <span className="font-medium text-foreground" /> }}
+              />
             </span>
-            <Tip label="Cancel reply">
+            <Tip label={t('composer.cancelReply')}>
               <Button
                 variant="ghost"
                 size="icon"
-                aria-label="Cancel reply"
+                aria-label={t('composer.cancelReply')}
                 onClick={() => {
                   onClearReply?.()
                   input.current?.focus()
@@ -311,10 +318,10 @@ export function Composer({ ref, conversation, threadRootId = null, replyTo = nul
             renderPreview={(reference) => <ComposerReferencePreview reference={reference} conversation={conversation} />}
             previewHidden={mention.open || emoji.open}
             rows={1}
-            aria-label={inThread ? 'Reply in Thread' : `Message ${title}`}
+            aria-label={inThread ? t('composer.replyInThread') : t('composer.messageTo', { title })}
             aria-controls={emoji.open ? emojiListId : undefined}
             aria-activedescendant={emoji.open ? `${emojiListId}-${emoji.activeIndex}` : undefined}
-            placeholder={inThread ? 'Reply…' : `Message ${title}`}
+            placeholder={inThread ? t('composer.replyPlaceholder') : t('composer.messageTo', { title })}
             className="min-h-10 shrink resize-none rounded-none border-0 bg-transparent px-3 pt-2.5 pb-1 text-[0.9375rem] leading-[1.5] focus-visible:ring-0 md:text-[0.9375rem] dark:bg-transparent"
             onChange={onChange}
             onKeyDown={onKeyDown}
@@ -341,14 +348,14 @@ export function Composer({ ref, conversation, threadRootId = null, replyTo = nul
                 event.target.value = ''
               }}
             />
-            <Tip label="Attach files">
-              <Button variant="ghost" size="icon" aria-label="Attach files" onClick={() => filePicker.current?.click()}>
+            <Tip label={t('composer.attachFiles')}>
+              <Button variant="ghost" size="icon" aria-label={t('composer.attachFiles')} onClick={() => filePicker.current?.click()}>
                 <Paperclip2 className="size-5" />
               </Button>
             </Tip>
             <Popover open={emojiOpen} onOpenChange={setEmojiOpen} modal={false}>
-              <Tip label="Add emoji">
-                <PopoverTrigger render={<Button variant="ghost" size="icon" aria-label="Add emoji" />}>
+              <Tip label={t('composer.addEmoji')}>
+                <PopoverTrigger render={<Button variant="ghost" size="icon" aria-label={t('composer.addEmoji')} />}>
                   <SmileCircle className="size-5" />
                 </PopoverTrigger>
               </Tip>
@@ -364,8 +371,8 @@ export function Composer({ ref, conversation, threadRootId = null, replyTo = nul
             </Popover>
             {stickers.length > 0 ? (
               <Popover open={stickerOpen} onOpenChange={setStickerOpen} modal={false}>
-                <Tip label="Send a sticker">
-                  <PopoverTrigger render={<Button variant="ghost" size="icon" aria-label="Send a sticker" />}>
+                <Tip label={t('composer.sendSticker')}>
+                  <PopoverTrigger render={<Button variant="ghost" size="icon" aria-label={t('composer.sendSticker')} />}>
                     <Sticker className="size-5" />
                   </PopoverTrigger>
                 </Tip>
@@ -376,8 +383,8 @@ export function Composer({ ref, conversation, threadRootId = null, replyTo = nul
                 ) : null}
               </Popover>
             ) : null}
-            <Tip label="Mention someone">
-              <Button variant="ghost" size="icon" aria-label="Mention someone" onClick={() => startMention('@')}>
+            <Tip label={t('composer.mentionSomeone')}>
+              <Button variant="ghost" size="icon" aria-label={t('composer.mentionSomeone')} onClick={() => startMention('@')}>
                 <At className="size-5" />
               </Button>
             </Tip>
@@ -391,17 +398,17 @@ export function Composer({ ref, conversation, threadRootId = null, replyTo = nul
               <span
                 data-slot="composer-counter"
                 data-over={remaining < 0 ? '' : undefined}
-                aria-label={remaining < 0 ? `${-remaining} characters over the limit` : `${remaining} characters left`}
+                aria-label={remaining < 0 ? t('composer.charactersOver', { count: -remaining }) : t('composer.charactersLeft', { count: remaining })}
                 className="px-1 text-xs text-muted-foreground tabular-nums data-over:font-medium data-over:text-destructive"
               >
                 {remaining}
               </span>
             ) : null}
-            <Tip label="Send message">
+            <Tip label={t('composer.sendMessage')}>
               <Button
                 variant={canSend ? 'default' : 'ghost'}
                 size="icon"
-                aria-label="Send message"
+                aria-label={t('composer.sendMessage')}
                 disabled={!canSend}
                 onClick={() => void submit()}
               >
@@ -415,9 +422,9 @@ export function Composer({ ref, conversation, threadRootId = null, replyTo = nul
         <div className="flex flex-col gap-1 pt-1.5 text-xs text-muted-foreground">
           <label className="flex w-fit items-center gap-2">
             <Checkbox checked={alsoInChannel} onCheckedChange={setAlsoInChannel} />
-            Also send to {conversation.kind === 'dm' ? 'this conversation' : title}
+            {conversation.kind === 'dm' ? t('composer.alsoSendToConversation') : t('composer.alsoSendTo', { title })}
           </label>
-          {globalMention ? <p data-slot="composer-note">@channel and @here do nothing in a thread.</p> : null}
+          {globalMention ? <p data-slot="composer-note">{t('composer.globalMentionInThread')}</p> : null}
         </div>
       ) : null}
     </div>

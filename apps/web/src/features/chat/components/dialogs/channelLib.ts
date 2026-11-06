@@ -1,4 +1,5 @@
 import { ChatError, type ChatErrorCode, type Conversation } from '@/features/chat/api/types'
+import { i18n } from '@/i18n'
 
 export const CHANNEL_NAME_MAX = 80
 
@@ -79,7 +80,7 @@ export function messageablePeople<T extends Person & { name: string }>(
   )
   const reachable = members.filter((member) => (me?.role !== 'Guest' && member.role !== 'Guest') || shared.has(member.id))
   const others = pickablePeople(reachable, currentUserId)
-  return me ? [{ ...me, name: `${me.name} (you)` }, ...others] : others
+  return me ? [{ ...me, name: i18n.t('chat:dialogs.you', { name: me.name }) }, ...others] : others
 }
 
 /** Name, handle or email contains the text, without regard to case. An empty text matches everybody. */
@@ -89,9 +90,10 @@ export function matchPeople<T extends { name: string; handle: string; email: str
   return people.filter((person) => [person.name, person.handle, person.email].some((field) => field.toLowerCase().includes(query)))
 }
 
-const GENERAL_MESSAGES: Partial<Record<ChatErrorCode, string>> = {
-  forbidden: 'You do not have permission to do this.',
-  offline: 'You are offline. Try again when you are connected.',
+// Translated when the message is made, so it follows a change of language.
+const GENERAL_MESSAGES: Partial<Record<ChatErrorCode, () => string>> = {
+  forbidden: () => i18n.t('chat:dialogs.errors.forbidden'),
+  offline: () => i18n.t('chat:dialogs.errors.offline'),
 }
 
 /**
@@ -100,7 +102,7 @@ const GENERAL_MESSAGES: Partial<Record<ChatErrorCode, string>> = {
  */
 export function chatErrorMessage(error: unknown, fallback: string, byCode: Partial<Record<ChatErrorCode, string>> = {}): string {
   if (!(error instanceof ChatError)) return fallback
-  return byCode[error.code] ?? GENERAL_MESSAGES[error.code] ?? fallback
+  return byCode[error.code] ?? GENERAL_MESSAGES[error.code]?.() ?? fallback
 }
 
 /** `chatErrorMessage` for opening or writing a direct message: a refusal shows the server's reason (a block). */

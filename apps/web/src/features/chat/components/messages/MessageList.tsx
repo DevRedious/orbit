@@ -10,6 +10,7 @@ import {
   type Ref,
 } from 'react'
 import { defaultRangeExtractor, useVirtualizer, type Range } from '@tanstack/react-virtual'
+import { useTranslation } from 'react-i18next'
 import { ArrowDown, ArrowUp } from 'reicon-react'
 import { toast } from 'sonner'
 import { EmojiPicker } from '@/components/common/EmojiPicker'
@@ -186,6 +187,7 @@ export function MessageList({
 }: MessageListProps) {
   // The virtualizer is one object that changes inside: the React Compiler must not keep what is read from it.
   'use no memo'
+  const { t } = useTranslation('chat')
   const { currentUserId } = useChatContext()
   const people = useChatPeople()
   const phone = useIsPhone()
@@ -360,7 +362,7 @@ export function MessageList({
       if (row && actionsFor(message).length > 0) showOverlay('sheet', message, row, 'start')
     },
     saveEdit: (message, body) => {
-      editMessage({ messageId: message.id, body }, { onError: () => toast.error('Could not save the edit. Try again.') })
+      editMessage({ messageId: message.id, body }, { onError: () => toast.error(t('messages.list.editFailed')) })
       endEdit()
     },
     endEdit,
@@ -453,7 +455,12 @@ export function MessageList({
       if (announce && newest && hidden(newest)) setAnnouncement('Message from a person you blocked')
       else if (announce && newest) {
         const text = firstLine(decodeMentions(newest.body, people.members, people.channels), 200)
-        setAnnouncement(`${authorName(people, newest.authorId, newest.bot?.name, 'Someone')}: ${text || wordlessPreview(Boolean(newest.stickerId)).toLowerCase()}`)
+        setAnnouncement(
+          t('messages.list.announcement', {
+            name: authorName(people, newest.authorId, newest.bot?.name, t('messages.someone')),
+            text: text || wordlessPreview(Boolean(newest.stickerId)).toLowerCase(),
+          }),
+        )
       }
     }
     state.lastKey = lastKey
@@ -591,7 +598,7 @@ export function MessageList({
             onClick={jumpToFirstUnread}
           >
             <ArrowUp />
-            Jump to first unread
+            {t('messages.list.jumpToFirstUnread')}
           </Button>
         ) : null}
         {hasNewer || (!atBottom && newCount > 0) ? (
@@ -602,7 +609,7 @@ export function MessageList({
             onClick={hasNewer ? onJumpToLatest : () => virtualizer.scrollToEnd()}
           >
             <ArrowDown />
-            {hasNewer ? 'Jump to latest' : newCount === 1 ? '1 new message' : `${newCount} new messages`}
+            {hasNewer ? t('messages.list.jumpToLatest') : t('messages.list.newCount', { count: newCount })}
           </Button>
         ) : null}
         {dayAbove?.type === 'message' && dayAbove.day !== undefined && (virtualizer.scrollOffset ?? 0) > 0 ? (

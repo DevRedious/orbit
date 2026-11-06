@@ -20,7 +20,7 @@ export function AgenticPage() {
             <div key={entry.client} className="flex flex-col gap-1.5">
               <p className="text-[13px] font-medium text-foreground">{entry.client}</p>
               <CodeBlock text={entry.command} />
-              <p className="text-xs text-muted-foreground">{entry.signIn}</p>
+              <p className="text-xs text-muted-foreground">{t(`agentic.signIn.${entry.client}`)}</p>
             </div>
           ))}
           <p className="text-xs text-muted-foreground">{t('agentic.remote')}</p>

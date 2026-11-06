@@ -91,6 +91,11 @@ export default {
     connectDescription: 'Run the command for your client in a terminal. Then sign in to Orbit in the browser, select the projects and permissions, then allow access.',
     remote: 'For a remote server, run claude mcp login orbit --no-browser or codex mcp login orbit --no-browser. Open the printed link in your browser, select “Client runs on a remote server”, then copy the callback URL into your terminal.',
     apiToken: 'A client that cannot sign in with OAuth can send an API token with selected permissions instead. A workspace admin creates it in <link>Settings → API tokens</link>.',
+    signIn: {
+      Claude: 'Start Claude, enter /mcp, select orbit and authenticate.',
+      Codex: 'The login command opens Orbit in your browser.',
+      Grok: 'Start Grok, enter /mcps and authenticate.',
+    },
   },
   github: {
     unavailable: 'GitHub settings are not available.',

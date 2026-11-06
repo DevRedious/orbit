@@ -3,13 +3,14 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { cn } from 'cn'
 import type { StorageFile, WorkspaceBucketView } from '@orbit/api/generated/types.gen'
-import { canDeleteStorageFile, storageFileLabel, storageFilesPage } from '@orbit/api/storage'
+import { canDeleteStorageFile, storageFilesPage } from '@orbit/api/storage'
 import { confirmAction } from '@/components/common/confirmAction'
 import { SettingsCard } from '@/components/common/SettingsCard'
 import { Button } from '@/components/ui/button'
 import { Progress, ProgressLabel } from '@/components/ui/progress'
 import { Spinner } from '@/components/ui/spinner'
 import { S3BucketForm } from '@/features/settings/components/S3BucketForm'
+import { storageFileText, storagePageText } from '@/features/settings/storageText'
 import { useDeleteStorageFile, useRemoveWorkspaceBucket, useSaveWorkspaceBucket, useWorkspaceBucket, useWorkspaceStorage } from '@/features/workspaces/api'
 import { useCan } from '@/features/workspaces/permissions'
 import { useWorkspace } from '@/features/workspaces/workspaceContext'
@@ -108,7 +109,7 @@ function StorageCard({ workspaceId }: { workspaceId: string }) {
   const percent = quota ? Math.min(100, (used / quota) * 100) : 0
 
   async function remove(file: StorageFile) {
-    const { name } = storageFileLabel(file)
+    const { name } = storageFileText(file)
     if (!await confirmAction({ title: t('fileStorage.deleteTitle', { name }), description: t('fileStorage.deleteDescription'), confirmLabel: t('delete'), danger: true })) return
     deleteFile.mutate(file.id, { onError: () => toast.error(t('fileStorage.deleteFailed')) })
   }
@@ -136,7 +137,7 @@ function StorageCard({ workspaceId }: { workspaceId: string }) {
           <h3 className="text-[13px] font-medium text-foreground">{t('fileStorage.largest')}</h3>
           <ul className="flex flex-col divide-y rounded-lg border">
             {storage.data.largest_files.map((file) => {
-              const { name, where } = storageFileLabel(file)
+              const { name, where } = storageFileText(file)
               return (
                 <li key={file.id} className="flex items-center gap-3 px-3 py-2">
                   <div className="flex min-w-0 flex-1 flex-col gap-0.5">
@@ -153,7 +154,7 @@ function StorageCard({ workspaceId }: { workspaceId: string }) {
           </ul>
           {page.previous !== null || page.next !== null ? (
             <div className="flex items-center gap-2">
-              <span className="mr-auto text-xs text-muted-foreground tabular-nums">{page.label}</span>
+              <span className="mr-auto text-xs text-muted-foreground tabular-nums">{storagePageText(offset, files.length, storage.data?.file_count ?? 0)}</span>
               <Button variant="outline" size="sm" disabled={page.previous === null || storage.isFetching} onClick={() => page.previous !== null && setOffset(page.previous)}>{t('fileStorage.previous')}</Button>
               <Button variant="outline" size="sm" disabled={page.next === null || storage.isFetching} onClick={() => page.next !== null && setOffset(page.next)}>{t('fileStorage.next')}</Button>
             </div>

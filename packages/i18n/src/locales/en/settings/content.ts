@@ -41,6 +41,18 @@ export default {
     deleteAria: 'Delete {{name}}',
     previous: 'Previous',
     next: 'Next',
+    pageRange: '{{from}}–{{to}} of {{total}}',
+    deletedFile: 'Deleted file',
+    deletedWhere: 'Deleted · stops counting within a day',
+    privateFile: 'Private file',
+    uses: {
+      task: 'Task “{{title}}”',
+      page: 'Page “{{title}}”',
+      emoji: 'Custom emoji',
+      sticker: 'Sticker',
+      private: 'Private page or chat',
+    },
+    untitled: 'Untitled',
   },
   s3: {
     endpoint: 'Endpoint',

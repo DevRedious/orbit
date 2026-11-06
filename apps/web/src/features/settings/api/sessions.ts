@@ -10,8 +10,11 @@ export interface SessionView extends SessionRecord {
   browser: string
 }
 
+/** The device name while the server does not report one; the page shows it in the UI language. */
+export const SIGNED_IN_DEVICE = 'Signed-in device'
+
 export function sessionView(session: SessionRecord): SessionView {
-  return { ...session, device: 'Signed-in device', browser: 'Orbit web' }
+  return { ...session, device: SIGNED_IN_DEVICE, browser: 'Orbit web' }
 }
 
 export function useSessions() {

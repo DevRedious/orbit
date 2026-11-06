@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { toast } from 'sonner'
 import { ApiProblem } from '@orbit/api/problem'
@@ -34,10 +35,11 @@ function tasks(count: number) {
 
 /** Where to bring data into the workspace from other tools. */
 export function ImportPage() {
+  const { t } = useTranslation('settings')
   const canManage = useCan('members.manage')
   return (
     <>
-      <SettingsCard title="Import" flush>
+      <SettingsCard title={t('import.title')} flush>
         {SOURCES.map((source) => (
           <SettingsRow key={source.name} className="flex-nowrap">
             <RowIcon>
@@ -45,7 +47,7 @@ export function ImportPage() {
             </RowIcon>
             <span className="flex min-w-0 flex-1 items-center gap-1.5 text-[0.8125rem] font-medium text-foreground">{source.name} <InfoTip text={source.description} /></span>
             <Link to={source.to} className={buttonVariants({ variant: 'outline', size: 'sm' })}>
-              Import from {source.name}
+              {t('import.from', { name: source.name })}
             </Link>
           </SettingsRow>
         ))}

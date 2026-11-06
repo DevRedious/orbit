@@ -1,4 +1,5 @@
 import { useState, type ComponentProps } from 'react'
+import { useTranslation } from 'react-i18next'
 import { cn } from 'cn'
 import { format, parseISO } from 'date-fns'
 import type { DateRange } from 'react-day-picker'
@@ -13,7 +14,7 @@ import { ColorDot } from '@/components/common/ColorDot'
 import { PriorityIcon } from '@/features/tasks/components/PriorityIcon'
 import { TaskStatusIcon } from '@/features/tasks/components/TaskStatusIcon'
 import { useTaskCandidates } from '@/features/tasks/useTaskCandidates'
-import { FIELD_META, MAX_FILTER_VALUES, NO_PARENT, chosenValues, isDateValue, listValue, taskValueLabel, unlistedOptions, valueOptions, type FilterOptions, type Glyph } from '../filterFields'
+import { FIELD_META, MAX_FILTER_VALUES, NO_PARENT, chosenValues, fieldPlural, isDateValue, listValue, taskValueLabel, unlistedOptions, valueOptions, type FilterOptions, type Glyph } from '../filterFields'
 import type { Condition, DateValue } from '../viewState'
 
 export interface FilterValuePickerProps {
@@ -51,11 +52,10 @@ export function ValueGlyph({ glyph, size = 14 }: { glyph: Glyph; size?: number }
   }
 }
 
-const VALUES_FULL_TITLE = `Up to ${MAX_FILTER_VALUES} values per filter`
-
 function ListValue({ condition, options, onChange }: FilterValuePickerProps) {
+  const { t } = useTranslation('views')
   const selected = chosenValues(condition, options)
-  const meta = FIELD_META[condition.field]
+  const items = fieldPlural(condition.field)
   const full = selected.length >= MAX_FILTER_VALUES
   const toggle = (value: string) => {
     if (selected.includes(value)) onChange({ ...condition, value: selected.filter((item) => item !== value) })
@@ -64,10 +64,10 @@ function ListValue({ condition, options, onChange }: FilterValuePickerProps) {
   // chosen values the list lacks (a member picked by ID, a deleted label) come first, so they can be unchecked
   const rows = [...unlistedOptions(condition, options), ...valueOptions(condition.field, options)]
   return (
-    <Command label={`Search ${meta.plural}`} className="w-64">
-      <CommandInput autoFocus aria-label={`Search ${meta.plural}`} placeholder={`Search ${meta.plural}…`} />
+    <Command label={t('valuePicker.search', { items })} className="w-64">
+      <CommandInput autoFocus aria-label={t('valuePicker.search', { items })} placeholder={t('valuePicker.searchPlaceholder', { items })} />
       <CommandList>
-        <CommandEmpty className="py-4 text-xs text-muted-foreground">No {meta.plural} match</CommandEmpty>
+        <CommandEmpty className="py-4 text-xs text-muted-foreground">{t('valuePicker.noMatch', { items })}</CommandEmpty>
         <CommandGroup>
           {rows.map((option) => {
             const checked = selected.includes(option.value)
@@ -79,7 +79,7 @@ function ListValue({ condition, options, onChange }: FilterValuePickerProps) {
                 keywords={[option.label]}
                 aria-checked={checked}
                 disabled={capped}
-                title={capped ? VALUES_FULL_TITLE : undefined}
+                title={capped ? t('valuePicker.valuesFull', { max: MAX_FILTER_VALUES }) : undefined}
                 // keep hover on a capped row so its title explains why
                 className="data-[disabled=true]:pointer-events-auto"
                 onSelect={() => toggle(option.value)}
@@ -100,6 +100,7 @@ function ListValue({ condition, options, onChange }: FilterValuePickerProps) {
 
 /** Parent filter: "No parent", then chosen tasks the search does not list (another page, a deleted task), then search results. */
 function TaskValue({ condition, options, onChange }: FilterValuePickerProps) {
+  const { t } = useTranslation('views')
   const [query, setQuery] = useState('')
   const selected = listValue(condition)
   const full = selected.length >= MAX_FILTER_VALUES
@@ -110,20 +111,20 @@ function TaskValue({ condition, options, onChange }: FilterValuePickerProps) {
   }
   const listed = new Set(candidates.map((task) => task.id))
   const rows = [
-    { value: NO_PARENT, label: 'No parent', identifier: null as string | null },
+    { value: NO_PARENT, label: t('filter.noParent'), identifier: null as string | null },
     ...selected.filter((value) => value !== NO_PARENT && !listed.has(value)).map((value) => ({ value, label: taskValueLabel(value, options), identifier: null })),
-    ...candidates.map((task) => ({ value: task.id, label: task.title || 'Untitled', identifier: task.identifier })),
+    ...candidates.map((task) => ({ value: task.id, label: task.title || t('filter.untitled'), identifier: task.identifier })),
   ]
   return (
-    <Command shouldFilter={false} label="Search tasks" className="w-80">
-      <CommandInput autoFocus aria-label="Search tasks" placeholder="Search tasks…" value={query} onValueChange={setQuery} />
+    <Command shouldFilter={false} label={t('valuePicker.searchTasks')} className="w-80">
+      <CommandInput autoFocus aria-label={t('valuePicker.searchTasks')} placeholder={t('valuePicker.searchTasksPlaceholder')} value={query} onValueChange={setQuery} />
       <CommandList>
         <CommandGroup>
           {rows.map((row) => {
             const checked = selected.includes(row.value)
             const capped = full && !checked
             return (
-              <CommandItem key={row.value} value={row.value} aria-checked={checked} disabled={capped} title={capped ? VALUES_FULL_TITLE : undefined}
+              <CommandItem key={row.value} value={row.value} aria-checked={checked} disabled={capped} title={capped ? t('valuePicker.valuesFull', { max: MAX_FILTER_VALUES }) : undefined}
                 className="data-[disabled=true]:pointer-events-auto" onSelect={() => toggle(row.value)}>
                 <CheckMark checked={checked} />
                 {row.identifier ? <span className="w-[72px] shrink-0 text-xs text-muted-foreground/70 tabular-nums">{row.identifier}</span> : null}
@@ -132,27 +133,31 @@ function TaskValue({ condition, options, onChange }: FilterValuePickerProps) {
             )
           })}
         </CommandGroup>
-        {loading ? <div role="status" className="px-2 py-2 text-xs text-muted-foreground">Searching…</div> : null}
+        {loading ? <div role="status" className="px-2 py-2 text-xs text-muted-foreground">{t('valuePicker.searching')}</div> : null}
       </CommandList>
     </Command>
   )
 }
 
-const SINGLE_PRESETS: Array<{ label: string; value: DateValue }> = [
-  { label: 'Today', value: { relative: 'today' } },
-  { label: 'Yesterday', value: { relative: 'today', offset_days: -1 } },
-  { label: 'Tomorrow', value: { relative: 'today', offset_days: 1 } },
-  { label: 'Start of week', value: { relative: 'start_of_week' } },
-  { label: 'End of week', value: { relative: 'end_of_week' } },
-  { label: '7 days ago', value: { relative: 'today', offset_days: -7 } },
-  { label: 'In 7 days', value: { relative: 'today', offset_days: 7 } },
+type SinglePreset = 'today' | 'yesterday' | 'tomorrow' | 'startOfWeek' | 'endOfWeek' | 'sevenDaysAgo' | 'inSevenDays'
+type RangePreset = 'thisWeek' | 'nextWeek' | 'next7Days' | 'last7Days'
+
+// keys, not text: the label is translated at render
+const SINGLE_PRESETS: Array<{ key: SinglePreset; value: DateValue }> = [
+  { key: 'today', value: { relative: 'today' } },
+  { key: 'yesterday', value: { relative: 'today', offset_days: -1 } },
+  { key: 'tomorrow', value: { relative: 'today', offset_days: 1 } },
+  { key: 'startOfWeek', value: { relative: 'start_of_week' } },
+  { key: 'endOfWeek', value: { relative: 'end_of_week' } },
+  { key: 'sevenDaysAgo', value: { relative: 'today', offset_days: -7 } },
+  { key: 'inSevenDays', value: { relative: 'today', offset_days: 7 } },
 ]
 
-const RANGE_PRESETS: Array<{ label: string; value: [DateValue, DateValue] }> = [
-  { label: 'This week', value: [{ relative: 'start_of_week' }, { relative: 'end_of_week' }] },
-  { label: 'Next week', value: [{ relative: 'start_of_week', offset_days: 7 }, { relative: 'end_of_week', offset_days: 7 }] },
-  { label: 'Next 7 days', value: [{ relative: 'today' }, { relative: 'today', offset_days: 6 }] },
-  { label: 'Last 7 days', value: [{ relative: 'today', offset_days: -6 }, { relative: 'today' }] },
+const RANGE_PRESETS: Array<{ key: RangePreset; value: [DateValue, DateValue] }> = [
+  { key: 'thisWeek', value: [{ relative: 'start_of_week' }, { relative: 'end_of_week' }] },
+  { key: 'nextWeek', value: [{ relative: 'start_of_week', offset_days: 7 }, { relative: 'end_of_week', offset_days: 7 }] },
+  { key: 'next7Days', value: [{ relative: 'today' }, { relative: 'today', offset_days: 6 }] },
+  { key: 'last7Days', value: [{ relative: 'today', offset_days: -6 }, { relative: 'today' }] },
 ]
 
 const toAbsolute = (day: Date): DateValue => ({ absolute: format(day, 'yyyy-MM-dd') })
@@ -164,20 +169,23 @@ function PresetButton({ className, ...props }: ComponentProps<typeof Button>) {
 }
 
 function DateValuePicker({ condition, onChange, onDone }: FilterValuePickerProps) {
+  const { t } = useTranslation('views')
   const range = condition.operator === 'between'
   const [draftRange, setDraftRange] = useState<DateRange | undefined>(undefined)
   const commit = (next: Condition) => {
     onChange(next)
     onDone()
   }
-  const presets = range ? RANGE_PRESETS : SINGLE_PRESETS
+  const presets = range
+    ? RANGE_PRESETS.map((preset) => ({ ...preset, label: t(`valuePicker.range.${preset.key}`) }))
+    : SINGLE_PRESETS.map((preset) => ({ ...preset, label: t(`valuePicker.single.${preset.key}`) }))
   const selectedDay = !range && isDateValue(condition.value) && 'absolute' in condition.value ? parseISO(condition.value.absolute) : undefined
   return (
     <div className="flex w-[17.5rem] flex-col">
-      <div role="group" aria-label="Date presets" className="flex flex-col gap-px p-1">
+      <div role="group" aria-label={t('valuePicker.datePresets')} className="flex flex-col gap-px p-1">
         {presets.map((preset) => (
           <PresetButton
-            key={preset.label}
+            key={preset.key}
             aria-pressed={sameValue(preset.value, condition.value)}
             onClick={() => commit({ field: condition.field, operator: condition.operator, value: preset.value })}
           >
@@ -187,8 +195,8 @@ function DateValuePicker({ condition, onChange, onDone }: FilterValuePickerProps
         {condition.field === 'due_date' ? (
           <>
             <Separator className="my-1" />
-            <PresetButton onClick={() => commit({ field: 'due_date', operator: 'is_empty' })}>No due date</PresetButton>
-            <PresetButton onClick={() => commit({ field: 'due_date', operator: 'is_not_empty' })}>Has a due date</PresetButton>
+            <PresetButton onClick={() => commit({ field: 'due_date', operator: 'is_empty' })}>{t('valuePicker.noDueDate')}</PresetButton>
+            <PresetButton onClick={() => commit({ field: 'due_date', operator: 'is_not_empty' })}>{t('valuePicker.hasDueDate')}</PresetButton>
           </>
         ) : null}
       </div>
@@ -220,6 +228,7 @@ function DateValuePicker({ condition, onChange, onDone }: FilterValuePickerProps
 }
 
 function TextValue({ condition, onChange, onDone }: FilterValuePickerProps) {
+  const { t } = useTranslation('views')
   const [text, setText] = useState(typeof condition.value === 'string' ? condition.value : '')
   const trimmed = text.trim()
   return (
@@ -234,14 +243,14 @@ function TextValue({ condition, onChange, onDone }: FilterValuePickerProps) {
     >
       <Input
         autoFocus
-        aria-label="Title or description contains"
-        placeholder="Title or description contains…"
+        aria-label={t('valuePicker.textContains')}
+        placeholder={t('valuePicker.textContainsPlaceholder')}
         maxLength={200}
         value={text}
         onChange={(event) => setText(event.target.value)}
         className="h-8 flex-1"
       />
-      <Button type="submit" size="sm" disabled={!trimmed}>Apply</Button>
+      <Button type="submit" size="sm" disabled={!trimmed}>{t('valuePicker.apply')}</Button>
     </form>
   )
 }

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { Star } from 'reicon-react'
 import { cn } from 'cn'
 import { Button } from '@/components/ui/button'
@@ -14,13 +15,14 @@ export interface FavoriteStarProps {
 
 /** Favorite toggle for a saved view (view header, Views page rows); solid pink while on. */
 export function FavoriteStar({ workspaceId, view, named = false, className }: FavoriteStarProps) {
+  const { t } = useTranslation('views')
   const setFavorite = useSetFavorite(workspaceId)
   const on = view.is_favorite
   const label = on
-    ? named ? `Remove ${view.name} from favorites` : 'Remove from favorites'
-    : named ? `Add ${view.name} to favorites` : 'Add to favorites'
+    ? named ? t('favorite.removeNamed', { name: view.name }) : t('favorite.remove')
+    : named ? t('favorite.addNamed', { name: view.name }) : t('favorite.add')
   return (
-    <Tip label={on ? 'Remove from favorites' : 'Add to favorites'}>
+    <Tip label={on ? t('favorite.remove') : t('favorite.add')}>
       <Button
         type="button"
         variant="ghost"

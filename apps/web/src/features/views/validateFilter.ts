@@ -2,6 +2,7 @@ import { apiClient } from '@/api/client'
 import { queryTasks } from '@orbit/api/generated/sdk.gen'
 import type { TaskQueryBody } from '@orbit/api/generated/types.gen'
 import { ApiProblem } from '@orbit/api/problem'
+import { problemMessage } from '@/i18n/problem'
 import type { FilterIssue } from './filterTree'
 import type { FilterGroup } from './viewState'
 
@@ -25,6 +26,6 @@ export async function validateFilterOnServer(workspaceId: string, filter: Filter
   } catch (error) {
     const path = problemPath(error)
     if (path === null) throw error
-    return { path, message: (error as ApiProblem).detail }
+    return { path, message: problemMessage(error, (error as ApiProblem).detail) }
   }
 }

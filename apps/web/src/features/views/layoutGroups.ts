@@ -1,6 +1,7 @@
 import type { BulkItem, CreateTaskBody, TaskUpdateBody } from '@orbit/api/generated/types.gen'
 import type { Task } from '@/features/tasks/api/models'
 import { statusKeyOf } from '@/features/tasks/taskMeta'
+import { i18n } from '@/i18n'
 import { dropUpdate, groupTasks, taskGroupValue, type GroupContext, type TaskGroup } from './grouping'
 import type { DisplayOptions, GroupBy } from './viewState'
 
@@ -53,7 +54,7 @@ export type ListSection = { group: TaskGroup; subGroups: TaskGroup[] | null }
  */
 export function listSections(tasks: Task[], display: DisplayOptions, ctx: GroupContext): ListSection[] {
   if (display.group_by === 'none') {
-    return [{ group: { key: ALL_TASKS_KEY, field: 'none', value: null, label: 'All tasks', tasks }, subGroups: null }]
+    return [{ group: { key: ALL_TASKS_KEY, field: 'none', value: null, label: i18n.t('views:grouping.allTasks'), tasks }, subGroups: null }]
   }
   const sub = subGroupOf(display)
   const shown = { ...ctx, showEmpty: display.show_empty_groups }
@@ -115,7 +116,7 @@ export type DropPlan =
  * Entering the Duplicate status needs a canonical task, so it wins over any other change and only opens the picker.
  */
 export function planDrop(task: Task, from: GroupValues, to: GroupValues, ctx: GroupContext): DropPlan {
-  if (!acceptsDrop(from, to)) return { kind: 'error', message: 'Tasks can’t be moved between projects.' }
+  if (!acceptsDrop(from, to)) return { kind: 'error', message: i18n.t('views:grouping.betweenProjects') }
   const changed = to.filter((target) => valueIn(from, target.field) !== target.value)
   if (changed.some((target) => target.field === 'status' && target.value?.startsWith('duplicate:'))) return { kind: 'duplicate' }
   let patch: TaskPatch = {}

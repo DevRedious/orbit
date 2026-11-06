@@ -1,4 +1,5 @@
 import { useId, useState, type FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Lock, People } from 'reicon-react'
 import { ApiProblem } from '@orbit/api/problem'
 import { Button } from '@/components/ui/button'
@@ -10,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { ColorSwatch } from '@/components/common/ColorSwatch'
 import { Tip } from '@/components/common/Tip'
+import { problemMessage } from '@/i18n/problem'
 import { useCreateView, useUpdateView, type SavedView } from '../api/views'
 import { useOpenKey } from '../useOpenKey'
 import { defaultViewState, type ViewState } from '../viewState'
@@ -30,15 +32,6 @@ export interface SaveViewDialogProps {
   onSaved: (view: SavedView) => void
   /** Opened from the keyboard: no entrance animation. */
   instant?: boolean
-}
-
-const TITLE: Record<SaveViewMode, string> = { create: 'Save view', save_as_new: 'Save as new view', duplicate: 'Duplicate view', edit: 'Edit view' }
-const SUBMIT: Record<SaveViewMode, string> = { create: 'Save view', save_as_new: 'Save as new view', duplicate: 'Duplicate view', edit: 'Save changes' }
-const DESCRIPTION: Record<SaveViewMode, string> = {
-  create: 'Save these filters and display options as a view.',
-  save_as_new: 'Save your changes as a new view. The original stays as it is.',
-  duplicate: 'Copy this view with its saved filters and display options.',
-  edit: 'Rename this view and choose who can see it.',
 }
 
 export function SaveViewDialog({ open, onOpenChange, instant = false, ...form }: SaveViewDialogProps) {
@@ -67,16 +60,18 @@ export function SaveViewDialog({ open, onOpenChange, instant = false, ...form }:
 type SaveViewFormProps = Omit<SaveViewDialogProps, 'open' | 'onOpenChange' | 'instant'> & { onClose: () => void }
 
 function SaveViewForm({ mode, workspaceId, state, view, onSaved, onClose }: SaveViewFormProps) {
+  const { t } = useTranslation('views')
   const nameId = useId()
   const descriptionId = useId()
   const createView = useCreateView(workspaceId)
   const updateView = useUpdateView(workspaceId)
-  const [name, setName] = useState(() => (!view || mode === 'create' ? '' : mode === 'edit' ? view.name : `${view.name} (copy)`))
+  const [name, setName] = useState(() => (!view || mode === 'create' ? '' : mode === 'edit' ? view.name : t('saveDialog.copyName', { name: view.name })))
   const [description, setDescription] = useState(() => (view && mode !== 'create' ? view.description : ''))
   const [icon, setIcon] = useState<string | null>(() => view?.icon ?? null)
   const [color, setColor] = useState<string | null>(() => view?.color ?? null)
   const [visibility, setVisibility] = useState<Visibility>(() => (mode === 'edit' && view ? view.visibility : 'personal'))
   const [error, setError] = useState<string | null>(null)
+  const [nameMissing, setNameMissing] = useState(false)
   const [pickerOpen, setPickerOpen] = useState(false)
   const canChangeVisibility = mode !== 'edit' || (view?.can_change_visibility ?? false)
   const pending = createView.isPending || updateView.isPending
@@ -85,10 +80,12 @@ function SaveViewForm({ mode, workspaceId, state, view, onSaved, onClose }: Save
     event.preventDefault()
     const trimmed = name.trim()
     if (!trimmed) {
-      setError('Enter a name.')
+      setError(t('saveDialog.nameRequired'))
+      setNameMissing(true)
       return
     }
     setError(null)
+    setNameMissing(false)
     try {
       const saved =
         mode === 'edit' && view
@@ -107,25 +104,25 @@ function SaveViewForm({ mode, workspaceId, state, view, onSaved, onClose }: Save
       onSaved(saved)
       onClose()
     } catch (caught) {
-      if (caught instanceof ApiProblem && caught.status === 409) setError('This view changed since you opened it. Reopen it to see the latest version.')
-      else setError(caught instanceof ApiProblem ? caught.detail : "Orbit couldn't save the view. Try again.")
+      if (caught instanceof ApiProblem && caught.status === 409) setError(t('saveDialog.conflict'))
+      else setError(problemMessage(caught, t('saveDialog.saveFailed')))
     }
   }
 
   return (
     <form className="grid gap-4" onSubmit={(event) => void submit(event)}>
       <DialogHeader>
-        <DialogTitle>{TITLE[mode]}</DialogTitle>
-        <DialogDescription>{DESCRIPTION[mode]}</DialogDescription>
+        <DialogTitle>{t(`saveDialog.title.${mode}`)}</DialogTitle>
+        <DialogDescription>{t(`saveDialog.description.${mode}`)}</DialogDescription>
       </DialogHeader>
       <Field>
-        <FieldLabel htmlFor={nameId}>Name</FieldLabel>
+        <FieldLabel htmlFor={nameId}>{t('saveDialog.name')}</FieldLabel>
         <div className="flex items-center gap-2">
           <Popover open={pickerOpen} onOpenChange={setPickerOpen} modal={false}>
-            <Tip label="Icon and color">
+            <Tip label={t('saveDialog.iconAndColor')}>
               <PopoverTrigger
                 render={
-                  <Button type="button" variant="outline" size="icon" aria-label="Choose icon and color">
+                  <Button type="button" variant="outline" size="icon" aria-label={t('saveDialog.chooseIconColor')}>
                     <ViewIcon icon={icon} color={color} />
                   </Button>
                 }
@@ -134,7 +131,7 @@ function SaveViewForm({ mode, workspaceId, state, view, onSaved, onClose }: Save
             {pickerOpen ? (
               <PopoverContent align="start" className="w-64 gap-3 p-3">
                 <ToggleGroup
-                  aria-label="Icon"
+                  aria-label={t('saveDialog.icon')}
                   size="sm"
                   spacing={1}
                   className="grid w-full grid-cols-7"
@@ -145,19 +142,19 @@ function SaveViewForm({ mode, workspaceId, state, view, onSaved, onClose }: Save
                   }}
                 >
                   {VIEW_ICON_NAMES.map((key) => {
-                    const Icon = VIEW_ICONS[key].icon
+                    const Icon = VIEW_ICONS[key]
                     return (
-                      <ToggleGroupItem key={key} value={key} aria-label={`${VIEW_ICONS[key].label} icon`} className="px-0 text-muted-foreground aria-pressed:text-foreground">
+                      <ToggleGroupItem key={key} value={key} aria-label={t('saveDialog.iconAria', { icon: t(`saveDialog.icons.${key}`) })} className="px-0 text-muted-foreground aria-pressed:text-foreground">
                         <Icon aria-hidden="true" />
                       </ToggleGroupItem>
                     )
                   })}
                 </ToggleGroup>
-                <div role="group" aria-label="Color" className="flex flex-wrap items-center gap-1.5">
+                <div role="group" aria-label={t('saveDialog.color')} className="flex flex-wrap items-center gap-1.5">
                   {VIEW_COLORS.map((swatch) => (
-                    <ColorSwatch key={swatch.value} size="sm" color={swatch.value} aria-label={swatch.name} aria-pressed={color === swatch.value} onClick={() => setColor(swatch.value)} />
+                    <ColorSwatch key={swatch.value} size="sm" color={swatch.value} aria-label={t(`saveDialog.colors.${swatch.name}`)} aria-pressed={color === swatch.value} onClick={() => setColor(swatch.value)} />
                   ))}
-                  <ColorSwatch size="sm" color={null} aria-label="No color" aria-pressed={color === null} onClick={() => setColor(null)} />
+                  <ColorSwatch size="sm" color={null} aria-label={t('saveDialog.noColor')} aria-pressed={color === null} onClick={() => setColor(null)} />
                 </div>
               </PopoverContent>
             ) : null}
@@ -167,22 +164,22 @@ function SaveViewForm({ mode, workspaceId, state, view, onSaved, onClose }: Save
             autoFocus
             maxLength={80}
             value={name}
-            placeholder="Launch blockers"
-            aria-invalid={error === 'Enter a name.' || undefined}
+            placeholder={t('saveDialog.namePlaceholder')}
+            aria-invalid={(error !== null && nameMissing) || undefined}
             onChange={(event) => setName(event.target.value)}
             className="flex-1"
           />
         </div>
       </Field>
       <Field>
-        <FieldLabel htmlFor={descriptionId}>Description</FieldLabel>
-        <Textarea id={descriptionId} rows={2} maxLength={500} value={description} placeholder="Optional" onChange={(event) => setDescription(event.target.value)} />
+        <FieldLabel htmlFor={descriptionId}>{t('saveDialog.descriptionLabel')}</FieldLabel>
+        <Textarea id={descriptionId} rows={2} maxLength={500} value={description} placeholder={t('saveDialog.optional')} onChange={(event) => setDescription(event.target.value)} />
       </Field>
       {canChangeVisibility ? (
         <div className="grid gap-2">
-          <span className="text-sm font-medium">Visibility</span>
+          <span className="text-sm font-medium">{t('saveDialog.visibility')}</span>
           <ToggleGroup
-            aria-label="Visibility"
+            aria-label={t('saveDialog.visibility')}
             variant="outline"
             className="w-full"
             value={[visibility]}
@@ -193,21 +190,21 @@ function SaveViewForm({ mode, workspaceId, state, view, onSaved, onClose }: Save
           >
             <ToggleGroupItem value="personal" className="flex-1 gap-1.5">
               <Lock className="size-3.5" aria-hidden="true" />
-              Only me
+              {t('saveDialog.onlyMe')}
             </ToggleGroupItem>
             <ToggleGroupItem value="workspace" className="flex-1 gap-1.5">
               <People className="size-3.5" aria-hidden="true" />
-              Workspace
+              {t('saveDialog.workspace')}
             </ToggleGroupItem>
           </ToggleGroup>
         </div>
       ) : (
-        <p className="text-xs text-muted-foreground">Only the owner can change who sees this view.</p>
+        <p className="text-xs text-muted-foreground">{t('saveDialog.ownerOnly')}</p>
       )}
       {error ? <FieldError>{error}</FieldError> : null}
       <DialogFooter>
-        <DialogClose render={<Button type="button" variant="outline" />}>Cancel</DialogClose>
-        <Button type="submit" disabled={pending}>{pending ? 'Saving…' : SUBMIT[mode]}</Button>
+        <DialogClose render={<Button type="button" variant="outline" />}>{t('cancel')}</DialogClose>
+        <Button type="submit" disabled={pending}>{pending ? t('saveDialog.saving') : t(`saveDialog.submit.${mode}`)}</Button>
       </DialogFooter>
     </form>
   )

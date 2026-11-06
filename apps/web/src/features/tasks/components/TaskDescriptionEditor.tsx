@@ -13,7 +13,8 @@ import { useCurrentUser } from '@/features/auth/api'
 import { revealCollabCursor } from '@/features/docs/collab/cursor'
 import { useCollaborators } from '@/features/docs/collab/presence'
 import { PresenceAvatars } from '@/features/docs/collab/PresenceAvatars'
-import { collabProblemAction, collabStatusLabel, type CollabProblem, type CollabSession } from '@orbit/editor/collab/session'
+import { collabProblemAction, type CollabProblem, type CollabSession } from '@orbit/editor/collab/session'
+import { collabStatusText } from '@/lib/collabStatus'
 import { useCollabSession } from '@/features/docs/collab/useCollabSession'
 import { pageMentionCandidates } from '@/features/docs/editor/pageMentions'
 import { useMembers } from '@/features/workspaces/api'
@@ -199,7 +200,7 @@ export function TaskDescriptionEditor({
         </div>
       )}
       {status === 'offline' || status === 'error' ? (
-        <p role="status" className="mt-2 text-xs text-muted-foreground">{collabStatusLabel(collab.state)}</p>
+        <p role="status" className="mt-2 text-xs text-muted-foreground">{collabStatusText(collab.state.status)}</p>
       ) : null}
       {notice ? (
         <p role="alert" className="mt-2 text-xs text-destructive">

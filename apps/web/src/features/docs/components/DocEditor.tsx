@@ -55,6 +55,7 @@ import { revealCollabCursor } from '@/features/docs/collab/cursor'
 import { useCollaborators } from '@/features/docs/collab/presence'
 import { PresenceAvatars } from '@/features/docs/collab/PresenceAvatars'
 import { collabProblemAction, type CollabProblem, type CollabSession, type CollabState } from '@orbit/editor/collab/session'
+import { collabStatusText } from '@/lib/collabStatus'
 import { useCollabSession } from '@/features/docs/collab/useCollabSession'
 import { useDocPageActions } from '@/features/docs/pageActions'
 import { downloadPageMarkdown, printPage } from '@/features/docs/pageExport'
@@ -131,15 +132,6 @@ const STATUS_DOT: Record<CollabState['status'], string> = {
   lost: 'bg-destructive',
   error: 'bg-destructive',
 }
-
-const STATUS_LABEL = {
-  live: 'collabStatus.live',
-  connecting: 'collabStatus.connecting',
-  reset: 'collabStatus.connecting',
-  offline: 'collabStatus.offline',
-  lost: 'collabStatus.lost',
-  error: 'collabStatus.error',
-} as const satisfies Record<CollabState['status'], string>
 
 const COMMENT_ERRORS = {
   create: 'comments.createFailed',
@@ -608,7 +600,7 @@ export function DocEditor({ workspaceId, page, pages, teamspaces, onRequestTrash
         ? t('status.conflict')
         : syncStatus === 'live' && status === 'saving'
           ? t('status.saving')
-          : t(STATUS_LABEL[syncStatus])
+          : collabStatusText(syncStatus)
   const statusTitle =
     syncStatus === 'live'
       ? t('status.liveHint')

@@ -1,7 +1,7 @@
-import { en, type Dictionary } from '@blocknote/core/locales'
+import { en, fr, type Dictionary } from '@blocknote/core/locales'
 import { i18n, type Language } from '@/i18n'
 
-const BLOCKNOTE_DICTIONARIES: Record<Language, Dictionary> = { en }
+const BLOCKNOTE_DICTIONARIES: Record<Language, Dictionary> = { en, fr }
 
 /** BlockNote's own strings (slash menu, toolbars, file panel, comment menus) in the UI language. */
 export function blockNoteDictionary(): Dictionary {

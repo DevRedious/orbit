@@ -1,0 +1,125 @@
+import type { Translation } from '../../../types'
+import type source from '../../en/shell/components'
+
+export default {
+  attachments: {
+    remove: 'Retirer {{name}}',
+    openImage: 'Ouvrir l’image {{name}}',
+    deletedFile: 'Fichier supprimé',
+    deletedByAdmin: '{{name}} · supprimé par un administrateur',
+  },
+  codeBlock: {
+    diagram: 'Diagramme',
+    code: 'Code',
+    copyCode: 'Copier le code',
+    copy: 'Copier',
+    copied: 'Copié',
+    failed: 'Échec',
+    codeCopied: 'Code copié',
+    copyFailed: 'Impossible de copier le code.',
+  },
+  mermaid: {
+    label: 'Diagramme',
+    drawing: 'Dessin du diagramme…',
+    empty: 'Le diagramme est vide.',
+    failed: 'Impossible de dessiner le diagramme.',
+  },
+  colorSwatch: {
+    custom: 'Couleur personnalisée',
+  },
+  datePicker: {
+    thisWeek: 'Cette semaine',
+    nextWeek: 'La semaine prochaine',
+    time: 'Heure',
+  },
+  emojiPicker: {
+    search: 'Rechercher un emoji',
+    custom: 'Personnalisés',
+    empty: 'Aucun emoji trouvé',
+    pick: 'Choisissez un emoji',
+    changeSkinTone: 'Changer la teinte de peau',
+    skinTone: 'Teinte de peau : {{tone}}. Changer la teinte de peau',
+    skinTones: {
+      none: 'par défaut',
+      light: 'claire',
+      'medium-light': 'moyennement claire',
+      medium: 'intermédiaire',
+      'medium-dark': 'moyennement foncée',
+      dark: 'foncée',
+    },
+  },
+  errorBoundary: {
+    title: 'Une erreur est survenue',
+    description: 'Cette partie d’Orbit a cessé de fonctionner. Rechargez la page pour réessayer.',
+    reload: 'Recharger',
+  },
+  imageViewer: {
+    copy: 'Copier l’image',
+    copied: 'Image copiée',
+    copyFailed: 'Impossible de copier l’image. Essayez plutôt de la télécharger.',
+    download: 'Télécharger l’image',
+    zoomOut: 'Zoom arrière',
+    resetZoom: 'Réinitialiser le zoom',
+    zoomIn: 'Zoom avant',
+    close: 'Fermer la visionneuse d’images',
+  },
+  mentionPopover: {
+    channels: 'Salons',
+    mentions: 'Mentions',
+  },
+  orbitUnavailable: {
+    title: 'Orbit est indisponible',
+    reconnecting: 'Reconnexion…',
+  },
+  profileTrigger: {
+    open: 'Ouvrir le profil de {{name}}',
+  },
+  scopeAccess: {
+    access: 'Accès',
+    none: 'Aucun accès',
+    read: 'Lecture',
+    write: 'Écriture',
+    projects: 'Projets',
+    allProjects: 'Tous les projets, y compris les futurs',
+    selectAll: 'Tout sélectionner',
+  },
+  spoiler: 'Contenu masqué',
+  unsavedBar: {
+    message: 'Vous avez des modifications non enregistrées.',
+    save: 'Enregistrer les modifications',
+  },
+  presence: {
+    online: 'En ligne',
+    idle: 'Inactif',
+    dnd: 'Ne pas déranger',
+    offline: 'Hors ligne',
+    invisible: 'Invisible',
+  },
+  ui: {
+    breadcrumb: 'fil d’Ariane',
+    more: 'Plus',
+    commandDialogTitle: 'Palette de commandes',
+    commandDialogDescription: 'Rechercher une commande à exécuter…',
+    showPassword: 'Afficher le mot de passe',
+    hidePassword: 'Masquer le mot de passe',
+  },
+  image: 'Image',
+  messagePreview: {
+    sticker: 'Sticker',
+    file: 'A envoyé un fichier',
+  },
+  soundSets: {
+    pop: 'Pop',
+    knock: 'Toc',
+    chime: 'Carillon',
+  },
+  imageProblems: {
+    type: 'Choisissez une image PNG, JPEG, WebP ou GIF.',
+    emojiTooLarge: 'L’image est trop lourde. La limite est de 256 Ko.',
+    stickerTooLarge: 'L’image est trop lourde. La limite est de 512 Ko.',
+    emojiName: 'Un nom compte de 2 à 32 caractères : lettres minuscules, chiffres et tirets bas.',
+    emojiTaken: ':{{name}}: existe déjà. Choisissez un autre nom.',
+    stickerName: 'Un nom compte de 2 à 30 caractères.',
+    stickerTaken: 'Un sticker nommé {{name}} existe déjà. Choisissez un autre nom.',
+  },
+} satisfies Translation<typeof source>

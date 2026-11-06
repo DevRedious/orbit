@@ -1,0 +1,55 @@
+import type { Translation } from '../../../types'
+import type source from '../../en/chat/composer'
+
+export default {
+  everyoneHere: 'tout le monde ici',
+  everyoneOnline: 'tout le monde en ligne',
+  notify: {
+    title: 'Notifier {{number}} personnes ?',
+    channel: '@channel envoie une notification à tout le monde dans {{title}}.',
+    here: '@here envoie une notification à tout le monde dans {{title}} qui est en ligne.',
+    confirm: 'Envoyer',
+  },
+  replyingTo: 'En réponse à <name>{{name}}</name>',
+  unknownAuthor: 'Inconnu',
+  cancelReply: 'Annuler la réponse',
+  replyInThread: 'Répondre dans le fil',
+  messageTo: 'Message dans {{title}}',
+  replyPlaceholder: 'Répondre…',
+  attachFiles: 'Joindre des fichiers',
+  addEmoji: 'Ajouter un emoji',
+  sendSticker: 'Envoyer un sticker',
+  mentionSomeone: 'Mentionner quelqu’un',
+  charactersOver_one: '{{count}} caractère au-delà de la limite',
+  charactersOver_other: '{{count}} caractères au-delà de la limite',
+  charactersLeft_one: '{{count}} caractère restant',
+  charactersLeft_other: '{{count}} caractères restants',
+  sendMessage: 'Envoyer le message',
+  alsoSendTo: 'Envoyer aussi dans {{title}}',
+  alsoSendToConversation: 'Envoyer aussi dans cette conversation',
+  globalMentionInThread: '@channel et @here n’ont aucun effet dans un fil.',
+  uploads: {
+    pastedFile: 'Fichier collé',
+    uploading: 'Envoi de {{name}}',
+    storageFull: 'L’espace de stockage de l’espace de travail est plein.',
+    failed: 'L’envoi a échoué.',
+    tryAgain: 'Réessayer',
+    cancel: 'Annuler l’envoi de {{name}}',
+    remove: 'Retirer {{name}}',
+  },
+  emoji: {
+    heading: 'Emojis correspondant à :{{query}}',
+    label: 'Emojis correspondant à {{query}}',
+  },
+  typing: {
+    someone: 'Quelqu’un',
+    one: '{{name}} est en train d’écrire…',
+    two: '{{first}} et {{second}} sont en train d’écrire…',
+    several: 'Plusieurs personnes sont en train d’écrire…',
+  },
+  reconnecting: 'Reconnexion… Les messages que vous envoyez maintenant partiront dès que vous serez de nouveau en ligne.',
+  stickers: {
+    search: 'Rechercher des stickers',
+    noMatch: 'Aucun sticker ne correspond',
+  },
+} satisfies Translation<typeof source>

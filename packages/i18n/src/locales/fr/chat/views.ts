@@ -1,0 +1,40 @@
+import type { Translation } from '../../../types'
+import type source from '../../en/chat/views'
+
+export default {
+  unknownAuthor: 'Inconnu',
+  deleted: 'Ce message a été supprimé',
+  tryAgain: 'Réessayer',
+  threads: {
+    title: 'Fils',
+    unknownConversation: 'Conversation inconnue',
+    replies_one: '{{count}} réponse',
+    replies_other: '{{count}} réponses',
+    rowLabel: 'Fil dans {{title}}, {{replies}}',
+    rowLabelUnread_one: 'Fil dans {{title}}, {{replies}}, {{count}} non lue',
+    rowLabelUnread_other: 'Fil dans {{title}}, {{replies}}, {{count}} non lues',
+    lastReply: 'dernière réponse {{ago}}',
+    loadFailed: 'Impossible de charger vos fils.',
+    emptyTitle: 'Les fils que vous suivez apparaissent ici',
+    emptyDescription: 'Répondez à un message ou suivez son fil : les nouvelles réponses s’afficheront dans cette liste.',
+  },
+  unreads: {
+    title: 'Non lus',
+    unreadCount_one: '{{count}} non lu',
+    unreadCount_other: '{{count}} non lus',
+    markAsRead: 'Marquer comme lu',
+    markReadFailed: 'Impossible de marquer comme lu. Réessayez.',
+    messagesLoadFailed: 'Impossible de charger ces messages.',
+    messagesLabel: 'Messages non lus dans {{title}}',
+    moreUnread_one: 'Encore {{count}} message non lu',
+    moreUnread_other: 'Encore {{count}} messages non lus',
+    markAllAsRead: 'Tout marquer comme lu',
+    loadFailed: 'Impossible de charger vos messages non lus.',
+    emptyTitle: 'Vous êtes à jour',
+    emptyDescription: 'Les nouveaux messages de vos salons et de vos messages privés s’affichent ici.',
+    markedAllRead: 'Tout a été marqué comme lu',
+    undo: 'Annuler',
+    undoFailed: 'Impossible d’annuler. Réessayez.',
+    markAllReadFailed: 'Impossible de tout marquer comme lu. Réessayez.',
+  },
+} satisfies Translation<typeof source>

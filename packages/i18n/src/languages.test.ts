@@ -2,11 +2,12 @@ import { expect, test } from 'bun:test'
 import { isLanguage, matchLanguage } from './languages'
 
 test('a region tag matches its base language', () => {
+  expect(matchLanguage(['fr-CA'])).toBe('fr')
   expect(matchLanguage(['EN-gb'])).toBe('en')
 })
 
 test('the first supported tag wins', () => {
-  expect(matchLanguage(['de-DE', 'en'])).toBe('en')
+  expect(matchLanguage(['de-DE', 'fr', 'en'])).toBe('fr')
 })
 
 test('no supported tag gives null', () => {
@@ -15,7 +16,7 @@ test('no supported tag gives null', () => {
 })
 
 test('only shipped languages are languages', () => {
-  expect(isLanguage('en')).toBe(true)
+  expect(isLanguage('fr')).toBe(true)
   expect(isLanguage('de')).toBe(false)
   expect(isLanguage(null)).toBe(false)
 })

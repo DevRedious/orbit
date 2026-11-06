@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { cn } from 'cn'
 import { buttonVariants } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -25,8 +26,9 @@ function withAccessLevel<S extends string>(resource: ScopeResource<S>, scopes: r
 
 /** The access section of the OAuth consent page and the API token form: one row per resource. */
 export function AccessPicker<S extends string>({ id, resources, scopes, onChange }: { id: string; resources: ScopeResource<S>[]; scopes: S[]; onChange: (scopes: S[]) => void }) {
+  const { t } = useTranslation('shell')
   return <div role="group" aria-labelledby={id} className="grid gap-3">
-    <span id={id} className="sr-only">Access</span>
+    <span id={id} className="sr-only">{t('scopeAccess.access')}</span>
     {resources.map((resource) => {
       const level = accessLevel(resource, scopes)
       return <div key={resource.name} className="grid gap-3">
@@ -42,7 +44,7 @@ export function AccessPicker<S extends string>({ id, resources, scopes, onChange
           {(['none', 'read', 'write'] as const).map((option) => <ToggleGroupItem key={option} value={option}
             disabled={resource.disabled ? option !== 'none' : option === 'none' ? !resource.read : option === 'write' ? !resource.write : false}
             className={cn(buttonVariants({ variant: option === level ? 'default' : 'outline', size: 'sm' }), 'disabled:opacity-25 aria-pressed:bg-primary aria-pressed:text-primary-foreground aria-pressed:hover:bg-primary/80 hover:translate-y-0 hover:shadow-[0_2px_0_var(--button-depth)]')}>
-            {option === 'none' ? 'No access' : option === 'read' ? 'Read' : 'Write'}
+            {t(`scopeAccess.${option}`)}
           </ToggleGroupItem>)}
         </ToggleGroup>
       </div>
@@ -54,16 +56,17 @@ export function AccessPicker<S extends string>({ id, resources, scopes, onChange
 
 /** The project checklist under the Tasks access row, with "Select all" above two or more projects. `all` covers every project, including future ones, and hides the list. Its title is for screen readers only. */
 export function ProjectPicker({ id, projects, selected, onChange, all, onAllChange, empty }: { id: string; projects: { id: string; name: string }[]; selected: string[]; onChange: (ids: string[]) => void; all: boolean; onAllChange: (all: boolean) => void; empty?: string }) {
+  const { t } = useTranslation('shell')
   return <div role="group" aria-labelledby={id} className="grid gap-3">
-    <span id={id} className="sr-only">Projects</span>
+    <span id={id} className="sr-only">{t('scopeAccess.projects')}</span>
     <Label className="flex items-center gap-2">
       <Checkbox checked={all} onCheckedChange={(checked) => onAllChange(Boolean(checked))} />
-      All projects, including future ones
+      {t('scopeAccess.allProjects')}
     </Label>
     {all ? null : <>
     {projects.length > 1 ? <Label className="flex items-center gap-2 text-sm font-normal text-muted-foreground">
       <Checkbox checked={selected.length === projects.length} indeterminate={selected.length > 0 && selected.length < projects.length} onCheckedChange={(checked) => onChange(checked ? projects.map((project) => project.id) : [])} />
-      Select all
+      {t('scopeAccess.selectAll')}
     </Label> : null}
     {/* py-2 holds the checkbox's 8px tap area, so a short list does not scroll and catch the page's wheel. */}
     {projects.length ? <div className="-mx-1 -my-2 grid max-h-64 gap-3 overflow-y-auto px-1 py-2">

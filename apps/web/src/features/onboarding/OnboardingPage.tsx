@@ -1,7 +1,7 @@
 import { useState } from 'react'
+import { Trans, useTranslation } from 'react-i18next'
 import { Link, Navigate, useNavigate } from 'react-router'
 import { Check } from 'reicon-react'
-import { ApiProblem } from '@orbit/api/problem'
 import { ColorSwatch } from '@/components/common/ColorSwatch'
 import { cn } from 'cn'
 import { Button, buttonVariants } from '@/components/ui/button'
@@ -13,14 +13,11 @@ import type { Project } from '@/features/tasks/api/models'
 import { PROJECT_COLORS } from '@/features/tasks/taskMeta'
 import { useCreateWorkspace, useWorkspaces } from '@/features/workspaces/api'
 import { useIsInstallationAdmin } from '@/features/workspaces/permissions'
+import { problemMessage } from '@/i18n/problem'
 
 /** The tag a project name suggests: its first three letters or digits, upper case. */
 function suggestedProjectKey(name: string) {
   return name.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3)
-}
-
-function problemText(error: unknown, fallback: string) {
-  return error instanceof ApiProblem ? error.detail : fallback
 }
 
 /**
@@ -38,10 +35,11 @@ export function OnboardingPage() {
 }
 
 function StepHeader({ step, title, children }: { step: number; title: string; children: React.ReactNode }) {
+  const { t } = useTranslation('shell')
   return (
     <>
       <AuthBrand />
-      <p className="mt-4 text-xs font-medium text-muted-foreground">Step {step} of 2</p>
+      <p className="mt-4 text-xs font-medium text-muted-foreground">{t('onboarding.step', { step })}</p>
       <h1 className="mt-1 mb-2">{title}</h1>
       <div className="grid gap-2 text-[13px] leading-[1.6] text-muted-foreground">{children}</div>
     </>
@@ -49,6 +47,7 @@ function StepHeader({ step, title, children }: { step: number; title: string; ch
 }
 
 function WorkspaceStep({ onCreated }: { onCreated: (workspaceId: string) => void }) {
+  const { t } = useTranslation('shell')
   const createWorkspace = useCreateWorkspace()
   const isOperator = useIsInstallationAdmin()
   const [name, setName] = useState('')
@@ -59,41 +58,43 @@ function WorkspaceStep({ onCreated }: { onCreated: (workspaceId: string) => void
         if (!name.trim() || createWorkspace.isPending) return
         createWorkspace.mutate(name.trim(), { onSuccess: (workspace) => onCreated(workspace.id) })
       }}>
-        <StepHeader step={1} title="Create your workspace">
-          <p>A workspace is where your team works together. It holds your projects, tasks, documents and chat.</p>
-          <p>You can invite people and add more workspaces later.</p>
+        <StepHeader step={1} title={t('onboarding.workspace.title')}>
+          <p>{t('onboarding.workspace.intro')}</p>
+          <p>{t('onboarding.workspace.later')}</p>
         </StepHeader>
         <Field>
-          <FieldLabel htmlFor="onboarding-workspace">Workspace name</FieldLabel>
-          <Input id="onboarding-workspace" required autoFocus placeholder="Acme Inc." value={name} onChange={(event) => setName(event.target.value)} />
+          <FieldLabel htmlFor="onboarding-workspace">{t('onboarding.workspace.name')}</FieldLabel>
+          <Input id="onboarding-workspace" required autoFocus placeholder={t('onboarding.workspace.namePlaceholder')} value={name} onChange={(event) => setName(event.target.value)} />
         </Field>
-        {createWorkspace.isError ? <p role="alert" className="text-[13px] text-destructive">{problemText(createWorkspace.error, 'The workspace could not be created.')}</p> : null}
-        <Button type="submit" disabled={createWorkspace.isPending || !name.trim()}>{createWorkspace.isPending ? 'Please wait…' : 'Create workspace'}</Button>
+        {createWorkspace.isError ? <p role="alert" className="text-[13px] text-destructive">{problemMessage(createWorkspace.error, t('onboarding.workspace.createFailed'))}</p> : null}
+        <Button type="submit" disabled={createWorkspace.isPending || !name.trim()}>{createWorkspace.isPending ? t('onboarding.pleaseWait') : t('onboarding.workspace.create')}</Button>
         {/* Admin and the account settings work without a workspace: there, a person can also delete their account. */}
         {isOperator
-          ? <Link to="/admin" className={cn(buttonVariants({ variant: 'ghost' }), '-mt-2')}>Back to Admin</Link>
-          : <Link to="/profile" className={cn(buttonVariants({ variant: 'ghost' }), '-mt-2')}>Account settings</Link>}
+          ? <Link to="/admin" className={cn(buttonVariants({ variant: 'ghost' }), '-mt-2')}>{t('onboarding.workspace.backToAdmin')}</Link>
+          : <Link to="/profile" className={cn(buttonVariants({ variant: 'ghost' }), '-mt-2')}>{t('onboarding.workspace.accountSettings')}</Link>}
       </form>
     </AuthCard>
   )
 }
 
 function ProjectStep({ workspaceId }: { workspaceId: string }) {
+  const { t } = useTranslation(['shell', 'common'])
   const projects = useProjects(workspaceId)
   const project = projects.data?.[0]
   if (projects.isError) {
     return (
       <AuthCard>
-        <StepHeader step={2} title="Set up your first project"><p role="alert">The project could not be loaded.</p></StepHeader>
-        <Button className="mt-4 w-full" onClick={() => void projects.refetch()}>Retry</Button>
+        <StepHeader step={2} title={t('onboarding.project.title')}><p role="alert">{t('onboarding.project.loadFailed')}</p></StepHeader>
+        <Button className="mt-4 w-full" onClick={() => void projects.refetch()}>{t('common:retry')}</Button>
       </AuthCard>
     )
   }
-  if (!project) return <AuthCard><p role="status" className="text-[13px] text-muted-foreground">Loading…</p></AuthCard>
+  if (!project) return <AuthCard><p role="status" className="text-[13px] text-muted-foreground">{t('onboarding.project.loading')}</p></AuthCard>
   return <ProjectForm workspaceId={workspaceId} project={project} />
 }
 
 function ProjectForm({ workspaceId, project }: { workspaceId: string; project: Project }) {
+  const { t } = useTranslation('shell')
   const navigate = useNavigate()
   const updateProject = useUpdateProject(workspaceId, project.id)
   const [draft, setDraft] = useState({ name: '', key: '', color: project.color })
@@ -109,26 +110,28 @@ function ProjectForm({ workspaceId, project }: { workspaceId: string; project: P
         if (!name || !key || updateProject.isPending) return
         updateProject.mutate({ name, key, color: draft.color, expected_version: project.version }, { onSuccess: finish })
       }}>
-        <StepHeader step={2} title="Set up your first project">
-          <p>Projects group your tasks. Each project has a tag that starts its task IDs, such as <span className="font-mono text-foreground">{key || 'WEB'}-1</span>.</p>
-          <p>Every project starts with a workflow: Backlog, Todo, In Progress, Done, Cancelled and Duplicate. You can change it and add more projects later.</p>
+        <StepHeader step={2} title={t('onboarding.project.title')}>
+          <p>
+            <Trans t={t} i18nKey="onboarding.project.intro" values={{ key: key || 'WEB' }} components={{ tag: <span className="font-mono text-foreground" /> }} />
+          </p>
+          <p>{t('onboarding.project.workflow')}</p>
         </StepHeader>
         <Field>
-          <FieldLabel htmlFor="onboarding-project">Project name</FieldLabel>
-          <Input id="onboarding-project" required autoFocus placeholder="Website" value={draft.name} onChange={(event) => {
+          <FieldLabel htmlFor="onboarding-project">{t('onboarding.project.name')}</FieldLabel>
+          <Input id="onboarding-project" required autoFocus placeholder={t('onboarding.project.namePlaceholder')} value={draft.name} onChange={(event) => {
             const value = event.target.value
             setDraft((current) => ({ ...current, name: value, key: keyEdited ? current.key : suggestedProjectKey(value) }))
           }} />
         </Field>
         <Field>
-          <FieldLabel htmlFor="onboarding-project-key">Tag</FieldLabel>
+          <FieldLabel htmlFor="onboarding-project-key">{t('onboarding.project.tag')}</FieldLabel>
           <Input id="onboarding-project-key" required maxLength={5} placeholder="WEB" value={draft.key} onChange={(event) => {
             setKeyEdited(true)
             setDraft((current) => ({ ...current, key: event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '') }))
           }} />
         </Field>
         <div className="grid gap-2">
-          <span className="text-sm font-medium">Color</span>
+          <span className="text-sm font-medium">{t('onboarding.project.color')}</span>
           <div className="flex flex-wrap gap-2">
             {PROJECT_COLORS.map((color) => (
               <ColorSwatch
@@ -136,7 +139,7 @@ function ProjectForm({ workspaceId, project }: { workspaceId: string; project: P
                 color={color}
                 size="sm"
                 title={color}
-                aria-label={`Color ${color}`}
+                aria-label={t('onboarding.project.colorOption', { color })}
                 aria-pressed={draft.color.toLowerCase() === color}
                 onClick={() => setDraft((current) => ({ ...current, color }))}
               >
@@ -145,9 +148,9 @@ function ProjectForm({ workspaceId, project }: { workspaceId: string; project: P
             ))}
           </div>
         </div>
-        {updateProject.isError ? <p role="alert" className="text-[13px] text-destructive">{problemText(updateProject.error, 'The project could not be saved.')}</p> : null}
-        <Button type="submit" disabled={updateProject.isPending || !name || !key}>{updateProject.isPending ? 'Please wait…' : 'Create project'}</Button>
-        <Button type="button" variant="ghost" onClick={finish}>Skip, keep “{project.name}”</Button>
+        {updateProject.isError ? <p role="alert" className="text-[13px] text-destructive">{problemMessage(updateProject.error, t('onboarding.project.saveFailed'))}</p> : null}
+        <Button type="submit" disabled={updateProject.isPending || !name || !key}>{updateProject.isPending ? t('onboarding.pleaseWait') : t('onboarding.project.create')}</Button>
+        <Button type="button" variant="ghost" onClick={finish}>{t('onboarding.project.skip', { name: project.name })}</Button>
       </form>
     </AuthCard>
   )

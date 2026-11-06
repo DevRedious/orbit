@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { Command as CommandPrimitive } from "cmdk"
+import { useTranslation } from "react-i18next"
 import { cn } from "cn"
 
 import {
@@ -34,8 +35,8 @@ function Command({
 }
 
 function CommandDialog({
-  title = "Command Palette",
-  description = "Search for a command to run...",
+  title,
+  description,
   children,
   className,
   style,
@@ -49,11 +50,12 @@ function CommandDialog({
   showCloseButton?: boolean
   children: React.ReactNode
 }) {
+  const { t } = useTranslation("shell")
   return (
     <Dialog {...props}>
       <DialogHeader className="sr-only">
-        <DialogTitle>{title}</DialogTitle>
-        <DialogDescription>{description}</DialogDescription>
+        <DialogTitle>{title ?? t("ui.commandDialogTitle")}</DialogTitle>
+        <DialogDescription>{description ?? t("ui.commandDialogDescription")}</DialogDescription>
       </DialogHeader>
       <DialogContent
         className={cn(

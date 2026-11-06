@@ -14,6 +14,7 @@ import { startPushWorker } from '@/features/realtime/push'
 import { preloadPageEditorWhenIdle } from '@/features/docs/editor/loadPageEditor'
 import { useUnreadFavicon } from '@/lib/favicon'
 import { chatEnabled } from './productNavigation'
+import { useTranslation } from 'react-i18next'
 import { Outlet, useLocation } from 'react-router'
 import { SidebarLeft as PanelLeft } from 'reicon-react'
 import { cn } from 'cn'
@@ -67,6 +68,7 @@ function WorkspaceShell() {
 }
 
 function Shell() {
+  const { t } = useTranslation('shell')
   const { workspace } = useWorkspace()
   const live = useWorkspaceEvents(workspace.id)
   const { total: chatBadge, unread: chatUnread } = useChatBadges()
@@ -179,11 +181,11 @@ function Shell() {
             )}
           >
             <UserMenu collapsed={sidebarCollapsed} />
-            <Tip label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'} side={sidebarCollapsed ? 'right' : undefined}>
+            <Tip label={sidebarCollapsed ? t('sidebar.expand') : t('sidebar.collapse')} side={sidebarCollapsed ? 'right' : undefined}>
               <button
                 type="button"
                 className="flex size-8 shrink-0 items-center justify-center rounded-md text-sidebar-nav transition-colors outline-none hover:bg-black/4 hover:text-sidebar-nav-active focus-visible:outline-1 focus-visible:outline-primary dark:hover:bg-white/5"
-                aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                aria-label={sidebarCollapsed ? t('sidebar.expand') : t('sidebar.collapse')}
                 onClick={toggleSidebar}
               >
                 <PanelLeft className={cn('size-[18px] opacity-90', sidebarCollapsed && 'rotate-180')} />
@@ -209,7 +211,7 @@ function Shell() {
       <SideSheet open={drawerOpen} onOpenChange={setDrawerOpen}>
         <SideSheetContent
           side="right"
-          aria-label="Navigation"
+          aria-label={t('nav.navigation')}
           className={cn(sidebarTheme.scheme, 'z-[41] w-[min(280px,84vw)] overflow-hidden rounded-l-2xl border-l border-sidebar-edge bg-sidebar bg-linear-to-b from-sidebar-wash to-transparent to-[520px] px-3 pt-[calc(12px+env(safe-area-inset-top,0px))] pb-[calc(12px+env(safe-area-inset-bottom,0px))] text-sidebar-foreground')}
           style={sidebarTheme.style}
         >

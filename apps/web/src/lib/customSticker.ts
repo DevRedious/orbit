@@ -1,3 +1,5 @@
+import { i18n } from '@/i18n'
+
 /** The server's rules (`chat/stickers`): the image types, the size and the length of a name. */
 export const STICKER_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif']
 export const STICKER_MAX_BYTES = 512 * 1024
@@ -26,9 +28,9 @@ export function stickerProblem(file: { type: string; size: number }, name: strin
   const trimmed = name.trim()
   const length = Array.from(trimmed).length
   // a system that does not know the type sends none: the server decides by the bytes
-  if (file.type !== '' && !STICKER_IMAGE_TYPES.includes(file.type)) return 'Choose a PNG, JPEG, WebP or GIF image.'
-  if (file.size > STICKER_MAX_BYTES) return 'The image is too large. The limit is 512 KB.'
-  if (length < 2 || length > STICKER_NAME_MAX || /\p{Cc}/u.test(trimmed)) return 'A name has 2 to 30 characters.'
-  if (names.some((used) => foldCase(used) === foldCase(trimmed))) return `A sticker named ${trimmed} exists already. Choose another name.`
+  if (file.type !== '' && !STICKER_IMAGE_TYPES.includes(file.type)) return i18n.t('shell:imageProblems.type')
+  if (file.size > STICKER_MAX_BYTES) return i18n.t('shell:imageProblems.stickerTooLarge')
+  if (length < 2 || length > STICKER_NAME_MAX || /\p{Cc}/u.test(trimmed)) return i18n.t('shell:imageProblems.stickerName')
+  if (names.some((used) => foldCase(used) === foldCase(trimmed))) return i18n.t('shell:imageProblems.stickerTaken', { name: trimmed })
   return null
 }

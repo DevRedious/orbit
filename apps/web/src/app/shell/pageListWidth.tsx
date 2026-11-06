@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 const STORAGE_KEY = 'orbit:page_list_width'
 export const PAGE_LIST_WIDTH = { min: 220, max: 480, default: 260 }
@@ -26,6 +27,7 @@ export function usePageListWidth() {
  * `onDragging` lets the sidebar drop its width transition while the pointer moves it.
  */
 export function SidebarResizeHandle({ width, onResize, onDragging }: { width: number; onResize: (width: number) => void; onDragging: (dragging: boolean) => void }) {
+  const { t } = useTranslation('shell')
   function startDrag(event: React.PointerEvent<HTMLDivElement>) {
     if (event.button !== 0) return
     event.preventDefault()
@@ -50,7 +52,7 @@ export function SidebarResizeHandle({ width, onResize, onDragging }: { width: nu
     <div
       role="separator"
       aria-orientation="vertical"
-      aria-label="Resize sidebar"
+      aria-label={t('sidebar.resize')}
       aria-valuemin={PAGE_LIST_WIDTH.min}
       aria-valuemax={PAGE_LIST_WIDTH.max}
       aria-valuenow={width}

@@ -1,4 +1,5 @@
 import { useId, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { SmileCircle } from 'reicon-react'
 import { Emoji } from '@/components/common/Emoji'
 import { EmojiPicker } from '@/components/common/EmojiPicker'
@@ -15,13 +16,8 @@ import { useOwnStatus } from '@/features/realtime/useOwnStatus'
 
 type ClearAfter = 'keep' | 'never' | '30m' | '1h' | '4h' | 'today'
 
-const CLEAR_AFTER_OPTIONS: { value: ClearAfter; label: string }[] = [
-  { value: 'never', label: "Don't clear" },
-  { value: '30m', label: '30 minutes' },
-  { value: '1h', label: '1 hour' },
-  { value: '4h', label: '4 hours' },
-  { value: 'today', label: 'Today' },
-]
+/** The choices after `keep`; their names are `shell:status.dialog.options.<value>`. */
+const CLEAR_AFTER_OPTIONS = ['never', '30m', '1h', '4h', 'today'] as const satisfies readonly ClearAfter[]
 
 const MINUTES: Partial<Record<ClearAfter, number>> = { '30m': 30, '1h': 60, '4h': 240 }
 
@@ -38,16 +34,19 @@ function clearAfterTime(choice: ClearAfter, current: string | null, now = new Da
  * Callers mount it while it is open.
  */
 export function CustomStatusDialog({ onClose }: { onClose: () => void }) {
+  const { t, i18n } = useTranslation(['shell', 'common'])
   const status = useOwnStatus()
   const setStatus = useSetStatus()
   const [emoji, setEmoji] = useState(status.emoji)
   const [text, setText] = useState(status.text ?? '')
   // A status that already has an end keeps it unless the user picks another one.
-  const [options] = useState(() =>
-    status.expiresAt
-      ? [{ value: 'keep' as const, label: `Keep (${new Date(status.expiresAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })})` }, ...CLEAR_AFTER_OPTIONS]
-      : CLEAR_AFTER_OPTIONS,
-  )
+  const [choices] = useState<ClearAfter[]>(() => (status.expiresAt ? ['keep', ...CLEAR_AFTER_OPTIONS] : [...CLEAR_AFTER_OPTIONS]))
+  const options = choices.map((value) => ({
+    value,
+    label: value === 'keep'
+      ? t('status.dialog.keep', { date: new Date(status.expiresAt ?? 0).toLocaleString(i18n.language, { dateStyle: 'medium', timeStyle: 'short' }) })
+      : t(`status.dialog.options.${value}`),
+  }))
   const [clearAfter, setClearAfter] = useState<ClearAfter>(options[0].value)
   const [emojiOpen, setEmojiOpen] = useState(false)
   const textId = useId()
@@ -67,14 +66,14 @@ export function CustomStatusDialog({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <Modal title="Custom status" onClose={onClose} className="sm:max-w-md" dismissible={!setStatus.isPending}>
+    <Modal title={t('status.dialog.title')} onClose={onClose} className="sm:max-w-md" dismissible={!setStatus.isPending}>
       <form className="grid gap-4" onSubmit={submit}>
         <Field>
-          <FieldLabel htmlFor={textId}>Status</FieldLabel>
+          <FieldLabel htmlFor={textId}>{t('status.dialog.status')}</FieldLabel>
           <div className="flex items-center gap-2">
             <Popover open={emojiOpen} onOpenChange={setEmojiOpen} modal={false}>
-              <Tip label={emoji ? 'Change emoji' : 'Add emoji'}>
-                <PopoverTrigger render={<Button type="button" variant="outline" size="icon" aria-label={emoji ? 'Change emoji' : 'Add emoji'} />}>
+              <Tip label={emoji ? t('status.dialog.changeEmoji') : t('status.dialog.addEmoji')}>
+                <PopoverTrigger render={<Button type="button" variant="outline" size="icon" aria-label={emoji ? t('status.dialog.changeEmoji') : t('status.dialog.addEmoji')} />}>
                   {emoji ? <Emoji value={emoji} /> : <SmileCircle className="text-muted-foreground" />}
                 </PopoverTrigger>
               </Tip>
@@ -100,16 +99,16 @@ export function CustomStatusDialog({ onClose }: { onClose: () => void }) {
               autoFocus
               className="min-w-0 flex-1"
               maxLength={100}
-              placeholder="What's your status?"
+              placeholder={t('status.dialog.placeholder')}
               value={text}
               onChange={(event) => setText(event.target.value)}
             />
           </div>
         </Field>
         <Field>
-          <FieldLabel>Clear after</FieldLabel>
+          <FieldLabel>{t('status.dialog.clearAfter')}</FieldLabel>
           <Select items={options} value={clearAfter} onValueChange={(value) => setClearAfter(value as ClearAfter)}>
-            <SelectTrigger aria-label="Clear after" className="w-full">
+            <SelectTrigger aria-label={t('status.dialog.clearAfter')} className="w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -123,10 +122,10 @@ export function CustomStatusDialog({ onClose }: { onClose: () => void }) {
         </Field>
         <DialogFooter>
           <Button type="button" variant="outline" disabled={!hadCustom || setStatus.isPending} onClick={() => save({ emoji: null, text: null, expires_at: null })}>
-            Clear status
+            {t('status.dialog.clear')}
           </Button>
           <Button type="submit" disabled={setStatus.isPending || (!hadCustom && emoji === null && !text.trim())}>
-            Save
+            {t('common:save')}
           </Button>
         </DialogFooter>
       </form>

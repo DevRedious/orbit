@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { Hashtag as Hash, User } from 'reicon-react'
 import type { MentionSuggestion } from '@/lib/useMentionAutocomplete'
 import { Button } from '@/components/ui/button'
@@ -21,6 +22,7 @@ export function MentionPopover({
   /** Docs hide the right-side handle column. */
   showHandle?: boolean
 }) {
+  const { t } = useTranslation('shell')
   if (suggestions.length === 0) return null
   const channelList = suggestions[0].kind === 'channel'
   return (
@@ -31,7 +33,7 @@ export function MentionPopover({
       )}
       data-placement={placement}
     >
-      <div className="px-3 pb-1 text-xs font-bold tracking-wider text-muted-foreground uppercase">{channelList ? 'Channels' : 'Mentions'}</div>
+      <div className="px-3 pb-1 text-xs font-bold tracking-wider text-muted-foreground uppercase">{channelList ? t('mentionPopover.channels') : t('mentionPopover.mentions')}</div>
       {suggestions.map((suggestion, index) => (
         <Button
           key={suggestion.id}

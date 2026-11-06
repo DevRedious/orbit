@@ -3,6 +3,7 @@ import react, { reactCompilerPreset } from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import babel from '@rolldown/plugin-babel'
 import openapi from '@orbit/api/generated/openapi.json' with { type: 'json' }
+import { LANGUAGES } from '@orbit/i18n/languages'
 import { createHash } from 'node:crypto'
 import { cpSync, existsSync, mkdirSync, readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
@@ -17,7 +18,7 @@ const cspScriptHash = `sha256-${createHash('sha256').update(bootstrapScript).dig
 
 /**
  * Emoji files that Orbit serves itself (the production CSP has no CDN): the Twemoji images at `/assets/twemoji-<version>/<code>.svg`
- * and the emoji data at `/assets/emojibase-<version>/en/…`. The version in the path makes them immutable: the server
+ * and the emoji data at `/assets/emojibase-<version>/<locale>/…`. The version in the path makes them immutable: the server
  * caches `/assets` for a year, so a browser downloads each file once. They stay in `node_modules`: the dev server
  * reads them from there and the build copies them into `dist`. The versions are those of the installed packages, as in
  * `src/lib/twemoji.ts`. The images are the `jdecked/twemoji` repository: its npm package of images stops at 15.0.0.
@@ -30,7 +31,8 @@ const emojibaseVersion = packageVersion('emojibase-data')
 const emojiAssets = [
   { url: `/assets/twemoji-${twemojiVersion}/`, dir: join(packageDir('twemoji-assets'), 'assets/svg/'), files: /^[0-9a-f-]+\.svg$/, type: 'image/svg+xml' },
   { url: `/assets/emojibase-${emojibaseVersion}/en/shortcodes/`, dir: join(packageDir('emojibase-data'), 'en/shortcodes/'), files: /^github\.json$/, type: 'application/json' },
-  { url: `/assets/emojibase-${emojibaseVersion}/en/`, dir: join(packageDir('emojibase-data'), 'en/'), files: /^(data|messages)\.json$/, type: 'application/json' },
+  // the emoji picker's names and categories, in each UI language (`EmojiPicker`): a new language needs only its catalog
+  ...LANGUAGES.map((locale) => ({ url: `/assets/emojibase-${emojibaseVersion}/${locale}/`, dir: join(packageDir('emojibase-data'), `${locale}/`), files: /^(data|messages)\.json$/, type: 'application/json' })),
 ]
 
 // https://vite.dev/config/

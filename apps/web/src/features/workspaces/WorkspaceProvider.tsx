@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Navigate, useLocation, useNavigate } from 'react-router'
 import type { WorkspaceRecord } from '@orbit/api/generated/types.gen'
 import { useWorkspaces } from './api'
@@ -18,6 +19,7 @@ const operatorPages = /^\/(admin|profile)(\/|$)/
 const profilePages = /^\/profile(\/|$)/
 
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
+  const { t } = useTranslation('shell')
   const query = useWorkspaces()
   const location = useLocation()
   const navigate = useNavigate()
@@ -42,7 +44,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   // With workspaces from before, a refetch that lost the connection keeps the app on screen (the banner in the shell
   // tells the user); one the server refused does not.
-  if (firstLoadFailed(query)) return <OrbitUnavailable detail="Your workspaces could not be loaded." onRetry={() => void query.refetch()} />
+  if (firstLoadFailed(query)) return <OrbitUnavailable detail={t('workspaces.loadFailed')} onRetry={() => void query.refetch()} />
   if (query.data === undefined) return <LoadingScreen />
   if (!value) {
     // Operators (the root user, instance admins) are not customers: with no workspace they land in Admin, without

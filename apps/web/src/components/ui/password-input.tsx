@@ -1,4 +1,5 @@
 import * as React from "react"
+import { useTranslation } from "react-i18next"
 import { Eye, EyeSlash } from "reicon-react"
 
 import {
@@ -12,6 +13,7 @@ function PasswordInput({
   className,
   ...props
 }: Omit<React.ComponentProps<"input">, "type">) {
+  const { t } = useTranslation("shell")
   const [visible, setVisible] = React.useState(false)
   return (
     <InputGroup data-slot="password-input" className={className}>
@@ -20,7 +22,7 @@ function PasswordInput({
         <InputGroupButton
           size="icon-xs"
           className="text-muted-foreground"
-          aria-label={visible ? "Hide password" : "Show password"}
+          aria-label={visible ? t("ui.hidePassword") : t("ui.showPassword")}
           aria-pressed={visible}
           disabled={props.disabled}
           onClick={() => setVisible((v) => !v)}

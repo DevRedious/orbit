@@ -7,6 +7,7 @@ import { PAYMENT_REQUIRED_EVENT, UNAUTHORIZED_EVENT } from '@/api/client'
 import { ThemeProvider } from '@/lib/theme'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { ErrorBoundary } from '@/components/common/ErrorBoundary'
+import { i18n } from '@/i18n'
 import { clearExpiredSession } from './authSession'
 
 function UnauthorizedSessionHandler() {
@@ -32,10 +33,10 @@ function PaymentRequiredHandler() {
 
   useEffect(() => {
     const refused = (event: Event) => {
-      const detail = event instanceof CustomEvent && typeof event.detail === 'string' ? event.detail : 'Choose a plan to keep working.'
+      const detail = event instanceof CustomEvent && typeof event.detail === 'string' ? event.detail : i18n.t('shell:billing.paymentRequired')
       toast.error(detail, {
         id: PAYMENT_REQUIRED_EVENT,
-        action: { label: 'Billing', onClick: () => navigate('/settings/billing') },
+        action: { label: i18n.t('shell:billing.billingAction'), onClick: () => navigate('/settings/billing') },
       })
     }
     window.addEventListener(PAYMENT_REQUIRED_EVENT, refused)

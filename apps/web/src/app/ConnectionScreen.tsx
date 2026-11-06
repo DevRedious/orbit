@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { OrbitUnavailable } from '@/components/common/OrbitUnavailable'
 import { retryConnection, useConnection } from '@/lib/connection'
 
@@ -7,6 +8,7 @@ import { retryConnection, useConnection } from '@/lib/connection'
  */
 export function ConnectionScreen() {
   const { phase } = useConnection()
+  const { t } = useTranslation('shell')
   if (phase !== 'failed') return null
-  return <OrbitUnavailable overlay detail="Orbit could not reconnect. It keeps trying, and you can retry now." onRetry={retryConnection} />
+  return <OrbitUnavailable overlay detail={t('connection.couldNotReconnect')} onRetry={retryConnection} />
 }

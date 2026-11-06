@@ -2,6 +2,7 @@ import { Kbd } from '@/components/ui/kbd'
 import { shortcutText } from '@/shortcuts/shortcutText'
 import { useBindings } from '@/shortcuts/useCommand'
 import { createContext, Fragment, useContext, useEffect, useState, type ComponentType, type ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link, useLocation, useMatch, useNavigate, useResolvedPath, type LinkProps } from 'react-router'
 import { cva, type VariantProps } from 'class-variance-authority'
 import { Calendar, ChevronDown, CalendarTick, Danger, SecurityUser, Home2 as Home, Layer, Message as MessageSquare, DocumentText as FileText, Search4 as Search, Setting2 as Settings, Sms as Mail, Star, TaskSquare as SquareCheck, Timer, Folder, Add as Plus, Trash } from 'reicon-react'
@@ -19,13 +20,16 @@ import { settingsAreaOf, useSettingsArea, type SettingsAreaName } from '@/featur
 import { chatEnabled, docsHidden } from './productNavigation'
 import { hostsPageList } from './sidebarSlot'
 
+// `area` names the label in `shell:nav`, translated at render
 const WORKSPACE_LINKS = [
-  { to: '/', label: 'Home', icon: Home, enabled: true },
-  { to: '/tasks', label: 'Tasks', icon: SquareCheck, enabled: true },
-  { to: '/docs', label: 'Docs', icon: FileText, enabled: true },
-  { to: '/chat', label: 'Chat', icon: MessageSquare, enabled: false },
-  { to: '/mail', label: 'Mail', icon: Mail, enabled: false },
-].filter((link) => !(docsHidden && link.to === '/docs'))
+  { to: '/', area: 'home', icon: Home, enabled: true },
+  { to: '/tasks', area: 'tasks', icon: SquareCheck, enabled: true },
+  { to: '/docs', area: 'docs', icon: FileText, enabled: true },
+  { to: '/chat', area: 'chat', icon: MessageSquare, enabled: false },
+  { to: '/mail', area: 'mail', icon: Mail, enabled: false },
+] as const
+
+const SHOWN_WORKSPACE_LINKS = WORKSPACE_LINKS.filter((link) => !(docsHidden && link.to === '/docs'))
 
 // Coolify tile navigation: the row never fills; the icon sits in a 3D tile and the current row shows a pink tile.
 // The Flat style (Account settings → Appearance) drops the tile: plain rows, and a filled row for the current page.
@@ -106,10 +110,11 @@ function SidebarNavItem({
   /** Something waits for the user, but there is no count: a dot shows. */
   unread?: boolean
 }) {
+  const { t } = useTranslation('shell')
   const collapsed = useContext(SidebarNavCollapsed)
   const match = useMatch({ path: useResolvedPath(to).pathname, end })
   const isActive = active ?? match !== null
-  const name = badge > 0 ? `${ariaLabel}, ${badge} unread` : unread ? `${ariaLabel}, unread` : ariaLabel
+  const name = badge > 0 ? t('nav.unreadCount', { label: ariaLabel, count: badge }) : unread ? t('nav.unread', { label: ariaLabel }) : ariaLabel
   return (
     <Tip label={collapsed ? name : undefined} side="right">
       <Link
@@ -145,9 +150,10 @@ function SidebarNavItem({
 
 /** A product area that is not built yet: shown, but disabled. */
 function SidebarNavComingSoon({ icon: Icon, label }: { icon: SidebarNavIcon; label: string }) {
+  const { t } = useTranslation('shell')
   const collapsed = useContext(SidebarNavCollapsed)
   return (
-    <Tip label={collapsed ? `${label} — Coming soon` : undefined} side="right">
+    <Tip label={collapsed ? t('sidebar.comingSoonTitle', { label }) : undefined} side="right">
       <Button
         data-slot="sidebar-nav-item"
         variant="ghost"
@@ -156,7 +162,7 @@ function SidebarNavComingSoon({ icon: Icon, label }: { icon: SidebarNavIcon; lab
       >
         <SidebarNavTile icon={Icon} />
         <SidebarNavLabel>{label}</SidebarNavLabel>
-        <span className="ml-auto text-[10px] text-muted-foreground/70 group-data-[collapsed=true]/sidebar-nav:hidden">Coming soon</span>
+        <span className="ml-auto text-[10px] text-muted-foreground/70 group-data-[collapsed=true]/sidebar-nav:hidden">{t('sidebar.comingSoon')}</span>
       </Button>
     </Tip>
   )
@@ -172,7 +178,8 @@ function SidebarSection({ label, collapsed }: { label: string; collapsed: boolea
   )
 }
 
-const PAGE_LIST_TITLES: Record<string, string> = { docs: 'Docs', chat: 'Chat' }
+/** The areas whose page list can fill the sidebar, by the first segment of their path. */
+const PAGE_LIST_AREAS: Partial<Record<string, 'docs' | 'chat'>> = { docs: 'docs', chat: 'chat' }
 
 // The pages opened in this tab, newest last, so Back can leave the current area. Shared by the sidebar and the drawer.
 const recentPaths: string[] = []
@@ -191,11 +198,11 @@ type SidebarArea = SettingsAreaName | 'tasks'
 
 /** The task pages ("presets") of the URL's `view`, as the old Personal section listed them. */
 const TASK_PRESETS = [
-  { view: 'mine', label: 'My tasks', icon: SquareCheck },
-  { view: 'current_week', label: 'This week', icon: Calendar },
-  { view: 'my_week', label: 'My week', icon: CalendarTick },
-  { view: 'overdue', label: 'Overdue', icon: Danger },
-  { view: 'due_soon', label: 'Due soon', icon: Timer },
+  { view: 'mine', icon: SquareCheck },
+  { view: 'current_week', icon: Calendar },
+  { view: 'my_week', icon: CalendarTick },
+  { view: 'overdue', icon: Danger },
+  { view: 'due_soon', icon: Timer },
 ] as const
 
 // One icon component per colour, so a project's tile keeps its identity between renders.
@@ -214,6 +221,7 @@ function dotIcon(color: string): SidebarNavIcon {
  * the project menu of the page header, as sidebar links.
  */
 function TasksAreaNav({ onNavigate, onBack }: { onNavigate?: () => void; onBack?: () => void }) {
+  const { t } = useTranslation('shell')
   const collapsed = useContext(SidebarNavCollapsed)
   const location = useLocation()
   const params = new URLSearchParams(location.search)
@@ -239,25 +247,25 @@ function TasksAreaNav({ onNavigate, onBack }: { onNavigate?: () => void; onBack?
 
   return (
     <>
-      <BackToApp label="Tasks" onNavigate={onNavigate} onBack={onBack} />
-      <SidebarNavItem to={tasksPath({ view: null })} active={onTasks && !view} icon={SquareCheck} label="All tasks" onClick={onNavigate} />
-      <SidebarNavItem to="/views" end icon={Layer} label="Views" aria-label="Task views" onClick={onNavigate} />
-      <SidebarSection label="My work" collapsed={collapsed} />
+      <BackToApp label={t('nav.tasks')} onNavigate={onNavigate} onBack={onBack} />
+      <SidebarNavItem to={tasksPath({ view: null })} active={onTasks && !view} icon={SquareCheck} label={t('sidebar.allTasks')} onClick={onNavigate} />
+      <SidebarNavItem to="/views" end icon={Layer} label={t('sidebar.views')} aria-label={t('sidebar.taskViews')} onClick={onNavigate} />
+      <SidebarSection label={t('sidebar.myWork')} collapsed={collapsed} />
       {TASK_PRESETS.map((preset) => (
-        <SidebarNavItem key={preset.view} to={tasksPath({ view: preset.view })} active={onTasks && view === preset.view} icon={preset.icon} label={preset.label} onClick={onNavigate} />
+        <SidebarNavItem key={preset.view} to={tasksPath({ view: preset.view })} active={onTasks && view === preset.view} icon={preset.icon} label={t(`sidebar.presets.${preset.view}`)} onClick={onNavigate} />
       ))}
       {projects.length > 0 ? (
         <>
-          <SidebarSection label="Projects" collapsed={collapsed} />
-          <SidebarNavItem to={tasksPath({ project: null })} active={onTasks && !project} icon={Folder} label="All projects" onClick={onNavigate} />
+          <SidebarSection label={t('sidebar.projects')} collapsed={collapsed} />
+          <SidebarNavItem to={tasksPath({ project: null })} active={onTasks && !project} icon={Folder} label={t('sidebar.allProjects')} onClick={onNavigate} />
           {projects.map((item) => (
             <div key={item.id} className="group/project relative">
               <SidebarNavItem to={tasksPath({ project: item.id })} active={onTasks && project === item.id} icon={dotIcon(item.color)} label={item.name} className="pr-8" onClick={onNavigate} />
               {collapsed ? null : (
-                <Tip label="Project settings" side="right">
+                <Tip label={t('sidebar.projectSettings')} side="right">
                   <Link
                     to={`/tasks/projects/${item.id}/settings`}
-                    aria-label={`${item.name} settings`}
+                    aria-label={t('sidebar.projectSettingsOf', { name: item.name })}
                     className="absolute top-1/2 right-1 flex size-6 -translate-y-1/2 items-center justify-center rounded-md text-sidebar-nav opacity-0 transition-opacity outline-none group-hover/project:opacity-100 hover:bg-black/5 hover:text-sidebar-nav-active focus-visible:opacity-100 pointer-coarse:opacity-100 dark:hover:bg-white/8"
                     onClick={onNavigate}
                   >
@@ -268,11 +276,11 @@ function TasksAreaNav({ onNavigate, onBack }: { onNavigate?: () => void; onBack?
             </div>
           ))}
         </>
-      ) : <SidebarSection label="Projects" collapsed={collapsed} />}
-      <Tip label={collapsed ? 'New project' : undefined} side="right">
-        <button type="button" data-slot="sidebar-nav-item" className={sidebarNavItemVariants()} aria-label="New project" onClick={() => setCreating(true)}>
+      ) : <SidebarSection label={t('sidebar.projects')} collapsed={collapsed} />}
+      <Tip label={collapsed ? t('sidebar.newProject') : undefined} side="right">
+        <button type="button" data-slot="sidebar-nav-item" className={sidebarNavItemVariants()} aria-label={t('sidebar.newProject')} onClick={() => setCreating(true)}>
           <SidebarNavTile icon={Plus} />
-          <SidebarNavLabel>New project</SidebarNavLabel>
+          <SidebarNavLabel>{t('sidebar.newProject')}</SidebarNavLabel>
         </button>
       </Tip>
       {creating ? (
@@ -287,7 +295,7 @@ function TasksAreaNav({ onNavigate, onBack }: { onNavigate?: () => void; onBack?
       ) : null}
       {favorites.length > 0 ? (
         <>
-          <SidebarSection label="Favorite views" collapsed={collapsed} />
+          <SidebarSection label={t('sidebar.favoriteViews')} collapsed={collapsed} />
           {favorites.map((saved) => (
             <SidebarNavItem key={saved.id} to={`/views/${saved.id}`} icon={Star} label={saved.name} onClick={onNavigate} />
           ))}
@@ -295,7 +303,7 @@ function TasksAreaNav({ onNavigate, onBack }: { onNavigate?: () => void; onBack?
       ) : null}
       {/* at the bottom, like the Docs trash */}
       <div className="flex-1" aria-hidden="true" />
-      <SidebarNavItem to="/tasks-trash" icon={Trash} label="Trash" aria-label="Task trash" onClick={onNavigate} />
+      <SidebarNavItem to="/tasks-trash" icon={Trash} label={t('sidebar.trash')} aria-label={t('sidebar.taskTrash')} onClick={onNavigate} />
     </>
   )
 }
@@ -305,6 +313,7 @@ function TasksAreaNav({ onNavigate, onBack }: { onNavigate?: () => void; onBack?
  * It opens the last page outside the current area.
  */
 function BackToApp({ label, onNavigate, onBack }: { label: string; onNavigate?: () => void; onBack?: () => void }) {
+  const { t } = useTranslation('shell')
   const collapsed = useContext(SidebarNavCollapsed)
   const area = areaOf(useLocation().pathname)
   const index = recentPaths.findLastIndex((path) => areaOf(path.split('?')[0]) !== area)
@@ -317,8 +326,8 @@ function BackToApp({ label, onNavigate, onBack }: { label: string; onNavigate?: 
   }
   const props = {
     'data-slot': 'sidebar-nav-back',
-    title: 'Back to the main menu',
-    'aria-label': 'Back to the main menu',
+    title: t('sidebar.backToMainMenu'),
+    'aria-label': t('sidebar.backToMainMenu'),
     className: 'mb-1 flex h-9 w-full min-w-0 shrink-0 items-center gap-2.5 rounded-md pr-2.5 pl-1 text-[13px] outline-none transition-colors duration-120 hover:bg-neutral-100 focus-visible:outline-1 focus-visible:outline-primary dark:hover:bg-white/6 group-data-[collapsed=true]/sidebar-nav:justify-center group-data-[collapsed=true]/sidebar-nav:px-0 flat:h-8 flat:pl-2.5',
     children: (
       <>
@@ -331,7 +340,7 @@ function BackToApp({ label, onNavigate, onBack }: { label: string; onNavigate?: 
     ),
   }
   return (
-    <Tip label={collapsed ? 'Back to the main menu' : undefined} side="right">
+    <Tip label={collapsed ? t('sidebar.backToMainMenu') : undefined} side="right">
       {/* with `onBack` (the mobile drawer) Back only shows the main menu, like Coolify's drawer: the page stays */}
       {onBack ? <button type="button" {...props} onClick={onBack} /> : <Link {...props} to={target} onClick={goBack} />}
     </Tip>
@@ -391,6 +400,7 @@ export function SidebarNav({
   /** Set while the open page's own list (docs, chat) shows here instead of the app links: the element it renders in. */
   pageListRef?: (element: HTMLDivElement | null) => void
 }) {
+  const { t } = useTranslation('shell')
   const location = useLocation()
   const pageArea: SidebarArea | null = contextual ? (settingsAreaOf(location.pathname) ?? (isTasksPath(location.pathname) ? 'tasks' : null)) : null
   // the area whose Back was pressed in the drawer: the main menu shows until the page moves to another area
@@ -425,6 +435,7 @@ export function SidebarNav({
   }
 
   const paletteKeys = useBindings()['palette.open']
+  const pageListArea = PAGE_LIST_AREAS[areaOf(location.pathname) ?? '']
 
   const openSearch = () => {
     onNavigate?.()
@@ -439,9 +450,9 @@ export function SidebarNav({
     <SidebarNavCollapsed.Provider value={collapsed}>
       <div data-slot="sidebar-nav" data-collapsed={collapsed} className="group/sidebar-nav flex min-h-0 flex-1 flex-col">
         <div className="px-1 pb-3">
-        <Tip label={collapsed ? 'Search' : undefined} side="right">
+        <Tip label={collapsed ? t('sidebar.search') : undefined} side="right">
           {collapsed ? (
-            <button type="button" data-slot="sidebar-nav-item" className={sidebarNavItemVariants()} aria-label="Search" onClick={openSearch}>
+            <button type="button" data-slot="sidebar-nav-item" className={sidebarNavItemVariants()} aria-label={t('sidebar.search')} onClick={openSearch}>
               <SidebarNavTile icon={Search} />
             </button>
           ) : (
@@ -449,11 +460,11 @@ export function SidebarNav({
             <button
               type="button"
               className="flex h-8 w-full min-w-0 items-center gap-2.5 rounded-md bg-neutral-100 pr-1.5 pl-2.5 text-[13px] font-medium text-muted-foreground transition-colors outline-none hover:bg-neutral-200 focus-visible:outline-1 focus-visible:outline-primary dark:bg-sidebar-tint/6 dark:inset-ring dark:inset-ring-sidebar-tint/10 dark:hover:bg-sidebar-tint/10"
-              aria-label="Search"
+              aria-label={t('sidebar.search')}
               onClick={openSearch}
             >
               <Search className="size-4 shrink-0 opacity-90" />
-              <span className="min-w-0 flex-1 truncate text-left">Search</span>
+              <span className="min-w-0 flex-1 truncate text-left">{t('sidebar.search')}</span>
               {paletteKeys ? (
                 <Kbd className="h-auto rounded-md border border-neutral-300 bg-neutral-200 px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground dark:border-sidebar-tint/18 dark:bg-white/6">{shortcutText(paletteKeys)}</Kbd>
               ) : null}
@@ -470,7 +481,7 @@ export function SidebarNav({
         >
           {pageList ? (
             <>
-              <BackToApp label={PAGE_LIST_TITLES[areaOf(location.pathname) ?? ''] ?? ''} onNavigate={onNavigate} />
+              <BackToApp label={pageListArea ? t(`nav.${pageListArea}`) : ''} onNavigate={onNavigate} />
               {/* the page renders its list here (`InAppSidebar`); it scrolls on its own */}
               <div ref={pageListRef} data-slot="sidebar-page-list" className="-mx-3 mt-2 flex min-h-0 flex-1 flex-col" />
             </>
@@ -478,14 +489,14 @@ export function SidebarNav({
             <div className="-mx-1 flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto overscroll-contain px-1 pb-2">
               {area === 'tasks' ? <TasksAreaNav onNavigate={onNavigate} onBack={backShowsMenu ? () => setMainMenuFor(area) : undefined} /> : area ? <SettingsAreaNav area={area} onNavigate={onNavigate} onBack={backShowsMenu ? () => setMainMenuFor(area) : undefined} /> : (
                 <>
-                  {WORKSPACE_LINKS.map((link) => link.enabled || (link.to === '/chat' && chat) ? (
+                  {SHOWN_WORKSPACE_LINKS.map((link) => link.enabled || (link.to === '/chat' && chat) ? (
                     <Fragment key={link.to}>
                       <SidebarNavItem
                         to={link.to === '/tasks' ? taskViewPath() : link.to}
                         active={link.to === '/tasks' ? tasksActive : undefined}
                         end={link.to === '/'}
                         icon={link.icon}
-                        label={link.label}
+                        label={t(`nav.${link.area}`)}
                         badge={link.to === '/chat' ? chatBadge : undefined}
                         unread={link.to === '/chat' ? chatUnread : undefined}
                         onClick={onNavigate}
@@ -494,30 +505,30 @@ export function SidebarNav({
                           always shown so the rows below never move when the route changes */}
                       {link.to === '/tasks' && !contextual ? (
                         <>
-                          <SidebarNavItem to="/views" end size="sub" icon={Layer} label="Views" aria-label="Task views" onClick={onNavigate} />
-                          <SidebarNavItem to="/tasks-trash" size="sub" icon={Trash} label="Trash" aria-label="Task trash" onClick={onNavigate} />
+                          <SidebarNavItem to="/views" end size="sub" icon={Layer} label={t('sidebar.views')} aria-label={t('sidebar.taskViews')} onClick={onNavigate} />
+                          <SidebarNavItem to="/tasks-trash" size="sub" icon={Trash} label={t('sidebar.trash')} aria-label={t('sidebar.taskTrash')} onClick={onNavigate} />
                         </>
                       ) : null}
                     </Fragment>
                   ) : (
-                    <SidebarNavComingSoon key={link.to} icon={link.icon} label={link.label} />
+                    <SidebarNavComingSoon key={link.to} icon={link.icon} label={t(`nav.${link.area}`)} />
                   ))}
                   {/* the new UI keeps these in the Tasks area */}
                   {contextual ? null : (
                     <>
-                      <SidebarSection label="Personal" collapsed={collapsed} />
+                      <SidebarSection label={t('sidebar.personal')} collapsed={collapsed} />
                       {TASK_PRESETS.map((preset) => (
-                        <SidebarNavItem key={preset.view} to={taskViewPath(preset.view)} active={taskViewActive(preset.view)} icon={preset.icon} label={preset.label} onClick={onNavigate} />
+                        <SidebarNavItem key={preset.view} to={taskViewPath(preset.view)} active={taskViewActive(preset.view)} icon={preset.icon} label={t(`sidebar.presets.${preset.view}`)} onClick={onNavigate} />
                       ))}
                     </>
                   )}
-                  <SidebarSection label="Manage" collapsed={collapsed} />
-                  <SidebarNavItem to="/settings" icon={Settings} label="Settings" onClick={onNavigate} />
+                  <SidebarSection label={t('sidebar.manage')} collapsed={collapsed} />
+                  <SidebarNavItem to="/settings" icon={Settings} label={t('nav.settings')} onClick={onNavigate} />
                   {isRoot ? (
                     <>
                       {/* the installation, not the workspace: it sits apart at the bottom */}
                       <div className="flex-1" aria-hidden="true" />
-                      <SidebarNavItem to="/admin" icon={SecurityUser} tone="neutral" label="Admin" onClick={onNavigate} />
+                      <SidebarNavItem to="/admin" icon={SecurityUser} tone="neutral" label={t('nav.admin')} onClick={onNavigate} />
                     </>
                   ) : null}
                 </>

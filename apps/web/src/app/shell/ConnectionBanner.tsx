@@ -1,5 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { WifiOff } from 'reicon-react'
 import { queryKeys } from '@/api/queryKeys'
 import { useCurrentUser, useSetupStatus } from '@/features/auth/api'
@@ -44,6 +45,7 @@ function useCoreQueryConnection(live: boolean) {
  */
 export function ConnectionBanner({ live }: { live: boolean }) {
   useCoreQueryConnection(live)
+  const { t } = useTranslation('shell')
   const { phase } = useConnection()
   if (phase !== 'lost') return null
   return (
@@ -53,7 +55,7 @@ export function ConnectionBanner({ live }: { live: boolean }) {
       className="pointer-events-none absolute top-2 left-1/2 z-30 flex max-w-[calc(100%-1rem)] -translate-x-1/2 items-center gap-1.5 rounded-full border border-border bg-popover px-2.5 py-0.5 text-[11px] text-muted-foreground shadow-sm duration-200 animate-in fade-in"
     >
       <WifiOff className="size-3 shrink-0" />
-      <span className="min-w-0 truncate">Reconnecting…</span>
+      <span className="min-w-0 truncate">{t('connection.reconnecting')}</span>
     </div>
   )
 }

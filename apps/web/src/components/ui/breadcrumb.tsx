@@ -1,13 +1,15 @@
 import * as React from "react"
 import { mergeProps } from "@base-ui/react/merge-props"
 import { useRender } from "@base-ui/react/use-render"
+import { useTranslation } from "react-i18next"
 import { cn } from "cn"
 import { ChevronRight, MoreH } from "reicon-react"
 
 function Breadcrumb({ className, ...props }: React.ComponentProps<"nav">) {
+  const { t } = useTranslation("shell")
   return (
     <nav
-      aria-label="breadcrumb"
+      aria-label={t("ui.breadcrumb")}
       data-slot="breadcrumb"
       className={cn(className)}
       {...props}
@@ -95,6 +97,7 @@ function BreadcrumbEllipsis({
   className,
   ...props
 }: React.ComponentProps<"span">) {
+  const { t } = useTranslation("shell")
   return (
     <span
       data-slot="breadcrumb-ellipsis"
@@ -107,7 +110,7 @@ function BreadcrumbEllipsis({
       {...props}
     >
       <MoreH />
-      <span className="sr-only">More</span>
+      <span className="sr-only">{t("ui.more")}</span>
     </span>
   )
 }

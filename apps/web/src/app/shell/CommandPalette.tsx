@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router'
 import { cn } from 'cn'
@@ -34,6 +35,7 @@ import { useTeamspaces } from '@/features/docs/api/teamspaces'
 import { pageTitle, spaceKey, spaceLabel } from '@/features/docs/pageTree'
 import { highlightSegments } from '@/features/docs/searchHighlights'
 import { useDebouncedValue } from '@/lib/useDebouncedValue'
+import { commandGroupLabel, commandTitle } from '@/shortcuts/commandText'
 import type { CommandId, Group } from '@/shortcuts/commands'
 import { ShortcutKeys } from '@/shortcuts/Shortcut'
 import { useAvailableCommands, useBindings, useRunCommand } from '@/shortcuts/useCommand'
@@ -47,6 +49,10 @@ interface CommandEntry {
   icon: LucideIcon
   title: string
   meta: string
+  /** A navigation entry: these come first in the results. */
+  navigation?: boolean
+  /** The group of a command entry. */
+  group?: Group
   /** Where the entry goes; a command entry runs its command instead. */
   to?: string
   /** The command behind the entry: its keys show in place of the meta hint. */
@@ -106,6 +112,32 @@ function PaletteItem({ entry, onSelect }: { entry: CommandEntry; onSelect: () =>
   )
 }
 
+/**
+ * The navigation entries. The id, title and search words come from `key` (`shell:commandPalette.entries` and
+ * `.keywords`), translated when the palette opens.
+ */
+const NAV_ENTRIES = [
+  { key: 'home', icon: Home, to: '/' },
+  { key: 'tasks', icon: SquareCheck, to: '/tasks', command: 'nav.tasks' },
+  { key: 'docs', icon: FileText, to: '/docs', command: 'nav.docs' },
+  ...(chatEnabled ? [{ key: 'chat', icon: MessageSquare, to: '/chat', command: 'nav.chat' } as const] : []),
+  { key: 'inbox', icon: Bell, to: '/activity', command: 'nav.inbox' },
+  { key: 'profile', icon: Users, to: '/profile', command: 'nav.profile' },
+  { key: 'settings', icon: Settings, to: '/settings', command: 'nav.settings' },
+  { key: 'members', icon: Users, to: '/settings/members' },
+  { key: 'sessions', icon: ShieldCheck, to: '/profile/sessions' },
+  { key: 'agentic', icon: RobotIcon, to: '/profile/agentic' },
+  { key: 'notifications', icon: Settings, to: '/profile/notifications' },
+  { key: 'trash', icon: Trash2, to: '/tasks-trash', command: 'nav.trash' },
+  { key: 'pageTrash', icon: Trash2, to: '/docs/trash' },
+  { key: 'mine', icon: SquareCheck, to: '/tasks?view=mine', command: 'nav.mine' },
+  { key: 'week', icon: SquareCheck, to: '/tasks?view=current_week', command: 'nav.week' },
+  { key: 'overdue', icon: SquareCheck, to: '/tasks?view=overdue', command: 'nav.overdue' },
+  { key: 'views', icon: SquareCheck, to: '/views', command: 'nav.views' },
+  { key: 'appearance', icon: Settings, to: '/profile/appearance' },
+  { key: 'shortcuts', icon: Settings, to: '/profile/shortcuts' },
+] as const satisfies readonly { key: string; icon: LucideIcon; to: string; command?: CommandId }[]
+
 /** Conversations shown for one search, so they never crowd out tasks and pages. */
 const CONVERSATION_RESULT_LIMIT = 5
 
@@ -115,6 +147,7 @@ const CONVERSATION_RESULT_LIMIT = 5
  */
 function useConversationEntries(workspaceId: string): CommandEntry[] {
   const queryClient = useQueryClient()
+  const { t } = useTranslation('shell')
   const [entries] = useState<CommandEntry[]>(() => {
     if (!chatEnabled) return []
     const conversations = queryClient.getQueryData<Conversation[]>(chatKeys.conversations(workspaceId)) ?? []
@@ -128,7 +161,7 @@ function useConversationEntries(workspaceId: string): CommandEntry[] {
           id: `chat_${conversation.id}`,
           icon: MessageSquare,
           title: dm ? conversationTitle(conversation, people, currentUserId) : `#${conversation.name}`,
-          meta: dm ? 'Direct message' : 'Channel',
+          meta: dm ? t('commandPalette.directMessage') : t('commandPalette.channel'),
           to: conversationPath(conversation.id),
           keywords: dm ? 'dm' : conversation.topic,
         }
@@ -138,6 +171,7 @@ function useConversationEntries(workspaceId: string): CommandEntry[] {
 }
 
 export function CommandPalette({ onClose }: { onClose: () => void }) {
+  const { t } = useTranslation('shell')
   const theme = useAppSidebarTheme()
   const { workspace } = useWorkspace()
   const conversations = useConversationEntries(workspace.id)
@@ -155,27 +189,14 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
   const teamspaces = useTeamspaces(workspace.id, search.length > 0 || recentCount > 0)
 
   const entries = useMemo<CommandEntry[]>(() => {
-    const nav: CommandEntry[] = [
-      { id: 'nav_home', icon: Home, title: 'Go to Home', meta: 'Navigation', to: '/', keywords: 'home' },
-      { id: 'nav_tasks', icon: SquareCheck, title: 'Go to Tasks', meta: 'Navigation', to: '/tasks', command: 'nav.tasks', keywords: 'tasks all' },
-      { id: 'nav_docs', icon: FileText, title: 'Go to Docs', meta: 'Navigation', to: '/docs', command: 'nav.docs', keywords: 'docs pages wiki documents' },
-      ...(chatEnabled ? [{ id: 'nav_chat', icon: MessageSquare, title: 'Go to Chat', meta: 'Navigation', to: '/chat', command: 'nav.chat' as const, keywords: 'chat messages channels' }] : []),
-      { id: 'nav_inbox', icon: Bell, title: 'Go to Activity', meta: 'Navigation', to: '/activity', command: 'nav.inbox', keywords: 'activity notifications mentions inbox' },
-      { id: 'nav_profile', icon: Users, title: 'Go to Profile', meta: 'Navigation', to: '/profile', command: 'nav.profile', keywords: 'profile account password name' },
-      { id: 'nav_settings', icon: Settings, title: 'Go to Settings', meta: 'Navigation', to: '/settings', command: 'nav.settings', keywords: 'settings preferences' },
-      { id: 'nav_members', icon: Users, title: 'Go to Members', meta: 'Navigation', to: '/settings/members', keywords: 'members invitations people' },
-      { id: 'nav_sessions', icon: ShieldCheck, title: 'Go to Sessions', meta: 'Navigation', to: '/profile/sessions', keywords: 'sessions devices' },
-      { id: 'nav_agentic', icon: RobotIcon, title: 'Go to Agentic', meta: 'Navigation', to: '/profile/agentic', keywords: 'agentic mcp ai claude codex grok connected apps' },
-      { id: 'nav_notifications', icon: Settings, title: 'Go to Notification settings', meta: 'Navigation', to: '/profile/notifications', keywords: 'notifications push sounds alerts' },
-      { id: 'nav_trash', icon: Trash2, title: 'Go to Task trash', meta: 'Navigation', to: '/tasks-trash', command: 'nav.trash', keywords: 'trash deleted tasks' },
-      { id: 'nav_page_trash', icon: Trash2, title: 'Go to Page trash', meta: 'Navigation', to: '/docs/trash', keywords: 'trash deleted pages docs' },
-      { id: 'nav_mine', icon: SquareCheck, title: 'Go to My tasks', meta: 'Navigation', to: '/tasks?view=mine', command: 'nav.mine', keywords: 'my tasks assigned' },
-      { id: 'nav_week', icon: SquareCheck, title: 'Go to Current week', meta: 'Navigation', to: '/tasks?view=current_week', command: 'nav.week', keywords: 'current week due' },
-      { id: 'nav_overdue', icon: SquareCheck, title: 'Go to Overdue', meta: 'Navigation', to: '/tasks?view=overdue', command: 'nav.overdue', keywords: 'overdue late' },
-      { id: 'nav_views', icon: SquareCheck, title: 'Go to Views', meta: 'Navigation', to: '/views', command: 'nav.views', keywords: 'views saved filters' },
-      { id: 'nav_appearance', icon: Settings, title: 'Go to Appearance', meta: 'Navigation', to: '/profile/appearance', keywords: 'appearance theme dark light system custom colors flat 3d floating navigation style' },
-      { id: 'nav_shortcuts', icon: Settings, title: 'Go to Keyboard shortcuts', meta: 'Navigation', to: '/profile/shortcuts', keywords: 'keyboard shortcuts keys hotkeys customize' },
-    ]
+    const nav: CommandEntry[] = NAV_ENTRIES.map(({ key, ...entry }) => ({
+      ...entry,
+      id: `nav_${key}`,
+      title: t(`commandPalette.entries.${key}`),
+      meta: t('commandPalette.navigation'),
+      navigation: true,
+      keywords: t(`commandPalette.keywords.${key}`),
+    }))
     // Server hits: the server matched them (tasks also on their description), so no local filter.
     const searching = query.trim().length > 0
     const tasks: CommandEntry[] = searching
@@ -194,7 +215,7 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
           id: `page_${page.id}`,
           icon: FileText,
           title: pageTitle(page),
-          meta: `Page · ${spaceLabel(spaceKey(page), teamspaces.data)}`,
+          meta: t('commandPalette.pageMeta', { space: spaceLabel(spaceKey(page), teamspaces.data) }),
           to: `/docs/${page.id}`,
           keywords: page.snippet,
           serverMatch: true,
@@ -205,7 +226,7 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
       : []
     if (docsHidden) return [...nav.filter((entry) => !entry.to?.startsWith('/docs')), ...tasks]
     return [...nav, ...pages, ...tasks]
-  }, [projects.data, taskQuery.data, pageQuery.data, teamspaces.data, query])
+  }, [projects.data, taskQuery.data, pageQuery.data, teamspaces.data, query, t])
 
   /** Recently opened pages, shown while the query is empty. */
   const recent = useMemo<CommandEntry[]>(
@@ -216,11 +237,11 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
             id: `recent_${page.id}`,
             icon: FileText,
             title: pageTitle(page),
-            meta: `Page · ${spaceLabel(spaceKey(page), teamspaces.data)}`,
+            meta: t('commandPalette.pageMeta', { space: spaceLabel(spaceKey(page), teamspaces.data) }),
             to: `/docs/${page.id}`,
             keywords: '',
           })),
-    [query, recentQuery.data, teamspaces.data],
+    [query, recentQuery.data, teamspaces.data, t],
   )
 
   const results = useMemo(() => {
@@ -229,9 +250,9 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
     const matches = (e: CommandEntry) => e.serverMatch || `${e.title} ${e.meta} ${e.keywords}`.toLowerCase().includes(q)
     const hits = entries.filter(matches)
     // navigation first, then a few conversations, then pages and tasks: all inside the one cap
-    const navigation = hits.filter((e) => e.meta === 'Navigation')
+    const navigation = hits.filter((e) => e.navigation)
     const chat = conversations.filter(matches).slice(0, CONVERSATION_RESULT_LIMIT)
-    return [...navigation, ...chat, ...hits.filter((e) => e.meta !== 'Navigation')].slice(0, 12)
+    return [...navigation, ...chat, ...hits.filter((e) => !e.navigation)].slice(0, 12)
   }, [entries, conversations, query, recentCount])
 
   // what can act now, read once when the palette opens: a task command needs the task the pointer was on
@@ -241,12 +262,13 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
     .filter((command) => !command.fixed && !command.repeat && command.group !== 'Navigation' && !command.id.startsWith('list.') && command.id !== 'palette.open' && command.id !== 'search.open')
     // the commands for the task come before those of the page
     .sort((a, b) => Number(b.group === 'Task') - Number(a.group === 'Task'))
-    .map((command) => ({ id: `command_${command.id}`, icon: COMMAND_ICON[command.group], title: command.title, meta: command.group, command: command.id as CommandId, run: true, keywords: command.group })))
+    // the English title and group stay searchable in every language
+    .map((command) => ({ id: `command_${command.id}`, icon: COMMAND_ICON[command.group], title: commandTitle(command), meta: commandGroupLabel(command.group), group: command.group, command: command.id as CommandId, run: true, keywords: `${commandGroupLabel(command.group)} ${command.group} ${command.title}` })))
   const runCommand = useRunCommand()
   const matches = (entry: CommandEntry) => `${entry.title} ${entry.keywords}`.toLowerCase().includes(query.trim().toLowerCase())
   /** Commands for the task or the page in view come before everything; the general ones go last. */
-  const here = commands.filter((entry) => entry.meta !== 'General' && matches(entry))
-  const general = commands.filter((entry) => entry.meta === 'General' && matches(entry))
+  const here = commands.filter((entry) => entry.group !== 'General' && matches(entry))
+  const general = commands.filter((entry) => entry.group === 'General' && matches(entry))
 
   const open = (entry: CommandEntry | undefined) => {
     if (!entry) return
@@ -259,8 +281,8 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
     <CommandDialog
       open
       onOpenChange={(next) => { if (!next) onClose() }}
-      title="Command palette"
-      description={chatEnabled ? 'Search tasks, pages, conversations and navigation.' : 'Search tasks, pages and navigation.'}
+      title={t('commandPalette.title')}
+      description={chatEnabled ? t('commandPalette.descriptionWithChat') : t('commandPalette.description')}
       // the pink tint of the dark shell, like the sidebar menus; the new UI adds the custom theme (`theme` is empty otherwise)
       className="top-[12vh] max-h-[min(60vh,28rem)] sm:max-w-[576px] dark:bg-sidebar-popover dark:ring-sidebar-tint/22 new-ui:bg-sidebar-popover"
       style={theme.style}
@@ -273,35 +295,35 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
           <CommandInput
             autoFocus
             className="pr-9"
-            placeholder="Search tasks, pages and navigation…"
+            placeholder={t('commandPalette.placeholder')}
             value={query}
             onValueChange={setQuery}
           />
           <Kbd className="absolute top-1/2 right-3 -translate-y-1/2 px-1.5 text-[11px] text-muted-foreground/70">esc</Kbd>
         </div>
         <CommandList className="mx-1.5 mt-1 mb-1.5 max-h-none min-h-0 flex-1 rounded-lg bg-background p-1 ring-1 ring-border dark:bg-[color-mix(in_oklab,var(--primary)_6%,oklch(0.2264_0_0))] new-ui:dark:bg-[color-mix(in_oklab,var(--sidebar-popover),white_3%)] dark:ring-sidebar-tint/12 dark:**:data-[slot=command-item]:data-selected:bg-sidebar-tint/10">
-          <CommandEmpty className="p-6 text-[13px] text-muted-foreground">No results for “{query}”</CommandEmpty>
+          <CommandEmpty className="p-6 text-[13px] text-muted-foreground">{t('commandPalette.noResults', { query })}</CommandEmpty>
           {here.length > 0 ? (
-            <CommandGroup heading="Commands" className="p-0">
+            <CommandGroup heading={t('commandPalette.commands')} className="p-0">
               {here.map((entry) => (
                 <PaletteItem key={entry.id} entry={entry} onSelect={() => open(entry)} />
               ))}
             </CommandGroup>
           ) : null}
           {recent.length > 0 ? (
-            <CommandGroup heading="Recent" className="p-0" data-recent-pages="">
+            <CommandGroup heading={t('commandPalette.recent')} className="p-0" data-recent-pages="">
               {recent.map((entry) => (
                 <PaletteItem key={entry.id} entry={entry} onSelect={() => open(entry)} />
               ))}
             </CommandGroup>
           ) : null}
-          <CommandGroup heading={recent.length > 0 || here.length > 0 ? 'Go to' : undefined} className="p-0">
+          <CommandGroup heading={recent.length > 0 || here.length > 0 ? t('commandPalette.goTo') : undefined} className="p-0">
             {results.map((entry) => (
               <PaletteItem key={entry.id} entry={entry} onSelect={() => open(entry)} />
             ))}
           </CommandGroup>
           {general.length > 0 ? (
-            <CommandGroup heading="General" className="p-0">
+            <CommandGroup heading={t('commandPalette.general')} className="p-0">
               {general.map((entry) => (
                 <PaletteItem key={entry.id} entry={entry} onSelect={() => open(entry)} />
               ))}

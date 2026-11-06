@@ -1,10 +1,12 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { useTranslation } from 'react-i18next'
 import { cn } from 'cn'
 import { Button } from '@/components/ui/button'
 
 /** Desktop pane footer; mobile top-of-screen overlay. */
 export function UnsavedBar({ onReset, onSave, saving }: { onReset: () => void; onSave: () => void; saving?: boolean }) {
+  const { t } = useTranslation(['shell', 'common'])
   const barRef = useRef<HTMLDivElement>(null)
   const [mobile, setMobile] = useState(() => window.matchMedia('(max-width: 899px)').matches)
 
@@ -45,12 +47,12 @@ export function UnsavedBar({ onReset, onSave, saving }: { onReset: () => void; o
         mobile && 'fixed top-[calc(12px+env(safe-area-inset-top,0px))] bottom-auto w-[calc(100%-24px)] animate-relation-enter',
       )}
     >
-      <span className="min-w-0 flex-1 text-[13px] font-medium">You have unsaved changes.</span>
+      <span className="min-w-0 flex-1 text-[13px] font-medium">{t('unsavedBar.message')}</span>
       <Button variant="link" className="text-primary" onClick={onReset}>
-        Reset
+        {t('common:reset')}
       </Button>
       <Button onClick={onSave} disabled={saving}>
-        Save Changes
+        {t('unsavedBar.save')}
       </Button>
     </div>
   )

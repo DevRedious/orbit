@@ -8,6 +8,7 @@ import {
 } from '@orbit/api/generated/sdk.gen'
 import type { NotificationRecord } from '@orbit/api/generated/types.gen'
 import { fetchAllPages } from '@/api/pagination'
+import { i18n } from '@/i18n'
 import { taskPath } from '@/lib/taskLinks'
 
 function required<T>(data: T | undefined, message: string): T {
@@ -108,23 +109,25 @@ export function isMention(notification: NotificationRecord): boolean {
   )
 }
 
+/** The title and body of a notification, in the UI language. */
 export function notificationCopy(notification: NotificationRecord, pageTitle?: string, actorName?: string): { title: string; body: string } {
+  const t = i18n.getFixedT(null, 'shell', 'notification')
+  const actor = actorName ?? t('someone')
+  const page = () => (pageTitle === undefined ? t('aPage') : t('quotedPage', { title: pageTitle.trim() || t('untitled') }))
   if (notification.kind === 'chat_mentioned') {
-    return { title: `${actorName ?? 'Someone'} mentioned you in chat`, body: 'Open the conversation to see the message.' }
+    return { title: t('chatMentionedTitle', { actor }), body: t('chatMentionedBody') }
   }
   if (notification.kind === 'page_mentioned') {
-    const page = pageTitle === undefined ? 'a page' : `“${pageTitle.trim() || 'Untitled'}”`
-    return { title: `${actorName ?? 'Someone'} mentioned you in ${page}`, body: 'Open the page to see where.' }
+    return { title: t('pageMentionedTitle', { actor, page: page() }), body: t('pageMentionedBody') }
   }
   if (notification.kind === 'page_comment_mentioned') {
-    const page = pageTitle === undefined ? 'a page' : `“${pageTitle.trim() || 'Untitled'}”`
-    return { title: 'You were mentioned in a comment', body: `Someone mentioned you in a comment on ${page}.` }
+    return { title: t('pageCommentMentionedTitle'), body: t('pageCommentMentionedBody', { page: page() }) }
   }
   if (notification.kind === 'comment_mentioned') {
-    return { title: 'You were mentioned', body: 'Someone mentioned you in a task comment.' }
+    return { title: t('mentionedTitle'), body: t('commentMentionedBody') }
   }
   if (notification.kind === 'description_mentioned') {
-    return { title: 'You were mentioned', body: 'Someone mentioned you in a task description.' }
+    return { title: t('mentionedTitle'), body: t('descriptionMentionedBody') }
   }
-  return { title: 'You were assigned a task', body: 'A task was assigned to you.' }
+  return { title: t('assignedTitle'), body: t('assignedBody') }
 }

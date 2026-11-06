@@ -1,6 +1,7 @@
 import { Component, type ReactNode } from 'react'
 import { Danger } from 'reicon-react'
 import { Button } from '@/components/ui/button'
+import { i18n } from '@/i18n'
 import { EmptyState } from './EmptyState'
 
 interface ErrorBoundaryProps {
@@ -27,9 +28,9 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, { error: unknow
       <div role="alert" data-slot="error-boundary" className="grid min-h-full flex-1 place-items-center p-6">
         <EmptyState
           icon={Danger}
-          title="Something went wrong"
-          description="This part of Orbit stopped working. Reload the page to try again."
-          action={<Button onClick={() => window.location.reload()}>Reload</Button>}
+          title={i18n.t('shell:errorBoundary.title')}
+          description={i18n.t('shell:errorBoundary.description')}
+          action={<Button onClick={() => window.location.reload()}>{i18n.t('shell:errorBoundary.reload')}</Button>}
         />
       </div>
     )

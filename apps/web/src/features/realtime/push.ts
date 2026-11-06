@@ -1,4 +1,5 @@
 import { apiClient } from '@/api/client'
+import { i18n } from '@/i18n'
 import { createPushSubscription, deletePushSubscription, getPushKey, listPushSubscriptions } from '@orbit/api/generated/sdk.gen'
 import { appNavigate } from '@/lib/navigateBridge'
 
@@ -58,7 +59,7 @@ export function deviceLabel(userAgent: string, hints?: UserAgentHints | null): s
   const brands = hints?.brands?.map((entry) => entry.brand) ?? []
   const browser = BRAND_NAMES.find(([brand]) => brands.includes(brand))?.[1] ?? AGENT_BROWSERS.find(([pattern]) => pattern.test(userAgent))?.[1]
   const system = (hints?.platform === 'Chrome OS' ? 'ChromeOS' : hints?.platform) || AGENT_SYSTEMS.find(([pattern]) => pattern.test(userAgent))?.[1]
-  const label = browser && system ? `${browser} on ${system}` : (browser ?? system ?? 'Browser')
+  const label = browser && system ? i18n.t('shell:device.label', { browser, system }) : (browser ?? system ?? i18n.t('shell:device.browser'))
   return label.slice(0, 120)
 }
 

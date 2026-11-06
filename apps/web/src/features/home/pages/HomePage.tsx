@@ -1,4 +1,5 @@
 import type { ComponentProps } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { DirectInbox as Inbox, DocumentText as FileText } from 'reicon-react'
 import { relativeTime } from '@/lib/format'
@@ -35,41 +36,48 @@ function RowMeta({ className, children }: { className?: string; children: React.
   return <span data-slot="row-meta" className={cn('shrink-0 text-xs text-muted-foreground/70', className)}>{children}</span>
 }
 
-function greetingFor(hour: number): string {
-  if (hour < 12) return 'Good morning'
-  if (hour < 18) return 'Good afternoon'
-  return 'Good evening'
+function greetingFor(hour: number): 'morning' | 'afternoon' | 'evening' {
+  if (hour < 12) return 'morning'
+  if (hour < 18) return 'afternoon'
+  return 'evening'
 }
 
-/** `Overdue`, `Today`, `Tomorrow` or the weekday and date. */
-function dueLabel(dueAt: string, now: Date): string {
+/** `overdue`, `today`, `tomorrow`, or null for a later day. */
+function dueDay(dueAt: string, now: Date): 'overdue' | 'today' | 'tomorrow' | null {
   const day = (date: Date) => new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime()
   const days = Math.round((day(new Date(dueAt)) - day(now)) / 86_400_000)
-  if (days < 0) return 'Overdue'
-  if (days === 0) return 'Today'
-  if (days === 1) return 'Tomorrow'
-  return new Date(dueAt).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })
+  if (days < 0) return 'overdue'
+  if (days === 0) return 'today'
+  if (days === 1) return 'tomorrow'
+  return null
 }
 
 function TaskRow({ task, status, now }: { task: Task; status: ComponentProps<typeof TaskStatusIcon>['status']; now: Date }) {
+  const { t, i18n } = useTranslation('shell')
+  const due = task.dueAt ? dueDay(task.dueAt, now) : null
   return (
     <CardRow to={taskPath(task)}>
       <TaskStatusIcon status={status} />
       <RowMeta>{task.identifier}</RowMeta>
       <span className="flex-1 truncate text-[13px]">{task.title}</span>
-      {task.dueAt ? <RowMeta className={cn(dueLabel(task.dueAt, now) === 'Overdue' && 'text-destructive')}>{dueLabel(task.dueAt, now)}</RowMeta> : null}
+      {task.dueAt ? (
+        <RowMeta className={cn(due === 'overdue' && 'text-destructive')}>
+          {due ? t(`home.due.${due}`) : new Date(task.dueAt).toLocaleDateString(i18n.language, { weekday: 'short', month: 'short', day: 'numeric' })}
+        </RowMeta>
+      ) : null}
     </CardRow>
   )
 }
 
 function HomeCard({ title, viewAllTo, children }: { title: string; viewAllTo: string; children: React.ReactNode }) {
+  const { t } = useTranslation('shell')
   return (
     <section className="flex w-full min-w-0 flex-col rounded-lg bg-card shadow-[0_0_0_1px_var(--border)]">
       <header className="flex min-h-12 items-center gap-2 py-2 pr-2 pl-4 text-sm font-medium text-muted-foreground">
         {title}
         <span className="flex-1" />
         <Link to={viewAllTo} className={buttonVariants({ variant: 'ghost' })}>
-          View all
+          {t('home.viewAll')}
         </Link>
       </header>
       <div className="relative min-w-0 overflow-hidden rounded-lg bg-background shadow-[0_0_0_1px_var(--muted)]">{children}</div>
@@ -78,6 +86,7 @@ function HomeCard({ title, viewAllTo, children }: { title: string; viewAllTo: st
 }
 
 export function HomePage() {
+  const { t } = useTranslation('shell')
   const { workspace } = useWorkspace()
   const me = useCurrentUser()
   const projects = useProjects(workspace.id)
@@ -89,7 +98,7 @@ export function HomePage() {
   // each card shows the first rows of its Tasks page; the overdue page has no assignee, so the card adds it
   const overdue = useTasks(workspace.id, { view: 'overdue', assignee_id: myId, sort: 'due_date', order: 'asc', limit: CARD_LIMIT })
   const thisWeek = useTasks(workspace.id, { view: 'my_week', sort: 'due_date', order: 'asc', limit: CARD_LIMIT })
-  const firstName = me.data?.display_name.split(' ')[0] ?? 'there'
+  const firstName = me.data?.display_name.split(' ')[0]
   const now = new Date()
 
   const toTasks = (query: typeof overdue): Task[] => query.data?.pages[0]?.items.map((record) => taskFromRecord(record, projects.data?.find((project) => project.id === record.project_id))) ?? []
@@ -97,7 +106,8 @@ export function HomePage() {
   const overdueTasks = toTasks(overdue).filter((task) => task.assigneeIds.includes(myId ?? ''))
   const weekTasks = toTasks(thisWeek)
   // a full card with a next page means there are more tasks than the card shows
-  const weekCount = `${weekTasks.length}${thisWeek.data?.pages[0]?.next_cursor ? '+' : ''}`
+  const moreThisWeek = Boolean(thisWeek.data?.pages[0]?.next_cursor)
+  const greeting = greetingFor(now.getHours())
   const unread = notifications.data ?? []
   const recentDocs = [...(pageTree.data ?? [])].sort((a, b) => b.updated_at.localeCompare(a.updated_at)).slice(0, CARD_LIMIT)
 
@@ -108,38 +118,36 @@ export function HomePage() {
           <div className="mx-auto flex max-w-[960px] flex-col gap-6 px-6 pt-12 pb-8 max-[599px]:px-4 max-[599px]:pt-8 max-[599px]:pb-6">
             <div>
               <h1 className="mb-1.5">
-                {greetingFor(now.getHours())}, {firstName}
+                {firstName === undefined ? t(`home.greeting.${greeting}NoName`) : t(`home.greeting.${greeting}`, { name: firstName })}
               </h1>
               <p className="text-[13px] text-muted-foreground [&_a]:text-muted-foreground [&_a]:no-underline [&_a:hover]:text-foreground [&_a:hover]:underline">
                 <Link to="/tasks?view=my_week">
-                  {weekCount} {weekCount === '1' ? 'task' : 'tasks'} due this week
+                  {moreThisWeek ? t('home.dueThisWeekMore', { count: weekTasks.length }) : t('home.dueThisWeek', { count: weekTasks.length })}
                 </Link>
                 {' · '}
-                <Link to="/inbox">
-                  {unread.length} unread {unread.length === 1 ? 'notification' : 'notifications'}
-                </Link>
+                <Link to="/inbox">{t('home.unreadNotifications', { count: unread.length })}</Link>
               </p>
             </div>
             <div className="grid grid-cols-1 items-start gap-4 min-[900px]:grid-cols-2">
               {overdueTasks.length === 0 ? null : (
-                <HomeCard title="Overdue" viewAllTo="/tasks?view=overdue">
+                <HomeCard title={t('home.overdue')} viewAllTo="/tasks?view=overdue">
                   {overdueTasks.map((task) => (
                     <TaskRow key={task.id} task={task} status={statuses.data.find((s) => s.id === task.statusId)} now={now} />
                   ))}
                 </HomeCard>
               )}
 
-              <HomeCard title="Due this week" viewAllTo="/tasks?view=my_week">
+              <HomeCard title={t('home.dueThisWeekTitle')} viewAllTo="/tasks?view=my_week">
                 {weekTasks.length === 0 ? (
-                  <CardEmpty>Nothing due this week.</CardEmpty>
+                  <CardEmpty>{t('home.nothingDue')}</CardEmpty>
                 ) : (
                   weekTasks.map((task) => <TaskRow key={task.id} task={task} status={statuses.data.find((s) => s.id === task.statusId)} now={now} />)
                 )}
               </HomeCard>
 
-              <HomeCard title="Unread in Inbox" viewAllTo="/inbox">
+              <HomeCard title={t('home.unreadInInbox')} viewAllTo="/inbox">
                 {unread.length === 0 ? (
-                  <CardEmpty>You are all caught up.</CardEmpty>
+                  <CardEmpty>{t('home.caughtUp')}</CardEmpty>
                 ) : (
                   unread.slice(0, CARD_LIMIT).map((notification) => {
                     const page = pageTree.data?.find((item) => item.id === notification.page_id)
@@ -155,14 +163,14 @@ export function HomePage() {
                 )}
               </HomeCard>
 
-              {docsHidden ? null : <HomeCard title="Recently updated docs" viewAllTo="/docs">
+              {docsHidden ? null : <HomeCard title={t('home.recentDocs')} viewAllTo="/docs">
                 {recentDocs.length === 0 ? (
-                  <CardEmpty>No docs yet.</CardEmpty>
+                  <CardEmpty>{t('home.noDocs')}</CardEmpty>
                 ) : (
                   recentDocs.map((page) => (
                     <CardRow key={page.id} to={`/docs/${page.id}`}>
                       {page.icon ? <Emoji value={page.icon} /> : <FileText className="size-4 shrink-0 text-muted-foreground/70" />}
-                      <span className="flex-1 truncate text-[13px]">{page.title.trim() || 'Untitled'}</span>
+                      <span className="flex-1 truncate text-[13px]">{page.title.trim() || t('home.untitled')}</span>
                       <RowMeta>{relativeTime(page.updated_at)}</RowMeta>
                     </CardRow>
                   ))

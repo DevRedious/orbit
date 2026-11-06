@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import { i18n } from '@/i18n'
 
 /** Set by `vite.config.ts` from `ORBIT_BUILD_REVISION`; `'development'` for local builds. */
 declare const __ORBIT_BUILD_REVISION__: string
@@ -8,13 +9,13 @@ declare const __ORBIT_BUILD_REVISION__: string
 const CHECK_INTERVAL_MS = 5 * 60_000
 
 function showNewVersionToast() {
-  toast('New version available', {
+  toast(i18n.t('shell:newVersion.available'), {
     id: 'orbit-new-version',
     duration: Infinity,
     dismissible: false,
     action: (
       <Button size="xs" className="ml-auto" onClick={() => window.location.reload()}>
-        Reload
+        {i18n.t('shell:newVersion.reload')}
       </Button>
     ),
   })

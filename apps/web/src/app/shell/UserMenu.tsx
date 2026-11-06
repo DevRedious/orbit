@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { Brush, ChevronDown, Logout as LogOut, User } from 'reicon-react'
 import { cn } from 'cn'
@@ -21,6 +22,7 @@ import { useOwnStatus } from '@/features/realtime/useOwnStatus'
 
 /** Signed-in profile and account actions shared by both sidebars. */
 export function UserMenu({ collapsed = false, topbar = false }: { collapsed?: boolean; /** The phone top bar's look: avatar and chevron, the menu opens below. */ topbar?: boolean }) {
+  const { t } = useTranslation('shell')
   const user = useCurrentUser()
   const logout = useLogout()
   const navigate = useNavigate()
@@ -30,7 +32,7 @@ export function UserMenu({ collapsed = false, topbar = false }: { collapsed?: bo
   const hasCustomStatus = status.emoji !== null || status.text !== null
   const [editingStatus, setEditingStatus] = useState(false)
 
-  const userName = me?.display_name ?? 'Account'
+  const userName = me?.display_name ?? t('userMenu.account')
 
   return (
     <>
@@ -41,7 +43,7 @@ export function UserMenu({ collapsed = false, topbar = false }: { collapsed?: bo
               <Button
                 variant="outline"
                 className={cn('h-8 w-full min-w-0 flex-1 justify-start gap-2 rounded-lg px-2 aria-expanded:border-primary aria-expanded:bg-primary/5 dark:border-sidebar-tint/24 dark:bg-primary/14 dark:text-[oklch(0.95_0.02_359)] dark:[--button-depth:color-mix(in_oklab,var(--primary)_35%,transparent)] dark:hover:border-sidebar-tint/34 dark:hover:bg-primary/18 dark:aria-expanded:border-primary dark:aria-expanded:bg-primary/18 dark:[&_svg]:text-sidebar-tint', collapsed && 'w-8 flex-none justify-center px-0', topbar && 'h-9 w-auto flex-none gap-1.5')}
-                aria-label={`Account menu for ${userName}`}
+                aria-label={t('userMenu.menuFor', { name: userName })}
               />
             }
           >
@@ -81,11 +83,11 @@ export function UserMenu({ collapsed = false, topbar = false }: { collapsed?: bo
           ) : null}
           <DropdownMenuItem onClick={() => navigate('/profile')}>
             <User />
-            Account settings
+            {t('userMenu.accountSettings')}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => navigate('/profile/appearance')}>
             <Brush />
-            Appearance
+            {t('userMenu.appearance')}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           {/* data-danger, not variant="destructive": the preset menu popup forces destructive items to the accent color */}
@@ -97,9 +99,9 @@ export function UserMenu({ collapsed = false, topbar = false }: { collapsed?: bo
             onClick={() => logout.mutate(undefined, { onSuccess: () => navigate('/login', { replace: true }) })}
           >
             <LogOut />
-            {logout.isPending ? 'Logging out…' : 'Log out'}
+            {logout.isPending ? t('userMenu.loggingOut') : t('userMenu.logOut')}
           </DropdownMenuItem>
-          {logout.isError ? <p className="px-2 py-1.5 text-xs text-destructive" role="alert">Could not log out. Please try again.</p> : null}
+          {logout.isError ? <p className="px-2 py-1.5 text-xs text-destructive" role="alert">{t('userMenu.logOutFailed')}</p> : null}
         </DropdownMenuContent>
       </DropdownMenu>
       {editingStatus ? <CustomStatusDialog onClose={() => setEditingStatus(false)} /> : null}

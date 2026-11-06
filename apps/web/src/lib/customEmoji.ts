@@ -1,3 +1,5 @@
+import { i18n } from '@/i18n'
+
 /** What the app needs of a workspace's custom emoji to show it. `url` is the image, served by Orbit. */
 export interface CustomEmoji {
   /** Without colons: `party_parrot`. */
@@ -30,9 +32,9 @@ export function emojiNameFromFile(fileName: string): string {
  * a name is in use already, by a custom emoji or a standard one (`:joy:`).
  */
 export function emojiProblem(file: { type: string; size: number }, name: string, taken: (name: string) => boolean): string | null {
-  if (file.type !== '' && !EMOJI_IMAGE_TYPES.includes(file.type)) return 'Choose a PNG, JPEG, WebP or GIF image.'
-  if (file.size > EMOJI_MAX_BYTES) return 'The image is too large. The limit is 256 KB.'
-  if (!NAME.test(name)) return 'A name has 2 to 32 characters: lower case letters, digits and underscores.'
-  if (taken(name)) return `:${name}: exists already. Choose another name.`
+  if (file.type !== '' && !EMOJI_IMAGE_TYPES.includes(file.type)) return i18n.t('shell:imageProblems.type')
+  if (file.size > EMOJI_MAX_BYTES) return i18n.t('shell:imageProblems.emojiTooLarge')
+  if (!NAME.test(name)) return i18n.t('shell:imageProblems.emojiName')
+  if (taken(name)) return i18n.t('shell:imageProblems.emojiTaken', { name })
   return null
 }

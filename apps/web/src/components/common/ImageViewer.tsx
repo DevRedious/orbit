@@ -1,5 +1,6 @@
 // Port of the chat reference ImageViewer: full-screen overlay with filename, zoom %, download, ± / reset / close.
 import { useRef, useState, type ComponentProps, type KeyboardEvent, type TouchEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Copy, Download, Xmark as X } from 'reicon-react'
 import { cn } from 'cn'
 import { toast } from 'sonner'
@@ -43,6 +44,7 @@ function ViewerBarButton({ className, size = 'icon-lg', title, ...props }: Compo
 }
 
 export function ImageViewer({ attachment, onClose }: { attachment: Attachment; onClose: () => void }) {
+  const { t } = useTranslation(['shell', 'common'])
   const [zoom, setZoomState] = useState(1)
   const [pan, setPan] = useState<Point>({ x: 0, y: 0 })
   const [gesturing, setGesturing] = useState(false)
@@ -115,42 +117,42 @@ export function ImageViewer({ attachment, onClose }: { attachment: Attachment; o
             <div className="text-xs font-semibold text-white/55 tabular-nums">{Math.round(zoom * 100)}%</div>
           </div>
           <div className="flex items-center gap-2">
-            <ViewerBarButton title="Copy image" aria-label="Copy image" onClick={() => {
+            <ViewerBarButton title={t('imageViewer.copy')} aria-label={t('imageViewer.copy')} onClick={() => {
               void copyImage(attachment.url).then(
-                () => toast('Image copied'),
-                () => toast.error('Could not copy the image. Try downloading it instead.'),
+                () => toast(t('imageViewer.copied')),
+                () => toast.error(t('imageViewer.copyFailed')),
               )
             }}>
               <Copy className="size-4" />
             </ViewerBarButton>
-            <Tip label="Download image" side="bottom">
+            <Tip label={t('imageViewer.download')} side="bottom">
               <a
                 data-slot="image-viewer-button"
                 href={attachment.url}
                 download={attachment.fileName}
                 className={cn(buttonVariants({ variant: 'ghost', size: 'icon-lg' }), 'bg-white/10 text-white hover:bg-white/15 hover:text-white dark:hover:bg-white/15')}
-                aria-label="Download image"
+                aria-label={t('imageViewer.download')}
                 onClick={(e) => e.stopPropagation()}
               >
                 <Download className="size-4" />
               </a>
             </Tip>
-            <ViewerBarButton className="text-lg font-bold" title="Zoom out" aria-label="Zoom out" onClick={() => setZoom(zoom - 0.25)}>
+            <ViewerBarButton className="text-lg font-bold" title={t('imageViewer.zoomOut')} aria-label={t('imageViewer.zoomOut')} onClick={() => setZoom(zoom - 0.25)}>
               −
             </ViewerBarButton>
-            <ViewerBarButton size="lg" className="px-3 text-xs font-bold" title="Reset zoom" onClick={() => setZoom(1)}>
-              Reset
+            <ViewerBarButton size="lg" className="px-3 text-xs font-bold" title={t('imageViewer.resetZoom')} onClick={() => setZoom(1)}>
+              {t('common:reset')}
             </ViewerBarButton>
-            <ViewerBarButton className="text-lg font-bold" title="Zoom in" aria-label="Zoom in" onClick={() => setZoom(zoom + 0.25)}>
+            <ViewerBarButton className="text-lg font-bold" title={t('imageViewer.zoomIn')} aria-label={t('imageViewer.zoomIn')} onClick={() => setZoom(zoom + 0.25)}>
               +
             </ViewerBarButton>
-            <ViewerBarButton title="Close image viewer" aria-label="Close image viewer" onClick={close}>
+            <ViewerBarButton title={t('imageViewer.close')} aria-label={t('imageViewer.close')} onClick={close}>
               <X className="size-4" />
             </ViewerBarButton>
           </div>
         </div>
         <Button type="button" variant="ghost" className="flex h-auto min-h-0 w-full flex-1 shrink! cursor-zoom-out items-center justify-center overflow-auto rounded-none border-0 p-2 font-normal whitespace-normal select-auto hover:bg-transparent touch-none sm:p-6 dark:hover:bg-transparent active:not-aria-[haspopup]:translate-y-0"
-          title="Close image viewer"
+          title={t('imageViewer.close')}
           onClick={close}
           onTouchStart={startGesture}
           onTouchMove={moveGesture}

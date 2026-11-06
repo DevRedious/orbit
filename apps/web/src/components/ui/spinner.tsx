@@ -1,9 +1,11 @@
+import { useTranslation } from "react-i18next"
 import { cn } from "cn"
 import { Loader as Loader2Icon } from 'reicon-react'
 
 function Spinner({ className, ...props }: React.ComponentProps<"svg">) {
+  const { t } = useTranslation("common")
   return (
-    <Loader2Icon data-slot="spinner" role="status" aria-label="Loading" className={cn("size-4 animate-spin", className)} {...props} />
+    <Loader2Icon data-slot="spinner" role="status" aria-label={t("loading")} className={cn("size-4 animate-spin", className)} {...props} />
   )
 }
 

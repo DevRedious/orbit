@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 
 /**
@@ -29,6 +30,7 @@ interface OrbitUnavailableProps {
 
 /** The full screen for "Orbit cannot reach the server": the loader, why, and Retry. */
 export function OrbitUnavailable({ detail, onRetry, overlay = false }: OrbitUnavailableProps) {
+  const { t } = useTranslation(['shell', 'common'])
   const [retrying, setRetrying] = useState(false)
 
   // Retry has no answer of its own (the screen goes away when the connection is back): the button rests a moment.
@@ -47,7 +49,7 @@ export function OrbitUnavailable({ detail, onRetry, overlay = false }: OrbitUnav
       <div role="alert" className="flex max-w-sm flex-col items-center gap-4 text-center">
         <OrbitLoader />
         <div className="flex flex-col gap-1.5">
-          <h1 className="text-lg font-semibold">Orbit is unavailable</h1>
+          <h1 className="text-lg font-semibold">{t('orbitUnavailable.title')}</h1>
           <p className="text-sm leading-[1.6] text-muted-foreground">{detail}</p>
         </div>
         <Button
@@ -58,7 +60,7 @@ export function OrbitUnavailable({ detail, onRetry, overlay = false }: OrbitUnav
             onRetry()
           }}
         >
-          {retrying ? 'Reconnecting…' : 'Retry'}
+          {retrying ? t('orbitUnavailable.reconnecting') : t('common:retry')}
         </Button>
       </div>
     </main>

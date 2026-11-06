@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { Link, useLocation } from 'react-router'
 import { Bell } from 'reicon-react'
 import { cn } from 'cn'
@@ -5,13 +6,14 @@ import { Tip } from '@/components/common/Tip'
 
 /** Activity, beside the workspace name: it stays in view in every sidebar area, and a dot shows while something is unread. */
 export function ActivityBell({ unread = false, topbar = false }: { unread?: boolean; /** The phone top bar's look: page colours instead of the sidebar's. */ topbar?: boolean }) {
+  const { t } = useTranslation('shell')
   const { pathname, search } = useLocation()
   // keep the project picked in Tasks, so Activity opens filtered to it
   const project = new URLSearchParams(search).get('project')
   const active = pathname === '/activity' || pathname.startsWith('/activity/')
-  const name = unread ? 'Activity, unread' : 'Activity'
+  const name = unread ? t('activity.unread') : t('activity.label')
   return (
-    <Tip label="Activity" side="bottom">
+    <Tip label={t('activity.label')} side="bottom">
       <Link
         data-slot="activity-bell"
         data-active={active}

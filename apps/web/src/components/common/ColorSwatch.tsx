@@ -1,4 +1,5 @@
 import type { ComponentProps } from 'react'
+import { useTranslation } from 'react-i18next'
 import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from 'cn'
 import { Button } from '@/components/ui/button'
@@ -41,14 +42,15 @@ function ColorSwatch({ color, size, className, style, title, ...props }: Omit<Co
 
 /** The rainbow swatch that opens the native colour picker for a custom colour. */
 function CustomColorSwatch({ value, onChange }: { value: string; onChange: (color: string) => void }) {
+  const { t } = useTranslation('shell')
   return (
-    <Tip label="Custom color">
+    <Tip label={t('colorSwatch.custom')}>
       <label
         data-slot="custom-color-swatch"
         className="relative inline-flex size-7 shrink-0 cursor-pointer rounded-full bg-[conic-gradient(#eb5757,#f2c94c,#4cb782,#26b5ce,#5e6ad2,#a78bfa,#eb5757)]"
       >
         {/* the native colour picker, invisible over the swatch */}
-        <input type="color" value={value} aria-label="Custom color" className="absolute inset-0 cursor-pointer opacity-0" onChange={(event) => onChange(event.target.value)} />
+        <input type="color" value={value} aria-label={t('colorSwatch.custom')} className="absolute inset-0 cursor-pointer opacity-0" onChange={(event) => onChange(event.target.value)} />
       </label>
     </Tip>
   )

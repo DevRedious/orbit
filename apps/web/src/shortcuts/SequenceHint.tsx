@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { parseKeys } from './bindings'
+import { commandTitle } from './commandText'
 import { ShortcutKeys } from './Shortcut'
 import { useActiveCommands, useBindings, usePendingSequence } from './useCommand'
 
@@ -37,7 +38,7 @@ export function SequenceHint() {
       {next.map(({ command, key }) => (
         <div key={command.id} className="col-span-full grid grid-cols-subgrid items-center">
           <ShortcutKeys keys={key} />
-          <span>{command.title}</span>
+          <span>{commandTitle(command)}</span>
         </div>
       ))}
     </div>

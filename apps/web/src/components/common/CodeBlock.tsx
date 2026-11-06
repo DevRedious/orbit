@@ -1,6 +1,7 @@
 // the chat reference CodeBlock (MessageItem.tsx): fenced code with copy button and syntax colors. A `mermaid` block
 // shows its diagram; a button switches to the source.
 import { Fragment, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { codeLines, detectLanguage, languageId, MERMAID_LANGUAGE } from '@orbit/editor/codeLanguages'
 import { Button } from '@/components/ui/button'
 import { codeTokenVariants } from './codeToken'
@@ -8,6 +9,7 @@ import { CopyCodeButton } from './CopyCodeButton'
 import { MermaidDiagram } from './MermaidDiagram'
 
 export function CodeBlock({ code, language = '' }: { code: string; language?: string }) {
+  const { t } = useTranslation('shell')
   const [showCode, setShowCode] = useState(false)
   const mermaid = (language ? languageId(language) : detectLanguage(code)) === MERMAID_LANGUAGE
   const diagram = mermaid && !showCode
@@ -54,7 +56,7 @@ export function CodeBlock({ code, language = '' }: { code: string; language?: st
             className="h-7 bg-background/90 px-2 text-[11px] font-semibold text-muted-foreground shadow-sm transition-opacity duration-150 focus-visible:opacity-100 hover-fine:opacity-0 hover-fine:group-hover:opacity-100 dark:bg-background/90"
             onClick={() => setShowCode(!showCode)}
           >
-            {showCode ? 'Diagram' : 'Code'}
+            {showCode ? t('codeBlock.diagram') : t('codeBlock.code')}
           </Button>
         ) : null}
         <CopyCodeButton getText={() => code} />

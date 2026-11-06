@@ -3,6 +3,7 @@
 // mentionify -> linkify. Custom regex parser, zero dependencies. Shared by
 // message content and embed cards.
 import { Fragment } from 'react'
+import { i18n } from '@/i18n'
 import { appNavigate, internalPath } from './navigateBridge'
 import { CodeBlock } from '@/components/common/CodeBlock'
 import { EmojiShortcode } from '@/components/common/Emoji'
@@ -234,7 +235,7 @@ export function renderMarkdownText(text: string, keyPrefix: string, mentionToken
       const htmlAlt = token.match(/\salt\s*=\s*(["'])(.*?)\1/i)?.[2]
       const markdownImage = token.match(/^!\[([^\]\n]*)\]\((https?:\/\/[^\s)]+)\)$/)
       const src = markdownImage?.[2] || htmlSource
-      const alt = markdownImage?.[1] ?? htmlAlt ?? 'Image'
+      const alt = markdownImage?.[1] ?? htmlAlt ?? i18n.t('shell:image')
       parts.push(src && /^https?:\/\//i.test(src)
         ? <img key={key} src={src} alt={alt} loading="lazy" className="my-2 block h-auto max-w-full rounded-md" />
         : token)

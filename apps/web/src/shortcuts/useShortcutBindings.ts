@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { apiClient } from '@/api/client'
+import { i18n } from '@/i18n'
 import { getShortcuts, putShortcuts } from '@orbit/api/generated/sdk.gen'
 import { queryKeys } from '@/api/queryKeys'
 import type { Overrides } from './bindings'
@@ -30,7 +31,7 @@ export function useShortcutBindings() {
     },
     onError: (_error, _bindings, context) => {
       queryClient.setQueryData(queryKeys.shortcuts, context?.previous ?? NONE)
-      toast.error('Could not save the shortcut. Try again.')
+      toast.error(i18n.t('shell:shortcuts.saveFailed'))
     },
   })
   return { overrides: query.data ?? NONE, save: mutation.mutate, isSaving: mutation.isPending }

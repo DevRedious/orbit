@@ -16,7 +16,14 @@ export default {
   menu: 'Menu',
   remove: 'Remove',
   reset: 'Reset',
+  save: 'Save',
   search: 'Search',
+  // Workspace roles as members see them.
+  role: {
+    owner: 'Owner',
+    admin: 'Admin',
+    member: 'Member',
+  },
   size: {
     bytes: '{{value}} B',
     kilobytes: '{{value}} KB',

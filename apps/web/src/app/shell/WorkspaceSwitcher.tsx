@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState, type ComponentProps } from 'react'
-import { ApiProblem } from '@orbit/api/problem'
+import { useTranslation } from 'react-i18next'
 import { Add as Plus, ChevronDown, ChevronExpandY } from 'reicon-react'
 import { cn } from 'cn'
 import { Button } from '@/components/ui/button'
@@ -10,10 +10,12 @@ import { Separator } from '@/components/ui/separator'
 import { Tip } from '@/components/common/Tip'
 import { useCreateWorkspace } from '@/features/workspaces/api'
 import { useWorkspace } from '@/features/workspaces/workspaceContext'
+import { problemMessage } from '@/i18n/problem'
 
 /** The panel is a Popover rather than a DropdownMenu: picking a workspace swaps the
     panel for a "create workspace" form, and a menu's typeahead would swallow typing. */
 export function WorkspaceSwitcher({ collapsed = false, topbar = false }: { collapsed?: boolean; /** The phone top bar's look: initial badge, name and an up/down chevron. */ topbar?: boolean }) {
+  const { t } = useTranslation('shell')
   const { workspace } = useWorkspace()
   const createWorkspace = useCreateWorkspace()
   const [open, setOpen] = useState(false)
@@ -22,7 +24,7 @@ export function WorkspaceSwitcher({ collapsed = false, topbar = false }: { colla
     <Popover open={open} onOpenChange={setOpen} modal={false}>
       {topbar ? (
         <PopoverTrigger
-          render={<Button variant="ghost" className="-ml-1 h-8 min-w-0 justify-start gap-1.5 rounded-lg px-2" aria-label={`Workspace: ${workspace.name}`} />}
+          render={<Button variant="ghost" className="-ml-1 h-8 min-w-0 justify-start gap-1.5 rounded-lg px-2" aria-label={t('workspaceSwitcher.trigger', { name: workspace.name })} />}
         >
           <span className="flex size-5 shrink-0 items-center justify-center rounded-md bg-muted text-[11px] font-semibold text-muted-foreground">{workspace.name.charAt(0).toUpperCase()}</span>
           <span className="truncate text-[13px] font-semibold text-foreground">{workspace.name}</span>
@@ -32,7 +34,7 @@ export function WorkspaceSwitcher({ collapsed = false, topbar = false }: { colla
       <Tip label={collapsed ? workspace.name : undefined} side="right">
         <PopoverTrigger
           render={
-            <Button variant="ghost" className="h-auto min-w-0 shrink items-baseline justify-start gap-[7px] rounded-none border-0 p-0 hover:bg-transparent aria-expanded:bg-transparent dark:hover:bg-transparent" aria-label={`Workspace: ${workspace.name}`} />
+            <Button variant="ghost" className="h-auto min-w-0 shrink items-baseline justify-start gap-[7px] rounded-none border-0 p-0 hover:bg-transparent aria-expanded:bg-transparent dark:hover:bg-transparent" aria-label={t('workspaceSwitcher.trigger', { name: workspace.name })} />
           }
         >
           <span className="truncate text-[17px] font-bold tracking-[-0.02em] text-foreground">{collapsed ? workspace.name.charAt(0) : workspace.name}</span>
@@ -49,6 +51,7 @@ export function WorkspaceSwitcher({ collapsed = false, topbar = false }: { colla
 }
 
 function WorkspaceMenu({ onSelect, createWorkspace }: { onSelect: () => void; createWorkspace: ReturnType<typeof useCreateWorkspace> }) {
+  const { t } = useTranslation(['shell', 'common'])
   const { workspace, workspaces, selectWorkspace } = useWorkspace()
   const [creating, setCreating] = useState(false)
   const [name, setName] = useState('')
@@ -73,11 +76,11 @@ function WorkspaceMenu({ onSelect, createWorkspace }: { onSelect: () => void; cr
 
   if (creating) return (
     <form className="flex w-60 max-w-full flex-col gap-2 p-2" onSubmit={(event) => { event.preventDefault(); void create() }}>
-      <Label className="mb-1.5 h-4 gap-1 text-[13px] leading-4 font-medium text-muted-foreground" htmlFor={inputId}>New workspace</Label>
+      <Label className="mb-1.5 h-4 gap-1 text-[13px] leading-4 font-medium text-muted-foreground" htmlFor={inputId}>{t('workspaceSwitcher.newWorkspace')}</Label>
       <Input id={inputId} autoFocus required value={name} disabled={createWorkspace.isPending} onChange={(event) => setName(event.target.value)} />
-      {createWorkspace.isError ? <p role="alert" className="text-xs text-destructive">{createWorkspace.error instanceof ApiProblem ? createWorkspace.error.detail : 'Workspace creation failed. Try again.'}</p> : null}
-      <Button type="submit" disabled={!name.trim() || createWorkspace.isPending}>{createWorkspace.isPending ? 'Creating…' : 'Create workspace'}</Button>
-      <Button type="button" variant="ghost" disabled={createWorkspace.isPending} onClick={() => { setCreating(false); setName(''); createWorkspace.reset() }}>Cancel</Button>
+      {createWorkspace.isError ? <p role="alert" className="text-xs text-destructive">{problemMessage(createWorkspace.error, t('workspaceSwitcher.createFailed'))}</p> : null}
+      <Button type="submit" disabled={!name.trim() || createWorkspace.isPending}>{createWorkspace.isPending ? t('workspaceSwitcher.creating') : t('workspaceSwitcher.create')}</Button>
+      <Button type="button" variant="ghost" disabled={createWorkspace.isPending} onClick={() => { setCreating(false); setName(''); createWorkspace.reset() }}>{t('common:cancel')}</Button>
     </form>
   )
 
@@ -93,7 +96,7 @@ function WorkspaceMenu({ onSelect, createWorkspace }: { onSelect: () => void; cr
       </WorkspaceOption>
     ))}
     <Separator className="my-1" />
-    <WorkspaceOption disabled={createWorkspace.isPending} onClick={() => { createWorkspace.reset(); setCreating(true) }}><Plus className="size-[15px]" />Create workspace</WorkspaceOption>
+    <WorkspaceOption disabled={createWorkspace.isPending} onClick={() => { createWorkspace.reset(); setCreating(true) }}><Plus className="size-[15px]" />{t('workspaceSwitcher.create')}</WorkspaceOption>
   </>
 }
 

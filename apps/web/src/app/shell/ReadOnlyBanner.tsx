@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { Lock } from 'reicon-react'
 import { PAYMENT_REQUIRED_EVENT } from '@/api/client'
@@ -12,6 +13,7 @@ const DAY_MILLIS = 24 * 60 * 60 * 1000
  * so the line appears as soon as a subscription lapses. The billing state is only served to members.
  */
 export function ReadOnlyBanner() {
+  const { t } = useTranslation('shell')
   const billing = useWorkspaceBilling()
   const { refetch } = billing
   const [openedAt] = useState(Date.now)
@@ -31,11 +33,9 @@ export function ReadOnlyBanner() {
         role="status"
         className="flex min-h-8 shrink-0 items-center justify-center gap-2 border-b border-destructive/20 bg-destructive/10 px-3 py-1 text-xs text-destructive dark:bg-destructive/20"
       >
-        <span className="min-w-0 truncate font-medium">
-          Trial: {days} {days === 1 ? 'day' : 'days'} left
-        </span>
+        <span className="min-w-0 truncate font-medium">{t('billing.trialDaysLeft', { count: days })}</span>
         <Link to="/settings/billing" className="shrink-0 font-semibold text-destructive underline underline-offset-4">
-          {data.can_manage ? 'Choose a plan' : 'View billing'}
+          {data.can_manage ? t('billing.choosePlan') : t('billing.viewBilling')}
         </Link>
       </div>
     )
@@ -48,9 +48,9 @@ export function ReadOnlyBanner() {
       className="flex min-h-8 shrink-0 items-center justify-center gap-2 border-b border-border bg-muted px-3 py-1 text-xs text-muted-foreground"
     >
       <Lock className="size-3.5 shrink-0" />
-      <span className="min-w-0 truncate">This workspace is read-only because it has no active subscription.</span>
+      <span className="min-w-0 truncate">{t('billing.readOnly')}</span>
       <Link to="/settings/billing" className="shrink-0 font-medium text-foreground underline-offset-4 hover:underline">
-        {data.can_manage ? 'Choose a plan' : 'View billing'}
+        {data.can_manage ? t('billing.choosePlan') : t('billing.viewBilling')}
       </Link>
     </div>
   )

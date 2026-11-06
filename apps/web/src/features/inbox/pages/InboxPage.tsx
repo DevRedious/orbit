@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useLocation, useNavigate, useSearchParams } from 'react-router'
 import { Notification as Bell } from 'reicon-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -20,6 +21,7 @@ const TABS = ['all', 'unread', 'mentions'] as const
 type InboxTab = (typeof TABS)[number]
 
 export function InboxPage() {
+  const { t } = useTranslation(['shell', 'common'])
   const { workspace } = useWorkspace()
   const navigate = useNavigate()
   const location = useLocation()
@@ -50,7 +52,7 @@ export function InboxPage() {
     <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden bg-background">
       <Pane>
         <PaneHeader>
-          <PaneTitle>Activity</PaneTitle>
+          <PaneTitle>{t('inbox.title')}</PaneTitle>
           {unreadCount > 0 ? <Badge className="h-4 min-w-4 px-1 text-[10px] tabular-nums">{unreadCount}</Badge> : null}
           <span className="flex-1" />
           <Button
@@ -59,7 +61,7 @@ export function InboxPage() {
             disabled={unreadCount === 0 || markAll.isPending}
             onClick={() => markAll.mutate()}
           >
-            {marking ? 'Marking…' : 'Mark all read'}
+            {marking ? t('inbox.marking') : t('inbox.markAllRead')}
           </Button>
         </PaneHeader>
         <Tabs className="shrink-0 gap-0" value={tab} onValueChange={(value) => setTab(value as InboxTab)}>
@@ -70,7 +72,7 @@ export function InboxPage() {
                 value={item}
                 className="h-7 flex-none px-2.5 text-[13px]"
               >
-                {item === 'all' ? 'All' : item === 'unread' ? 'Unread' : 'Mentions'}
+                {t(`inbox.tabs.${item}`)}
               </TabsTrigger>
             ))}
           </TabsList>
@@ -78,14 +80,14 @@ export function InboxPage() {
         {allQuery.isPending || items.length === 0 ? (
           <div className="min-h-0 flex-1 overflow-y-auto">
             {allQuery.isPending ? (
-              <EmptyState icon={Bell} title="Loading activity" description="Loading your notifications." />
+              <EmptyState icon={Bell} title={t('inbox.loadingTitle')} description={t('inbox.loadingDescription')} />
             ) : loadFailed(allQuery) ? (
               <div className="flex h-full flex-col items-center justify-center">
-                <EmptyState icon={Bell} title="Activity unavailable" description="Notifications could not be loaded." />
-                <Button variant="outline" type="button" onClick={() => void allQuery.refetch()}>Retry</Button>
+                <EmptyState icon={Bell} title={t('inbox.unavailableTitle')} description={t('inbox.unavailableDescription')} />
+                <Button variant="outline" type="button" onClick={() => void allQuery.refetch()}>{t('common:retry')}</Button>
               </div>
             ) : (
-              <EmptyState icon={Bell} title="You're all caught up" description="Assignments and mentions appear here." />
+              <EmptyState icon={Bell} title={t('inbox.emptyTitle')} description={t('inbox.emptyDescription')} />
             )}
           </div>
         ) : (
@@ -121,14 +123,14 @@ export function InboxPage() {
                     <span className="truncate text-[13px] text-foreground data-unread:font-semibold" data-unread={!notification.read_at || undefined}>
                       {copy.title}
                     </span>
-                    <span className="truncate text-xs text-muted-foreground/70">{actor ? `${actor.name} · ${copy.body}` : copy.body}</span>
+                    <span className="truncate text-xs text-muted-foreground/70">{actor ? t('inbox.rowBody', { actor: actor.name, body: copy.body }) : copy.body}</span>
                   </span>
                   <span className="shrink-0 text-xs text-muted-foreground/70">
                     {relativeTime(notification.created_at)}
                   </span>
                 </Button>
                 {/* over the spacer: 12px padding, the 8px unread column and the 10px gap */}
-                <ProfileTrigger userId={actor?.id} name={actor?.name ?? 'Unknown'} kind="avatar" className="absolute top-1/2 left-[30px] flex -translate-y-1/2">
+                <ProfileTrigger userId={actor?.id} name={actor?.name ?? t('inbox.unknownActor')} kind="avatar" className="absolute top-1/2 left-[30px] flex -translate-y-1/2">
                   <Avatar className="size-7">
                     <AvatarFallback>{(actor?.name ?? '?').charAt(0).toUpperCase()}</AvatarFallback>
                   </Avatar>

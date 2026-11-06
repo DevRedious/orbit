@@ -1,4 +1,5 @@
 import { useEffect, useRef, type MouseEvent, type TouchEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { PinTack } from 'reicon-react'
 import { UserAvatar } from '@/components/common/UserAvatar'
 import { Button } from '@/components/ui/button'
@@ -22,20 +23,22 @@ const PRESS_SLOP = 10
 
 /** "Sending" shows only when the send takes a while (offline, reconnecting), so a normal send does not flash it. */
 function SendingNote() {
+  const { t } = useTranslation('chat')
   const slow = useDelayed(true, 1000)
-  return <span className={slow ? 'text-xs text-muted-foreground' : 'sr-only'}>Sending</span>
+  return <span className={slow ? 'text-xs text-muted-foreground' : 'sr-only'}>{t('messages.item.sending')}</span>
 }
 
 function FailedNote({ message }: { message: Message }) {
+  const { t } = useTranslation('chat')
   const { retry, discard } = useMessageList()
   return (
     <div role="alert" data-slot="message-failed" className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-destructive">
-      <span>Not sent.</span>
+      <span>{t('messages.item.notSent')}</span>
       <Button variant="link" size="xs" className="h-6 px-0 text-destructive" onClick={() => retry(message)}>
-        Try again
+        {t('messages.item.tryAgain')}
       </Button>
       <Button variant="link" size="xs" className="h-6 px-0 text-muted-foreground" onClick={() => discard(message)}>
-        Delete
+        {t('messages.item.delete')}
       </Button>
     </div>
   )
@@ -56,6 +59,7 @@ interface MessageItemProps {
 
 /** One message row. Keyboard actions on the focused row (`E`, `T`, `R`, the Menu key) are handled by `MessageList`. */
 export function MessageItem({ message, groupStart, editing, active, tone, menuOpen }: MessageItemProps) {
+  const { t } = useTranslation('chat')
   const { currentUserId, inThread, phone, people, openThread, openMenu, openSheet } = useMessageList()
   const press = useRef<{ timer: ReturnType<typeof setTimeout>; x: number; y: number } | null>(null)
   const author = people.byId.get(message.authorId)
@@ -129,7 +133,7 @@ export function MessageItem({ message, groupStart, editing, active, tone, menuOp
       <div className="relative flex max-w-[calc(90ch+3rem)] gap-3 text-[15px] max-[899px]:gap-2 max-[899px]:text-sm">
         <div className="flex w-9 shrink-0 justify-center max-[899px]:w-[30px]">
           {groupStart ? (
-            <ProfileTrigger userId={author?.id} name={author?.name ?? 'Unknown'} kind="avatar" tabIndex={-1} className="mt-0.5 flex self-start">
+            <ProfileTrigger userId={author?.id} name={author?.name ?? t('messages.unknown')} kind="avatar" tabIndex={-1} className="mt-0.5 flex self-start">
               <UserAvatar user={author} name="?" size={phone ? 30 : 36} />
             </ProfileTrigger>
           ) : (
@@ -146,8 +150,8 @@ export function MessageItem({ message, groupStart, editing, active, tone, menuOp
           {groupStart ? (
             <div className="flex items-baseline gap-2">
               {/* `Tab` reaches one message row (the arrow keys move between rows), so only its name is a tab stop */}
-              <ProfileTrigger userId={author?.id} name={author?.name ?? 'Unknown'} tabIndex={active ? 0 : -1} className="truncate font-medium text-foreground">
-                <span data-slot="message-author">{author?.name ?? 'Unknown'}</span>
+              <ProfileTrigger userId={author?.id} name={author?.name ?? t('messages.unknown')} tabIndex={active ? 0 : -1} className="truncate font-medium text-foreground">
+                <span data-slot="message-author">{author?.name ?? t('messages.unknown')}</span>
               </ProfileTrigger>
               <time dateTime={iso} title={fullTimestamp(message.createdAt)} className="shrink-0 text-xs text-muted-foreground">
                 {messageTime(message.createdAt)}
@@ -155,7 +159,7 @@ export function MessageItem({ message, groupStart, editing, active, tone, menuOp
               {message.sendState === 'sending' ? <SendingNote /> : null}
             </div>
           ) : message.sendState === 'sending' ? (
-            <span className="sr-only">Sending</span>
+            <span className="sr-only">{t('messages.item.sending')}</span>
           ) : null}
           {message.threadRootId && !inThread ? (
             <button
@@ -164,13 +168,13 @@ export function MessageItem({ message, groupStart, editing, active, tone, menuOp
               className="flex h-6 items-center rounded-sm text-xs text-muted-foreground outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50"
               onClick={() => openThread(message)}
             >
-              replied to a thread
+              {t('messages.item.repliedToThread')}
             </button>
           ) : null}
           {message.pinned && !message.deleted ? (
             <div data-slot="message-pinned" className="flex items-center gap-1 text-xs text-muted-foreground">
               <PinTack className="size-3" />
-              Pinned
+              {t('messages.item.pinned')}
             </div>
           ) : null}
           {editing ? (

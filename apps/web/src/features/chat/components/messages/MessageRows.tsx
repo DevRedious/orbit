@@ -1,3 +1,4 @@
+import { Trans, useTranslation } from 'react-i18next'
 import type { Message } from '../../api/types'
 import { dayChip, fullTimestamp, messageTime } from '../../lib/time'
 import { useMessageList } from './messageListContext'
@@ -17,10 +18,11 @@ export function DayChip({ at }: { at: number }) {
  * the square shows).
  */
 export function NewLine() {
+  const { t } = useTranslation('chat')
   return (
-    <div role="separator" aria-label="New messages" data-slot="new-line" className="flex items-center gap-2 px-4 py-1">
+    <div role="separator" aria-label={t('messages.rows.newMessages')} data-slot="new-line" className="flex items-center gap-2 px-4 py-1">
       <span data-slot="unread-marker" aria-hidden="true" className="size-1.5 shrink-0 bg-primary" />
-      <span className="text-xs font-semibold text-primary">New</span>
+      <span className="text-xs font-semibold text-primary">{t('messages.rows.new')}</span>
       <span aria-hidden="true" className="h-px flex-1 bg-primary" />
     </div>
   )
@@ -36,19 +38,25 @@ export function RepliesDivider({ count }: { count: number }) {
   )
 }
 
-const SYSTEM_TEXT: Record<Exclude<Message['kind'], 'message'>, string> = {
-  pin: 'pinned a message',
-  join: 'joined',
-  leave: 'left',
-}
+const SYSTEM_TEXT = {
+  pin: 'messages.rows.system.pin',
+  join: 'messages.rows.system.join',
+  leave: 'messages.rows.system.leave',
+} as const satisfies Record<Exclude<Message['kind'], 'message'>, string>
 
 /** A pin, join or leave: one muted line. */
 export function SystemRow({ message }: { message: Message }) {
+  const { t } = useTranslation('chat')
   const { people } = useMessageList()
   if (message.kind === 'message') return null
   return (
     <div role="listitem" data-slot="system-message" data-kind={message.kind} className="px-4 py-1 text-xs text-muted-foreground">
-      <span className="font-medium text-foreground/80">{people.byId.get(message.authorId)?.name ?? 'Someone'}</span> {SYSTEM_TEXT[message.kind]}
+      <Trans
+        t={t}
+        i18nKey={SYSTEM_TEXT[message.kind]}
+        values={{ name: people.byId.get(message.authorId)?.name ?? t('messages.someone') }}
+        components={{ author: <span className="font-medium text-foreground/80" /> }}
+      />
       <time dateTime={new Date(message.createdAt).toISOString()} title={fullTimestamp(message.createdAt)} className="ml-2">
         {messageTime(message.createdAt)}
       </time>

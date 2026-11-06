@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { Hashtag, Lock } from 'reicon-react'
 import { UserAvatar, UserAvatarStack } from '@/components/common/UserAvatar'
 import type { Conversation } from '@/features/chat/api/types'
@@ -25,13 +26,14 @@ export function ConversationIcon({
   group?: 'stack' | 'count'
   filled?: boolean
 }) {
+  const { t } = useTranslation('chat')
   const presence = usePresence()
   if (conversation.kind !== 'dm') {
     const Icon = conversation.kind === 'private' ? Lock : Hashtag
     return (
       <span data-slot="conversation-icon" className="flex shrink-0 items-center justify-center text-muted-foreground" style={{ width: size, height: size }}>
         <Icon size={Math.round(size * 0.9)} weight={filled ? 'Filled' : 'Outline'} aria-hidden="true" />
-        {conversation.kind === 'private' ? <span className="sr-only">Private channel</span> : null}
+        {conversation.kind === 'private' ? <span className="sr-only">{t('sidebar.row.privateChannel')}</span> : null}
       </span>
     )
   }

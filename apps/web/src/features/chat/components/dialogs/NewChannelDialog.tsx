@@ -1,4 +1,5 @@
 import { useId, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Hashtag, Lock } from 'reicon-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -29,12 +30,13 @@ interface NewChannelDialogProps {
 
 /** Creates a public or private channel, then opens it. The form is mounted only while the dialog is open, so it starts empty each time. */
 export function NewChannelDialog({ open, onOpenChange, defaultCategoryId, defaultName }: NewChannelDialogProps) {
+  const { t } = useTranslation('chat')
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="overflow-y-auto sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>New channel</DialogTitle>
-          <DialogDescription>Channels keep a conversation about one topic in one place.</DialogDescription>
+          <DialogTitle>{t('dialogs.newChannel.title')}</DialogTitle>
+          <DialogDescription>{t('dialogs.newChannel.description')}</DialogDescription>
         </DialogHeader>
         <NewChannelForm defaultCategoryId={defaultCategoryId ?? null} defaultName={defaultName ?? ''} onDone={() => onOpenChange(false)} />
       </DialogContent>
@@ -43,6 +45,7 @@ export function NewChannelDialog({ open, onOpenChange, defaultCategoryId, defaul
 }
 
 function NewChannelForm({ defaultCategoryId, defaultName, onDone }: { defaultCategoryId: string | null; defaultName: string; onDone: () => void }) {
+  const { t } = useTranslation('chat')
   const { workspaceId, currentUserId } = useChatContext()
   const categories = useCategories().data ?? []
   const members = useMembers(workspaceId).data ?? []
@@ -59,7 +62,7 @@ function NewChannelForm({ defaultCategoryId, defaultName, onDone }: { defaultCat
 
   const finalName = channelNameFinal(name)
   const nameTaken = createChannel.error instanceof ChatError && createChannel.error.code === 'conflict'
-  const categoryOptions = [{ value: NO_CATEGORY, label: 'No category' }, ...categories.map((item) => ({ value: item.id, label: item.name }))]
+  const categoryOptions = [{ value: NO_CATEGORY, label: t('dialogs.channel.noCategory') }, ...categories.map((item) => ({ value: item.id, label: item.name }))]
   // the categories can still load when the dialog opens, and the default one can be gone
   const categoryValue = categoryOptions.some((option) => option.value === category) ? category : NO_CATEGORY
 
@@ -89,7 +92,7 @@ function NewChannelForm({ defaultCategoryId, defaultName, onDone }: { defaultCat
       }}
     >
       <Field data-invalid={nameTaken || undefined}>
-        <FieldLabel htmlFor={nameId}>Name</FieldLabel>
+        <FieldLabel htmlFor={nameId}>{t('dialogs.channel.name')}</FieldLabel>
         <InputGroup>
           <InputGroupAddon>
             <Hashtag aria-hidden />
@@ -102,7 +105,7 @@ function NewChannelForm({ defaultCategoryId, defaultName, onDone }: { defaultCat
             autoCapitalize="none"
             spellCheck={false}
             maxLength={CHANNEL_NAME_MAX}
-            placeholder="design-team"
+            placeholder={t('dialogs.newChannel.namePlaceholder')}
             value={name}
             aria-invalid={nameTaken || undefined}
             onChange={(event) => {
@@ -111,16 +114,16 @@ function NewChannelForm({ defaultCategoryId, defaultName, onDone }: { defaultCat
             }}
           />
         </InputGroup>
-        {nameTaken ? <FieldError>A channel with this name already exists.</FieldError> : <FieldDescription>Lowercase, with hyphens in place of spaces.</FieldDescription>}
+        {nameTaken ? <FieldError>{t('dialogs.channel.nameTaken')}</FieldError> : <FieldDescription>{t('dialogs.newChannel.nameHint')}</FieldDescription>}
       </Field>
 
       <Field>
-        <FieldLabel htmlFor={topicId}>Topic</FieldLabel>
-        <Input id={topicId} value={topic} maxLength={250} placeholder="What this channel is about" onChange={(event) => setTopic(event.target.value)} />
+        <FieldLabel htmlFor={topicId}>{t('dialogs.channel.topic')}</FieldLabel>
+        <Input id={topicId} value={topic} maxLength={250} placeholder={t('dialogs.channel.topicPlaceholder')} onChange={(event) => setTopic(event.target.value)} />
       </Field>
 
       <Field>
-        <FieldLabel htmlFor={categoryId}>Category</FieldLabel>
+        <FieldLabel htmlFor={categoryId}>{t('dialogs.channel.category')}</FieldLabel>
         <Select items={categoryOptions} value={categoryValue} onValueChange={(value) => setCategory(value as string)}>
           <SelectTrigger id={categoryId}>
             <SelectValue />
@@ -136,7 +139,7 @@ function NewChannelForm({ defaultCategoryId, defaultName, onDone }: { defaultCat
       </Field>
 
       <FieldSet className="gap-0">
-        <FieldLegend variant="label">Visibility</FieldLegend>
+        <FieldLegend variant="label">{t('dialogs.newChannel.visibility')}</FieldLegend>
         <ToggleGroup
           variant="outline"
           orientation="vertical"
@@ -151,38 +154,38 @@ function NewChannelForm({ defaultCategoryId, defaultName, onDone }: { defaultCat
           <ToggleGroupItem value="public" className="h-auto flex-col items-start gap-0.5 py-2 whitespace-normal">
             <span className="flex items-center gap-1.5">
               <Hashtag aria-hidden />
-              Public
+              {t('dialogs.newChannel.public')}
             </span>
-            <span className="text-xs font-normal text-muted-foreground">Everyone in the workspace is in it.</span>
+            <span className="text-xs font-normal text-muted-foreground">{t('dialogs.channel.publicHint')}</span>
           </ToggleGroupItem>
           <ToggleGroupItem value="private" className="h-auto flex-col items-start gap-0.5 py-2 whitespace-normal">
             <span className="flex items-center gap-1.5">
               <Lock aria-hidden />
-              Private
+              {t('dialogs.newChannel.private')}
             </span>
-            <span className="text-xs font-normal text-muted-foreground">Only the people you add can see it.</span>
+            <span className="text-xs font-normal text-muted-foreground">{t('dialogs.newChannel.privateHint')}</span>
           </ToggleGroupItem>
         </ToggleGroup>
       </FieldSet>
 
       {kind === 'private' ? (
         <Field>
-          <FieldLabel>Add people</FieldLabel>
-          <MemberPicker label="Add people" people={pickablePeople(members, currentUserId)} selectedIds={memberIds} onChange={setMemberIds} />
-          <FieldDescription>You are a member already. You can add more people later.</FieldDescription>
+          <FieldLabel>{t('dialogs.newChannel.addPeople')}</FieldLabel>
+          <MemberPicker label={t('dialogs.newChannel.addPeople')} people={pickablePeople(members, currentUserId)} selectedIds={memberIds} onChange={setMemberIds} />
+          <FieldDescription>{t('dialogs.newChannel.addPeopleHint')}</FieldDescription>
         </Field>
       ) : null}
 
       {createChannel.isError && !nameTaken ? (
         <p role="alert" className="text-sm text-destructive">
-          {chatErrorMessage(createChannel.error, 'The channel was not created. Try again.', { not_found: 'This category no longer exists. Choose another one.' })}
+          {chatErrorMessage(createChannel.error, t('dialogs.newChannel.createFailed'), { not_found: t('dialogs.newChannel.categoryGone') })}
         </p>
       ) : null}
 
       <DialogFooter>
-        <DialogClose render={<Button type="button" variant="outline" />}>Cancel</DialogClose>
+        <DialogClose render={<Button type="button" variant="outline" />}>{t('dialogs.cancel')}</DialogClose>
         <Button type="submit" disabled={!finalName || createChannel.isPending}>
-          {createChannel.isPending ? 'Creating…' : 'Create channel'}
+          {createChannel.isPending ? t('dialogs.newChannel.creating') : t('dialogs.newChannel.create')}
         </Button>
       </DialogFooter>
     </form>

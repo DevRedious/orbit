@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { toast } from 'sonner'
 import { TickCircle } from 'reicon-react'
@@ -22,6 +23,7 @@ const PREVIEW_LIMIT = 5
 
 /** One conversation's unread messages (the newest few of the loaded page), with "Mark as read" and a link to it. */
 function UnreadGroup({ conversation, state, people }: UnreadConversation & { people: readonly User[] }) {
+  const { t } = useTranslation('chat')
   const { currentUserId } = useChatContext()
   const messages = useMessages(conversation.id)
   const markRead = useMarkRead()
@@ -44,7 +46,7 @@ function UnreadGroup({ conversation, state, people }: UnreadConversation & { peo
           <span className="truncate">{title}</span>
         </Link>
         <span className="shrink-0 text-xs text-muted-foreground">
-          {state.unreadCount} unread
+          {t('views.unreads.unreadCount', { count: state.unreadCount })}
         </span>
         <Button
           type="button"
@@ -52,20 +54,20 @@ function UnreadGroup({ conversation, state, people }: UnreadConversation & { peo
           size="sm"
           className="ml-auto text-muted-foreground"
           disabled={markRead.isPending}
-          onClick={() => markRead.mutate(conversation.id, { onError: () => void toast.error('Could not mark as read. Try again.') })}
+          onClick={() => markRead.mutate(conversation.id, { onError: () => void toast.error(t('views.unreads.markReadFailed')) })}
         >
-          Mark as read
+          {t('views.unreads.markAsRead')}
         </Button>
       </div>
       {messages.isError ? (
         <p className="text-[13px] text-muted-foreground" role="alert">
-          Could not load these messages.{' '}
+          {t('views.unreads.messagesLoadFailed')}{' '}
           <Button type="button" variant="link" size="sm" className="h-auto p-0" onClick={() => void messages.refetch()}>
-            Try again
+            {t('views.tryAgain')}
           </Button>
         </p>
       ) : (
-        <ol className="flex max-w-[90ch] flex-col gap-3" aria-label={`Unread messages in ${title}`}>
+        <ol className="flex max-w-[90ch] flex-col gap-3" aria-label={t('views.unreads.messagesLabel', { title })}>
           {shown.map((message) => (
             <li key={message.id}>
               <MessagePreview message={message} people={people} />
@@ -78,7 +80,7 @@ function UnreadGroup({ conversation, state, people }: UnreadConversation & { peo
           to={conversationPath(conversation.id)}
           className="self-start rounded-sm text-xs text-muted-foreground outline-none hover:text-foreground hover:underline focus-visible:ring-2 focus-visible:ring-ring/50"
         >
-          {more} more unread {more === 1 ? 'message' : 'messages'}
+          {t('views.unreads.moreUnread', { count: more })}
         </Link>
       ) : null}
     </section>
@@ -90,6 +92,7 @@ function UnreadGroup({ conversation, state, people }: UnreadConversation & { peo
  * read" also has `Shift+Esc` and offers Undo.
  */
 export function UnreadsView() {
+  const { t } = useTranslation('chat')
   const { workspaceId } = useChatContext()
   const conversations = useConversations()
   const states = useConversationStates()
@@ -104,27 +107,27 @@ export function UnreadsView() {
       <PaneHeader className="max-[899px]:px-2">
         <ChatBackLink />
         <PaneTitle render={<h1 />} className="flex-1 text-sm">
-          Unreads
+          {t('views.unreads.title')}
         </PaneTitle>
         {groups.length > 0 ? (
           <Button type="button" variant="ghost" size="sm" className="text-muted-foreground" onClick={markAllRead}>
-            Mark all as read
+            {t('views.unreads.markAllAsRead')}
             <Shortcut id="chat.markAllRead" className="max-[899px]:hidden" />
           </Button>
         ) : null}
       </PaneHeader>
       {failed ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-[13px] text-muted-foreground" role="alert">
-          Could not load your unread messages.
+          {t('views.unreads.loadFailed')}
           <Button type="button" variant="outline" size="sm" onClick={() => void Promise.all([conversations.refetch(), states.refetch()])}>
-            Try again
+            {t('views.tryAgain')}
           </Button>
         </div>
       ) : loading ? (
         <div className="flex-1" />
       ) : groups.length === 0 ? (
         <div className="flex flex-1 flex-col p-6">
-          <EmptyState icon={TickCircle} title="You're all caught up" description="New messages in your channels and direct messages show here." />
+          <EmptyState icon={TickCircle} title={t('views.unreads.emptyTitle')} description={t('views.unreads.emptyDescription')} />
         </div>
       ) : (
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">

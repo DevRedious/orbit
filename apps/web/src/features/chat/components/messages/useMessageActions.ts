@@ -14,6 +14,7 @@ import {
   Unread,
   type IconComponent,
 } from 'reicon-react'
+import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { confirmAction } from '@/components/common/confirmAction'
 import type { DropdownMenuContent } from '@/components/ui/dropdown-menu'
@@ -60,6 +61,7 @@ interface MessageActionOptions {
  * `actionsFor(message)`, so they never differ.
  */
 export function useMessageActions({ inThread, onReply, onForward, onAddReaction, onEdit, onMarkUnread }: MessageActionOptions) {
+  const { t } = useTranslation('chat')
   const { currentUserId } = useChatContext()
   const people = useChatPeople()
   const host = useChatHost()
@@ -72,7 +74,7 @@ export function useMessageActions({ inThread, onReply, onForward, onAddReaction,
   const moderator = role === 'Owner' || role === 'Admin'
 
   function react(message: Message, emoji: string) {
-    toggleReaction({ message, emoji }, { onError: () => toast.error('Could not update the reaction. Try again.') })
+    toggleReaction({ message, emoji }, { onError: () => toast.error(t('messages.actions.reactionFailed')) })
   }
 
   /** Opens the thread of a root, or the thread a reply belongs to (at that reply). */
@@ -96,18 +98,18 @@ export function useMessageActions({ inThread, onReply, onForward, onAddReaction,
   function copy(text: string, done: string) {
     navigator.clipboard.writeText(text).then(
       () => toast.success(done),
-      () => toast.error('Could not copy. Try again.'),
+      () => toast.error(t('messages.actions.copyFailed')),
     )
   }
 
   async function remove(message: Message) {
     const confirmed = await confirmAction({
-      title: 'Delete message?',
-      description: message.replyCount > 0 ? 'The replies stay in the thread. This cannot be undone.' : 'This cannot be undone.',
-      confirmLabel: 'Delete',
+      title: t('messages.actions.deleteTitle'),
+      description: message.replyCount > 0 ? t('messages.actions.deleteWithReplies') : t('messages.actions.deleteDescription'),
+      confirmLabel: t('messages.actions.deleteConfirm'),
       danger: true,
     })
-    if (confirmed) deleteMessage(message.id, { onError: () => toast.error('Could not delete the message. Try again.') })
+    if (confirmed) deleteMessage(message.id, { onError: () => toast.error(t('messages.actions.deleteFailed')) })
   }
 
   function actionsFor(message: Message): MessageAction[] {
@@ -116,55 +118,55 @@ export function useMessageActions({ inThread, onReply, onForward, onAddReaction,
     const own = message.authorId === currentUserId
     const actions: MessageAction[] = []
     if (!message.deleted) {
-      actions.push({ key: 'react', label: 'Add reaction', icon: SmileCircle, run: () => onAddReaction(message) })
+      actions.push({ key: 'react', label: t('messages.actions.addReaction'), icon: SmileCircle, run: () => onAddReaction(message) })
     }
     if (onReply && !message.deleted) {
-      actions.push({ key: 'reply', label: 'Reply', icon: Reply, run: () => onReply(message) })
+      actions.push({ key: 'reply', label: t('messages.actions.reply'), icon: Reply, run: () => onReply(message) })
     }
     if (!inThread) {
-      actions.push({ key: 'thread', label: 'Reply in Thread', icon: MessageIcon, run: () => openThread(message) })
+      actions.push({ key: 'thread', label: t('messages.actions.replyInThread'), icon: MessageIcon, run: () => openThread(message) })
     }
     if (canForward(message)) {
-      actions.push({ key: 'forward', label: 'Forward', icon: Forward, run: () => onForward(message) })
+      actions.push({ key: 'forward', label: t('messages.actions.forward'), icon: Forward, run: () => onForward(message) })
     }
     actions.push({
       key: 'link',
-      label: 'Copy link',
+      label: t('messages.actions.copyLink'),
       icon: Link2,
-      run: () => copy(`${window.location.origin}${messagePath(message)}`, 'Link copied'),
+      run: () => copy(`${window.location.origin}${messagePath(message)}`, t('messages.actions.linkCopied')),
     })
     if (message.deleted) return actions
     actions.push(
       {
         key: 'text',
-        label: 'Copy text',
+        label: t('messages.actions.copyText'),
         icon: Copy,
-        run: () => copy(decodeMentions(message.body, people.members, people.channels), 'Text copied'),
+        run: () => copy(decodeMentions(message.body, people.members, people.channels), t('messages.actions.textCopied')),
       },
-      { key: 'task', label: 'Create task', icon: TaskSquare, run: () => host.createTask(message) },
+      { key: 'task', label: t('messages.actions.createTask'), icon: TaskSquare, run: () => host.createTask(message) },
       {
         key: 'pin',
-        label: message.pinned ? 'Unpin' : 'Pin',
+        label: message.pinned ? t('messages.actions.unpin') : t('messages.actions.pin'),
         icon: message.pinned ? PinOff : Pin,
         run: () =>
           setPinned(
             { message, pinned: !message.pinned },
-            { onError: () => toast.error(message.pinned ? 'Could not unpin the message. Try again.' : 'Could not pin the message. Try again.') },
+            { onError: () => toast.error(message.pinned ? t('messages.actions.unpinFailed') : t('messages.actions.pinFailed')) },
           ),
       },
       {
         key: 'unread',
-        label: 'Mark as unread',
+        label: t('messages.actions.markUnread'),
         icon: Unread,
         run: () => {
           onMarkUnread?.(message)
-          markUnread(message.id, { onError: () => toast.error('Could not mark as unread. Try again.') })
+          markUnread(message.id, { onError: () => toast.error(t('messages.actions.markUnreadFailed')) })
         },
       },
     )
-    if (canEdit(message, currentUserId)) actions.push({ key: 'edit', label: 'Edit', icon: Edit, run: () => onEdit(message) })
+    if (canEdit(message, currentUserId)) actions.push({ key: 'edit', label: t('messages.actions.edit'), icon: Edit, run: () => onEdit(message) })
     if (own || moderator) {
-      actions.push({ key: 'delete', label: 'Delete', icon: Trash, destructive: true, run: () => void remove(message) })
+      actions.push({ key: 'delete', label: t('messages.actions.delete'), icon: Trash, destructive: true, run: () => void remove(message) })
     }
     return actions
   }

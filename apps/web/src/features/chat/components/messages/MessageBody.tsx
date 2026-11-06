@@ -1,4 +1,5 @@
 import { Fragment, useContext, useState, type ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Attachments } from '@/components/common/Attachments'
 import { Button } from '@/components/ui/button'
 import { CustomEmojiContext } from '@/lib/customEmojiContext'
@@ -39,6 +40,7 @@ function LinkCards({ body }: { body: string }) {
  * or a backslash is before it (`\ENG-12`). A message of only emoji shows them large.
  */
 export function MessageBody({ message }: { message: Message }) {
+  const { t } = useTranslation('chat')
   const people = useChatPeople()
   const { renderLink, taskKeys } = useChatHost()
   const customEmoji = useContext(CustomEmojiContext)
@@ -48,7 +50,7 @@ export function MessageBody({ message }: { message: Message }) {
   if (message.deleted) {
     return (
       <p data-slot="message-body" data-deleted="" className="text-muted-foreground italic">
-        This message was deleted
+        {t('messages.body.deleted')}
       </p>
     )
   }
@@ -97,14 +99,14 @@ export function MessageBody({ message }: { message: Message }) {
           </InternalLinkContext>
           {message.editedAt ? (
             <span data-slot="message-edited" className="ml-1 text-xs text-muted-foreground">
-              (edited)
+              {t('messages.body.edited')}
             </span>
           ) : null}
         </div>
       ) : null}
       {long ? (
         <Button variant="link" size="xs" className="mt-0.5 h-6 px-0" aria-expanded={expanded} onClick={() => setExpanded(!expanded)}>
-          {expanded ? 'Show less' : 'Show more'}
+          {expanded ? t('messages.body.showLess') : t('messages.body.showMore')}
         </Button>
       ) : null}
       {message.sticker && !stickerGone ? (
@@ -122,7 +124,7 @@ export function MessageBody({ message }: { message: Message }) {
         />
       ) : message.stickerId ? (
         <p data-slot="message-sticker" data-deleted="" className="text-muted-foreground italic">
-          Sticker was deleted
+          {t('messages.body.stickerDeleted')}
         </p>
       ) : null}
       <Attachments attachments={message.attachments} hasTextContent={text !== ''} />

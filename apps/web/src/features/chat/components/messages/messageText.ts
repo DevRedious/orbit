@@ -1,3 +1,4 @@
+import { i18n } from '@/i18n'
 import { splitEmoji } from '@/lib/twemoji'
 import type { Message } from '../../api/types'
 
@@ -101,14 +102,14 @@ export function quickReactions(messages: readonly Message[], userId: string | nu
 /** "Ada is typing", "Ada and Grace are typing", then "Several people are typing". Empty when nobody types. */
 export function typingLabel(names: readonly string[]): string {
   if (names.length === 0) return ''
-  if (names.length === 1) return `${names[0]} is typing`
-  if (names.length === 2) return `${names[0]} and ${names[1]} are typing`
-  return 'Several people are typing'
+  if (names.length === 1) return i18n.t('chat:messages.typing.one', { name: names[0] })
+  if (names.length === 2) return i18n.t('chat:messages.typing.two', { first: names[0], second: names[1] })
+  return i18n.t('chat:messages.typing.several')
 }
 
 /** "1 reply", "4 replies". */
 export function replyCountLabel(count: number): string {
-  return count === 1 ? '1 reply' : `${count} replies`
+  return i18n.t('chat:messages.rows.replyCount', { count })
 }
 
 /** Messages of other members that came after the message with `lastKey`; none when that message is gone. */

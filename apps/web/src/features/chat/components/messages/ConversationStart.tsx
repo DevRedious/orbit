@@ -1,3 +1,4 @@
+import { Trans, useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { useChatContext } from '../../api/chatContext'
 import type { Conversation } from '../../api/types'
@@ -9,6 +10,7 @@ import { ProfileTrigger } from '@/components/common/ProfileTrigger'
 
 /** The block above the first message of a conversation. */
 export function ConversationStart({ conversation }: { conversation: Conversation }) {
+  const { t } = useTranslation('chat')
   const { currentUserId } = useChatContext()
   const people = useChatPeople()
   const { togglePane } = useChatNavigation()
@@ -18,8 +20,8 @@ export function ConversationStart({ conversation }: { conversation: Conversation
   if (isSelfDm(conversation)) {
     return (
       <div data-slot="conversation-start" className="flex flex-col items-start gap-1 px-4 pt-8 pb-4 max-[899px]:px-3">
-        <p className="text-base font-semibold">This is your space</p>
-        <p className="max-w-[90ch] text-sm text-muted-foreground">Draft messages, keep links and files handy, or jot down notes. Only you can see it.</p>
+        <p className="text-base font-semibold">{t('messages.start.selfTitle')}</p>
+        <p className="max-w-[90ch] text-sm text-muted-foreground">{t('messages.start.selfBody')}</p>
       </div>
     )
   }
@@ -27,7 +29,7 @@ export function ConversationStart({ conversation }: { conversation: Conversation
   if (conversation.kind === 'dm') {
     return (
       <div data-slot="conversation-start" className="px-4 pt-8 pb-4 max-[899px]:px-3">
-        <p className="text-base font-semibold">This is the start of your conversation with {title}</p>
+        <p className="text-base font-semibold">{t('messages.start.dmTitle', { title })}</p>
       </div>
     )
   }
@@ -35,24 +37,23 @@ export function ConversationStart({ conversation }: { conversation: Conversation
   const creator = people.byId.get(conversation.createdBy)
   return (
     <div data-slot="conversation-start" className="flex flex-col items-start gap-1 px-4 pt-8 pb-4 max-[899px]:px-3">
-      <p className="text-base font-semibold">This is the start of {title}</p>
+      <p className="text-base font-semibold">{t('messages.start.channelTitle', { title })}</p>
       {conversation.topic ? <p className="max-w-[90ch] text-sm text-muted-foreground">{conversation.topic}</p> : null}
       <p className="text-xs text-muted-foreground">
         {creator ? (
-          <>
-            Created by{' '}
-            <ProfileTrigger userId={creator.id} name={creator.name} className="font-medium text-foreground/85">
-              {creator.name}
-            </ProfileTrigger>{' '}
-            on {fullTimestamp(conversation.createdAt)}
-          </>
+          <Trans
+            t={t}
+            i18nKey="messages.start.createdBy"
+            values={{ name: creator.name, date: fullTimestamp(conversation.createdAt) }}
+            components={{ creator: <ProfileTrigger userId={creator.id} name={creator.name} className="font-medium text-foreground/85" /> }}
+          />
         ) : (
-          `Created on ${fullTimestamp(conversation.createdAt)}`
+          t('messages.start.createdOn', { date: fullTimestamp(conversation.createdAt) })
         )}
       </p>
       {conversation.isMember && !conversation.archived && !membersOpen ? (
         <Button variant="outline" size="sm" className="mt-2" onClick={() => togglePane('members')}>
-          Add people
+          {t('messages.start.addPeople')}
         </Button>
       ) : null}
     </div>

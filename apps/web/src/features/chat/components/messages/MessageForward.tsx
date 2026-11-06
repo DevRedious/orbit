@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { Forward } from 'reicon-react'
 import { shortDate } from '@/lib/format'
 import { useConversations } from '../../api/queries'
@@ -13,6 +14,7 @@ import { conversationTitle } from './people'
  * original message.
  */
 export function MessageForward({ message, origin, active }: { message: Message; origin: ForwardOrigin; active: boolean }) {
+  const { t } = useTranslation('chat')
   const { currentUserId, people, openOrigin } = useMessageList()
   const conversation = useConversations().data?.find((item) => item.id === origin.conversationId)
   const date = (
@@ -25,13 +27,13 @@ export function MessageForward({ message, origin, active }: { message: Message; 
     <div data-slot="message-forward" className="min-w-0">
       <div className="flex items-center gap-1 text-xs text-muted-foreground italic">
         <Forward aria-hidden="true" className="size-3.5" />
-        Forwarded
+        {t('messages.forward.forwarded')}
       </div>
       <div className="border-l-4 border-muted-foreground/40 pl-3">
         <MessageBody message={message} />
       </div>
       <div data-slot="message-forward-origin" className="mt-1 flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
-        <span className="truncate">{people.byId.get(origin.authorId)?.name ?? 'Unknown'}</span>
+        <span className="truncate">{people.byId.get(origin.authorId)?.name ?? t('messages.unknown')}</span>
         {conversation ? (
           <button
             type="button"

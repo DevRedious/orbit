@@ -1,10 +1,9 @@
 import { useState, type ComponentProps } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Heart, Message as Replies, Play, Repeat } from 'reicon-react'
 import { useLinkPreview } from '../../api/queries'
 import type { LinkPreview } from '../../api/types'
 
-const COUNT = new Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 1 })
-const POSTED = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
 
 /** An image of another site. Without a source, and when it does not load, it takes no space. The site does not learn where the reader is. */
 function EmbedImage({ src, className, ...props }: Omit<ComponentProps<'img'>, 'alt'>) {
@@ -56,6 +55,7 @@ const escapeAttribute = (value: string) => value.replace(/&/g, '&amp;').replace(
  * `<video>` has no referrer setting of its own, so the player is a small document of its own that sends none.
  */
 function PostVideo({ preview }: { preview: LinkPreview }) {
+  const { t } = useTranslation('chat')
   const [playing, setPlaying] = useState(false)
   const ratio = preview.videoWidth && preview.videoHeight ? preview.videoWidth / preview.videoHeight : 16 / 9
   return (
@@ -63,7 +63,7 @@ function PostVideo({ preview }: { preview: LinkPreview }) {
     <div data-slot="link-embed-video" className="relative z-10 max-h-96 w-full overflow-hidden rounded-md border bg-black" style={{ aspectRatio: ratio }}>
       {playing ? (
         <iframe
-          title={`Video by ${preview.authorName ?? preview.authorHandle ?? 'X'}`}
+          title={t('messages.embed.videoBy', { name: preview.authorName ?? preview.authorHandle ?? 'X' })}
           // Sandboxed: an opaque origin with no forms, popups or top navigation. The player runs no script (the CSP
           // allows no inline one), but a sandbox without `allow-scripts` also blocks `autoplay`: Play would not start it.
           sandbox="allow-scripts"
@@ -74,7 +74,7 @@ function PostVideo({ preview }: { preview: LinkPreview }) {
           srcDoc={`<!doctype html><html style="height:100%"><head><meta name="referrer" content="no-referrer"></head><body style="height:100%;margin:0;overflow:hidden;background:#000"><video src="${escapeAttribute(preview.videoUrl ?? '')}" poster="${escapeAttribute(preview.imageUrl ?? '')}" controls autoplay playsinline style="display:block;width:100%;height:100%"></video></body></html>`}
         />
       ) : (
-        <button type="button" aria-label="Play video" className="group/play relative block size-full outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-inset" onClick={() => setPlaying(true)}>
+        <button type="button" aria-label={t('messages.embed.playVideo')} className="group/play relative block size-full outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-inset" onClick={() => setPlaying(true)}>
           <EmbedImage src={preview.imageUrl} className="size-full object-cover" />
           <PlayMark />
         </button>
@@ -85,11 +85,14 @@ function PostVideo({ preview }: { preview: LinkPreview }) {
 
 /** A post on X: who wrote it, what it says, its video or first image, and its numbers. The video plays in the card. */
 function PostEmbed({ preview }: { preview: LinkPreview }) {
+  const { t, i18n } = useTranslation('chat')
+  const compact = new Intl.NumberFormat(i18n.language, { notation: 'compact', maximumFractionDigits: 1 })
+  const posted = new Intl.DateTimeFormat(i18n.language, { month: 'short', day: 'numeric', year: 'numeric' })
   const counts = [
-    { label: 'replies', icon: Replies, count: preview.replies },
-    { label: 'reposts', icon: Repeat, count: preview.reposts },
-    { label: 'likes', icon: Heart, count: preview.likes },
-  ]
+    { label: 'messages.embed.replies', icon: Replies, count: preview.replies },
+    { label: 'messages.embed.reposts', icon: Repeat, count: preview.reposts },
+    { label: 'messages.embed.likes', icon: Heart, count: preview.likes },
+  ] as const
   return (
     <div
       data-slot="link-embed"
@@ -120,13 +123,13 @@ function PostEmbed({ preview }: { preview: LinkPreview }) {
       <div className="flex min-w-0 items-center gap-3 text-xs text-muted-foreground tabular-nums">
         {counts.map(({ label, icon: Icon, count }) =>
           count === undefined ? null : (
-            <span key={label} className="flex items-center gap-1" aria-label={`${count} ${label}`}>
+            <span key={label} className="flex items-center gap-1" aria-label={t(label, { count })}>
               <Icon className="size-3.5" aria-hidden="true" />
-              {COUNT.format(count)}
+              {compact.format(count)}
             </span>
           ),
         )}
-        {preview.createdAt ? <time dateTime={new Date(preview.createdAt).toISOString()} className="ml-auto truncate">{POSTED.format(preview.createdAt)}</time> : null}
+        {preview.createdAt ? <time dateTime={new Date(preview.createdAt).toISOString()} className="ml-auto truncate">{posted.format(preview.createdAt)}</time> : null}
       </div>
     </div>
   )
@@ -134,6 +137,7 @@ function PostEmbed({ preview }: { preview: LinkPreview }) {
 
 /** A YouTube video: the poster until the reader asks for the player, so YouTube loads nothing before that. */
 function VideoEmbed({ preview }: { preview: LinkPreview }) {
+  const { t } = useTranslation('chat')
   const [playing, setPlaying] = useState(false)
   return (
     <div data-slot="link-embed" data-kind="youtube" className="flex w-full max-w-md min-w-0 flex-col overflow-hidden rounded-lg border bg-card text-[13px] text-foreground">
@@ -147,7 +151,7 @@ function VideoEmbed({ preview }: { preview: LinkPreview }) {
           className="aspect-video w-full border-0 bg-black"
         />
       ) : (
-        <button type="button" aria-label={`Play ${preview.title}`} className="group/play relative block aspect-video w-full overflow-hidden bg-black outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-inset" onClick={() => setPlaying(true)}>
+        <button type="button" aria-label={t('messages.embed.play', { title: preview.title ?? '' })} className="group/play relative block aspect-video w-full overflow-hidden bg-black outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-inset" onClick={() => setPlaying(true)}>
           <EmbedImage src={preview.imageUrl} className="size-full object-cover" />
           <PlayMark />
         </button>

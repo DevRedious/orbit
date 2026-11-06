@@ -1,4 +1,5 @@
 import { useId, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
@@ -16,11 +17,12 @@ interface CategoryDialogProps {
 
 /** Creates a shared category or renames one. The form is mounted only while the dialog is open. */
 export function CategoryDialog({ open, onOpenChange, category }: CategoryDialogProps) {
+  const { t } = useTranslation('chat')
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{category ? 'Rename category' : 'New category'}</DialogTitle>
+          <DialogTitle>{category ? t('dialogs.category.renameTitle') : t('dialogs.category.newTitle')}</DialogTitle>
         </DialogHeader>
         <CategoryForm category={category} onDone={() => onOpenChange(false)} />
       </DialogContent>
@@ -29,6 +31,7 @@ export function CategoryDialog({ open, onOpenChange, category }: CategoryDialogP
 }
 
 function CategoryForm({ category, onDone }: { category?: Category; onDone: () => void }) {
+  const { t } = useTranslation('chat')
   const createCategory = useCreateCategory()
   const renameCategory = useRenameCategory()
   const [name, setName] = useState(category?.name ?? '')
@@ -57,14 +60,14 @@ function CategoryForm({ category, onDone }: { category?: Category; onDone: () =>
       }}
     >
       <Field data-invalid={mutation.isError || undefined}>
-        <FieldLabel htmlFor={nameId}>Name</FieldLabel>
+        <FieldLabel htmlFor={nameId}>{t('dialogs.category.name')}</FieldLabel>
         <Input
           id={nameId}
           autoFocus
           required
           autoComplete="off"
           maxLength={60}
-          placeholder="Projects"
+          placeholder={t('dialogs.category.namePlaceholder')}
           value={name}
           aria-invalid={mutation.isError || undefined}
           onChange={(event) => {
@@ -74,18 +77,18 @@ function CategoryForm({ category, onDone }: { category?: Category; onDone: () =>
         />
         {mutation.isError ? (
           <FieldError>
-            {chatErrorMessage(mutation.error, category ? 'The category was not renamed. Try again.' : 'The category was not created. Try again.', {
-              conflict: 'A category with this name already exists.',
-              forbidden: 'Only workspace owners and admins can change categories.',
-              not_found: 'This category no longer exists.',
+            {chatErrorMessage(mutation.error, category ? t('dialogs.category.renameFailed') : t('dialogs.category.createFailed'), {
+              conflict: t('dialogs.category.conflict'),
+              forbidden: t('dialogs.category.forbidden'),
+              not_found: t('dialogs.category.notFound'),
             })}
           </FieldError>
         ) : null}
       </Field>
       <DialogFooter>
-        <DialogClose render={<Button type="button" variant="outline" />}>Cancel</DialogClose>
+        <DialogClose render={<Button type="button" variant="outline" />}>{t('dialogs.cancel')}</DialogClose>
         <Button type="submit" disabled={!trimmed || mutation.isPending}>
-          {category ? 'Rename category' : 'Create category'}
+          {category ? t('dialogs.category.rename') : t('dialogs.category.create')}
         </Button>
       </DialogFooter>
     </form>

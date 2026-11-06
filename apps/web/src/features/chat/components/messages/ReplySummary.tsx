@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { ProfileTrigger } from '@/components/common/ProfileTrigger'
 import { UserAvatar } from '@/components/common/UserAvatar'
 import { extractPreview, wordlessPreview } from '@/lib/messagePreview'
@@ -15,6 +16,7 @@ import { replyCountLabel } from './messageText'
  * of the three places the square shows).
  */
 export function ReplySummary({ message }: { message: Message }) {
+  const { t } = useTranslation('chat')
   const { people, openThread } = useMessageList()
   const state = useThreadState(message.id).data
   const unread = Boolean(state?.following && state.unreadReplies > 0)
@@ -32,11 +34,11 @@ export function ReplySummary({ message }: { message: Message }) {
       <span className="flex min-w-0 flex-col gap-1 border-l-2 border-border pl-2.5">
         {reply ? (
           <span data-slot="reply-preview" className="flex min-w-0 items-center gap-1.5">
-            <ProfileTrigger userId={author?.id} name={author?.name ?? 'Unknown'} kind="avatar" tabIndex={-1} className="relative z-1 flex shrink-0">
+            <ProfileTrigger userId={author?.id} name={author?.name ?? t('messages.unknown')} kind="avatar" tabIndex={-1} className="relative z-1 flex shrink-0">
               <UserAvatar user={author} name="?" size={16} />
             </ProfileTrigger>
-            <ProfileTrigger userId={author?.id} name={author?.name ?? 'Unknown'} tabIndex={-1} className="relative z-1 shrink-0 font-medium text-foreground/90">
-              {author?.name ?? 'Unknown'}
+            <ProfileTrigger userId={author?.id} name={author?.name ?? t('messages.unknown')} tabIndex={-1} className="relative z-1 shrink-0 font-medium text-foreground/90">
+              {author?.name ?? t('messages.unknown')}
             </ProfileTrigger>
             <span className="truncate text-[13px]">{text || wordlessPreview(reply.sticker === true)}</span>
           </span>
@@ -48,8 +50,8 @@ export function ReplySummary({ message }: { message: Message }) {
         >
           {unread ? <span data-slot="unread-marker" aria-hidden="true" className="size-1.5 shrink-0 bg-primary" /> : null}
           <span className="shrink-0 font-medium text-foreground/90 in-data-unread:font-bold in-data-unread:text-foreground">{replyCountLabel(message.replyCount)}</span>
-          {unread ? <span className="sr-only">, {state?.unreadReplies} unread</span> : null}
-          {message.lastReplyAt ? <span className="truncate in-data-unread:font-semibold">last reply {relativeAgo(message.lastReplyAt)}</span> : null}
+          {unread ? <span className="sr-only">{t('messages.replySummary.unread', { count: state?.unreadReplies ?? 0 })}</span> : null}
+          {message.lastReplyAt ? <span className="truncate in-data-unread:font-semibold">{t('messages.replySummary.lastReply', { time: relativeAgo(message.lastReplyAt) })}</span> : null}
         </button>
       </span>
     </div>

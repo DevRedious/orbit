@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { PinTack } from 'reicon-react'
 import { Button } from '@/components/ui/button'
@@ -14,6 +15,7 @@ import { useJumpToMessage } from './useJumpToMessage'
 
 /** The pinned messages of a conversation, newest first. */
 export function PinsPane({ conversationId }: { conversationId: string }) {
+  const { t } = useTranslation('chat')
   const { workspaceId } = useChatContext()
   const pins = usePins(conversationId)
   const conversation = useConversation(conversationId).data
@@ -26,32 +28,32 @@ export function PinsPane({ conversationId }: { conversationId: string }) {
   const unpin = (message: Message) => {
     setPinned.mutate(
       { message, pinned: false },
-      { onError: (error) => toast.error(chatErrorMessage(error, 'Could not unpin the message. Try again.', { forbidden: 'You cannot unpin messages here.' })) },
+      { onError: (error) => toast.error(chatErrorMessage(error, t('panes.pins.unpinFailed'), { forbidden: t('panes.pins.unpinForbidden') })) },
     )
   }
 
   return (
-    <RightPane title="Pinned messages">
+    <RightPane title={t('panes.pins.title')}>
       <RightPaneBody>
         {pins.isPending ? (
           <RightPaneLoading />
         ) : pins.isError ? (
-          <RightPaneError title="The pinned messages could not be loaded." onRetry={() => void pins.refetch()} />
+          <RightPaneError title={t('panes.pins.loadFailed')} onRetry={() => void pins.refetch()} />
         ) : pins.data.length === 0 ? (
-          <RightPaneEmpty icon={PinTack} title="No pinned messages" description="Pin a message to keep it here." />
+          <RightPaneEmpty icon={PinTack} title={t('panes.pins.emptyTitle')} description={t('panes.pins.emptyDescription')} />
         ) : (
-          <ul aria-label="Pinned messages" className="flex flex-col gap-1">
+          <ul aria-label={t('panes.pins.title')} className="flex flex-col gap-1">
             {pins.data.map((message) => (
               <li key={message.id} className="flex flex-col gap-1 rounded-lg p-2 hover-fine:hover:bg-muted/50">
                 <MessageByline message={message} members={members} profile />
                 <MessageBody message={message} />
                 <div className="-ml-2 flex items-center gap-1">
                   <Button variant="ghost" size="xs" onClick={() => jump(message)}>
-                    Jump
+                    {t('panes.pins.jump')}
                   </Button>
                   {canUnpin ? (
                     <Button variant="ghost" size="xs" onClick={() => unpin(message)}>
-                      Unpin
+                      {t('panes.pins.unpin')}
                     </Button>
                   ) : null}
                 </div>

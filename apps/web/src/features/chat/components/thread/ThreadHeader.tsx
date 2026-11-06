@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { ArrowLeft, Bell, BellOff, Maximize4, Minimize, MoreH, Xmark } from 'reicon-react'
 import { toast } from 'sonner'
 import { PaneHeader, PaneTitle } from '@/components/common/Pane'
@@ -10,10 +11,11 @@ import { threadPath } from '../../chatRoutes'
 import { useChatNavigation } from '../../useChatNavigation'
 
 function FollowButton({ rootId, following }: { rootId: string; following: boolean }) {
+  const { t } = useTranslation('chat')
   const { mutate: setFollow, isPending } = useSetThreadFollow()
-  const label = following ? 'Unfollow thread' : 'Follow thread'
+  const label = following ? t('thread.unfollow') : t('thread.follow')
   return (
-    <Tip label={following ? 'Following. You are notified of new replies.' : 'Follow to be notified of new replies'} side="bottom">
+    <Tip label={following ? t('thread.followingTip') : t('thread.followTip')} side="bottom">
       <Button
         variant="ghost"
         size="icon"
@@ -23,7 +25,7 @@ function FollowButton({ rootId, following }: { rootId: string; following: boolea
         onClick={() =>
           setFollow(
             { rootId, following: !following },
-            { onError: () => toast.error(following ? 'Could not unfollow the thread. Try again.' : 'Could not follow the thread. Try again.') },
+            { onError: () => toast.error(following ? t('thread.unfollowFailed') : t('thread.followFailed')) },
           )
         }
       >
@@ -61,20 +63,21 @@ export function ThreadHeader({
   onResize,
   onClose,
 }: ThreadHeaderProps) {
+  const { t } = useTranslation('chat')
   const { expandThread, collapseThread, openConversation } = useChatNavigation()
 
   if (variant === 'pane') {
     return (
       <PaneHeader data-slot="thread-header" className="gap-1">
         <PaneTitle render={<h2 />} className="flex-1">
-          Thread
+          {t('thread.title')}
         </PaneTitle>
         {canResize ? (
-          <Tip label="Open in full view" side="bottom">
+          <Tip label={t('thread.openFullTip')} side="bottom">
             <Button
               variant="ghost"
               size="icon"
-              aria-label="Open thread in full view"
+              aria-label={t('thread.openFull')}
               onClick={() => {
                 onResize()
                 expandThread(rootId)
@@ -85,8 +88,8 @@ export function ThreadHeader({
           </Tip>
         ) : null}
         <FollowButton rootId={rootId} following={following} />
-        <Tip label="Close thread" side="bottom">
-          <Button variant="ghost" size="icon" aria-label="Close thread" onClick={onClose}>
+        <Tip label={t('thread.close')} side="bottom">
+          <Button variant="ghost" size="icon" aria-label={t('thread.close')} onClick={onClose}>
             <Xmark className="size-5" />
           </Button>
         </Tip>
@@ -96,7 +99,7 @@ export function ThreadHeader({
 
   return (
     <PaneHeader data-slot="thread-header" className="gap-1">
-      <Button variant="ghost" size="icon" className="min-[900px]:hidden" aria-label="Back" onClick={onClose}>
+      <Button variant="ghost" size="icon" className="min-[900px]:hidden" aria-label={t('thread.back')} onClick={onClose}>
         <ArrowLeft className="size-5" />
       </Button>
       <Breadcrumb className="min-w-0 flex-1">
@@ -113,19 +116,19 @@ export function ThreadHeader({
           <BreadcrumbSeparator className="shrink-0" />
           <BreadcrumbItem className="min-w-0">
             <BreadcrumbPage className="truncate">
-              <span className="font-semibold">Thread</span>
-              {rootLine ? <span className="text-muted-foreground"> · “{rootLine}”</span> : null}
+              <span className="font-semibold">{t('thread.title')}</span>
+              {rootLine ? <span className="text-muted-foreground">{t('thread.rootLine', { line: rootLine })}</span> : null}
             </BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
       {canResize ? (
-        <Tip label="Show in the side pane" side="bottom">
+        <Tip label={t('thread.sidePaneTip')} side="bottom">
           <Button
             variant="ghost"
             size="icon"
             className="max-[899px]:hidden"
-            aria-label="Show thread in the side pane"
+            aria-label={t('thread.sidePane')}
             onClick={() => {
               onResize()
               collapseThread(rootId)
@@ -137,8 +140,8 @@ export function ThreadHeader({
       ) : null}
       <FollowButton rootId={rootId} following={following} />
       <DropdownMenu>
-        <Tip label="Thread actions" side="bottom">
-          <DropdownMenuTrigger render={<Button variant="ghost" size="icon" aria-label="Thread actions" />}>
+        <Tip label={t('thread.actions')} side="bottom">
+          <DropdownMenuTrigger render={<Button variant="ghost" size="icon" aria-label={t('thread.actions')} />}>
             <MoreH className="size-5" />
           </DropdownMenuTrigger>
         </Tip>
@@ -146,15 +149,15 @@ export function ThreadHeader({
           <DropdownMenuItem
             onClick={() => {
               navigator.clipboard.writeText(`${window.location.origin}${threadPath(conversationId, rootId)}`).then(
-                () => toast.success('Link copied'),
-                () => toast.error('Could not copy. Try again.'),
+                () => toast.success(t('thread.linkCopied')),
+                () => toast.error(t('thread.copyFailed')),
               )
             }}
           >
-            Copy link
+            {t('thread.copyLink')}
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => openConversation(conversationId, rootId)}>Show in {conversationTitle}</DropdownMenuItem>
-          <DropdownMenuItem onClick={onClose}>Close thread</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => openConversation(conversationId, rootId)}>{t('thread.showIn', { conversation: conversationTitle })}</DropdownMenuItem>
+          <DropdownMenuItem onClick={onClose}>{t('thread.close')}</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </PaneHeader>

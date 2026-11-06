@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Search4 } from 'reicon-react'
 import type { CustomStickerRecord } from '@orbit/api/generated/types.gen'
 import { Tip } from '@/components/common/Tip'
@@ -10,6 +11,7 @@ import { searchStickers } from '@/lib/customSticker'
  * `Tab` goes through them; a click picks one.
  */
 export function StickerPicker({ stickers, onPick }: { stickers: readonly CustomStickerRecord[]; onPick: (sticker: CustomStickerRecord) => void }) {
+  const { t } = useTranslation('chat')
   const [search, setSearch] = useState('')
   const found = searchStickers(stickers, search)
   return (
@@ -19,7 +21,7 @@ export function StickerPicker({ stickers, onPick }: { stickers: readonly CustomS
           <InputGroupAddon>
             <Search4 />
           </InputGroupAddon>
-          <InputGroupInput autoFocus type="search" value={search} placeholder="Search stickers" aria-label="Search stickers" autoComplete="off" onChange={(event) => setSearch(event.target.value)} />
+          <InputGroupInput autoFocus type="search" value={search} placeholder={t('composer.stickers.search')} aria-label={t('composer.stickers.search')} autoComplete="off" onChange={(event) => setSearch(event.target.value)} />
         </InputGroup>
       </div>
       {found.length > 0 ? (
@@ -39,7 +41,7 @@ export function StickerPicker({ stickers, onPick }: { stickers: readonly CustomS
           ))}
         </div>
       ) : (
-        <p className="px-3 pb-3 text-sm text-muted-foreground">No stickers match</p>
+        <p className="px-3 pb-3 text-sm text-muted-foreground">{t('composer.stickers.noMatch')}</p>
       )}
     </div>
   )

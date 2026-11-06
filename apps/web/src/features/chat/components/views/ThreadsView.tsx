@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useHref } from 'react-router'
 import { Layer } from 'reicon-react'
 import { EmptyState } from '@/components/common/EmptyState'
@@ -21,13 +22,14 @@ import { MessagePreview } from './MessagePreview'
  * link that opens the thread in full view (closing it comes back here).
  */
 function ThreadRow({ thread, conversation, people }: { thread: FollowedThread; conversation: Conversation | undefined; people: readonly User[] }) {
+  const { t } = useTranslation('chat')
   const { currentUserId } = useChatContext()
   const navigation = useChatNavigation()
   const href = useHref(threadPath(thread.conversationId, thread.root.id))
   const unread = thread.state.unreadReplies
-  const title = conversation ? conversationTitle(conversation, people, currentUserId ?? '') : 'Unknown conversation'
+  const title = conversation ? conversationTitle(conversation, people, currentUserId ?? '') : t('views.threads.unknownConversation')
   const lastReplyAt = thread.lastReply?.createdAt ?? thread.root.lastReplyAt
-  const replies = `${thread.root.replyCount} ${thread.root.replyCount === 1 ? 'reply' : 'replies'}`
+  const replies = t('views.threads.replies', { count: thread.root.replyCount })
 
   return (
     <article
@@ -38,7 +40,7 @@ function ThreadRow({ thread, conversation, people }: { thread: FollowedThread; c
       <div className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
         <a
           href={href}
-          aria-label={`Thread in ${title}, ${replies}${unread > 0 ? `, ${unread} unread` : ''}`}
+          aria-label={unread > 0 ? t('views.threads.rowLabelUnread', { title, replies, count: unread }) : t('views.threads.rowLabel', { title, replies })}
           className="flex min-w-0 items-center gap-1.5 text-[13px] font-medium text-foreground outline-none after:absolute after:inset-0 in-data-[unread=true]:font-semibold"
           onClick={(event) => {
             // a modified click opens a new tab, like any link
@@ -53,7 +55,7 @@ function ThreadRow({ thread, conversation, people }: { thread: FollowedThread; c
         <span className="shrink-0">{replies}</span>
         {lastReplyAt ? (
           <time className="shrink-0 max-[899px]:hidden" dateTime={new Date(lastReplyAt).toISOString()} title={fullTimestamp(lastReplyAt)}>
-            last reply {relativeAgo(lastReplyAt)}
+            {t('views.threads.lastReply', { ago: relativeAgo(lastReplyAt) })}
           </time>
         ) : null}
         {unread > 0 ? <CountBadge count={unread} className="ml-auto" /> : null}
@@ -66,6 +68,7 @@ function ThreadRow({ thread, conversation, people }: { thread: FollowedThread; c
 
 /** The Threads view: the threads the user follows, unread first, then by last reply. */
 export function ThreadsView() {
+  const { t } = useTranslation('chat')
   const { workspaceId } = useChatContext()
   const threads = useFollowedThreads()
   const conversations = useConversations().data ?? []
@@ -77,21 +80,21 @@ export function ThreadsView() {
       <PaneHeader className="max-[899px]:px-2">
         <ChatBackLink />
         <PaneTitle render={<h1 />} className="flex-1 text-sm">
-          Threads
+          {t('views.threads.title')}
         </PaneTitle>
       </PaneHeader>
       {threads.isError ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-[13px] text-muted-foreground" role="alert">
-          Could not load your threads.
+          {t('views.threads.loadFailed')}
           <Button type="button" variant="outline" size="sm" onClick={() => void threads.refetch()}>
-            Try again
+            {t('views.tryAgain')}
           </Button>
         </div>
       ) : threads.data === undefined ? (
         <div className="flex-1" />
       ) : rows.length === 0 ? (
         <div className="flex flex-1 flex-col p-6">
-          <EmptyState icon={Layer} title="Threads you follow appear here" description="Reply to a message or follow its thread, and new replies show up in this list." />
+          <EmptyState icon={Layer} title={t('views.threads.emptyTitle')} description={t('views.threads.emptyDescription')} />
         </div>
       ) : (
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">

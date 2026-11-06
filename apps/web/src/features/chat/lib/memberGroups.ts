@@ -6,8 +6,11 @@ interface Member {
   role: 'Owner' | 'Admin' | 'Member'
 }
 
+/** The heading of a group, in English: the member list translates it. */
+export type MemberGroupLabel = 'Owner' | 'Admin' | 'Online' | 'Offline'
+
 export interface MemberGroup<T> {
-  label: string
+  label: MemberGroupLabel
   online: boolean
   people: T[]
 }
@@ -20,10 +23,11 @@ export function memberGroups<T extends Member>(people: readonly T[], presence: P
   const sorted = [...people].sort((a, b) => a.name.localeCompare(b.name))
   // idle and do not disturb count as online: only somebody who shows as offline is not in the map
   const here = sorted.filter((person) => presence.has(person.id))
-  return [
+  const groups: MemberGroup<T>[] = [
     { label: 'Owner', online: true, people: here.filter((person) => person.role === 'Owner') },
     { label: 'Admin', online: true, people: here.filter((person) => person.role === 'Admin') },
     { label: 'Online', online: true, people: here.filter((person) => person.role === 'Member') },
     { label: 'Offline', online: false, people: sorted.filter((person) => !presence.has(person.id)) },
-  ].filter((group) => group.people.length > 0)
+  ]
+  return groups.filter((group) => group.people.length > 0)
 }

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { Archive, Edit, Link2, Logout, Notification, Star, TickCircle } from 'reicon-react'
 import {
   DropdownMenuItem,
@@ -16,6 +17,7 @@ import type { ConversationActions } from './useConversationActions'
  * "Mark as read"; the header does not.
  */
 export function ConversationMenuItems({ actions, placement, onEdit }: { actions: ConversationActions; placement: 'row' | 'header'; onEdit: () => void }) {
+  const { t } = useTranslation('chat')
   const { state } = actions
   const row = placement === 'row'
   return (
@@ -25,23 +27,23 @@ export function ConversationMenuItems({ actions, placement, onEdit }: { actions:
           {row ? (
             <DropdownMenuItem disabled={state.unreadCount === 0 && state.mentionCount === 0} onClick={actions.markRead}>
               <TickCircle />
-              Mark as read
+              {t('sidebar.menu.markAsRead')}
             </DropdownMenuItem>
           ) : null}
           <DropdownMenuItem onClick={actions.toggleFavorite}>
             <Star weight={state.favorite ? 'Filled' : 'Outline'} />
-            {state.favorite ? 'Remove star' : 'Star'}
+            {state.favorite ? t('sidebar.menu.removeStar') : t('sidebar.menu.star')}
           </DropdownMenuItem>
           <DropdownMenuSub>
             <DropdownMenuSubTrigger>
               <Notification />
-              Notifications
+              {t('sidebar.menu.notifications')}
             </DropdownMenuSubTrigger>
             <DropdownMenuSubContent className="w-auto min-w-40">
               <DropdownMenuRadioGroup value={state.notify} onValueChange={(value) => actions.setNotify(value as NotifyLevel)}>
-                <DropdownMenuRadioItem value="all">All messages</DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="mentions">Mentions only</DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="muted">Muted</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="all">{t('sidebar.menu.notifyAll')}</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="mentions">{t('sidebar.menu.notifyMentions')}</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="muted">{t('sidebar.menu.notifyMuted')}</DropdownMenuRadioItem>
               </DropdownMenuRadioGroup>
             </DropdownMenuSubContent>
           </DropdownMenuSub>
@@ -49,14 +51,14 @@ export function ConversationMenuItems({ actions, placement, onEdit }: { actions:
       ) : null}
       <DropdownMenuItem onClick={actions.copyLink}>
         <Link2 />
-        Copy link
+        {t('sidebar.menu.copyLink')}
       </DropdownMenuItem>
       {actions.canManage ? (
         <>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={onEdit}>
             <Edit />
-            Edit channel
+            {t('sidebar.menu.editChannel')}
           </DropdownMenuItem>
         </>
       ) : null}
@@ -64,13 +66,13 @@ export function ConversationMenuItems({ actions, placement, onEdit }: { actions:
       {actions.canLeave ? (
         <DropdownMenuItem onClick={() => void actions.leave()}>
           <Logout />
-          Leave channel
+          {t('sidebar.menu.leaveChannel')}
         </DropdownMenuItem>
       ) : null}
       {actions.canArchive ? (
         <DropdownMenuItem variant="destructive" onClick={() => void actions.archive()}>
           <Archive />
-          Archive channel
+          {t('sidebar.menu.archiveChannel')}
         </DropdownMenuItem>
       ) : null}
     </>

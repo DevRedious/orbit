@@ -1,4 +1,5 @@
 import type { ComponentProps, ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { DocumentText } from 'reicon-react'
 import { cn } from 'cn'
@@ -110,6 +111,7 @@ function useLinkedView(viewId: string) {
 
 /** The card under a message for a link to a workspace view: icon, name, description or owner, and the reader's favorite star. */
 function ViewLinkCard({ viewId }: { viewId: string }) {
+  const { t } = useTranslation('chat')
   const { workspace } = useWorkspace()
   const view = useLinkedView(viewId)
   if (!view) return null
@@ -120,7 +122,7 @@ function ViewLinkCard({ viewId }: { viewId: string }) {
       <Link to={viewPath(view.id)} className="min-w-0 shrink-0 truncate font-medium outline-none after:absolute after:inset-0 after:rounded-lg focus-visible:after:ring-2 focus-visible:after:ring-ring/50 max-[480px]:shrink">
         {view.name}
       </Link>
-      <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">{view.description || `View by ${view.owner.display_name}`}</span>
+      <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">{view.description || t('conversation.page.viewBy', { name: view.owner.display_name })}</span>
       <FavoriteStar workspaceId={workspace.id} view={view} className="relative z-10" />
     </div>
   )

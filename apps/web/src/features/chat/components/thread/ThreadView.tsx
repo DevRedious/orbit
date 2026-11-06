@@ -1,5 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState, type KeyboardEvent, type RefObject } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import { useChatContext } from '../../api/chatContext'
@@ -43,6 +44,7 @@ interface ThreadBodyProps {
 
 /** The messages and the composer. Mounted when the thread has loaded, so what it captures on open stays. */
 function ThreadBody({ conversation, root, state, focusMessageId, announce, list }: ThreadBodyProps) {
+  const { t } = useTranslation('chat')
   const thread = useThread(root.id)
   const { workspaceId } = useChatContext()
   const queryClient = useQueryClient()
@@ -82,7 +84,7 @@ function ThreadBody({ conversation, root, state, focusMessageId, announce, list 
     <>
       <MessageList
         ref={list}
-        label="Thread"
+        label={t('thread.title')}
         inThread
         root={root}
         messages={replies}
@@ -126,7 +128,7 @@ function ThreadBody({ conversation, root, state, focusMessageId, announce, list 
         </>
       ) : (
         <p data-slot="thread-notice" className="shrink-0 border-t border-border px-4 py-3 text-sm text-muted-foreground max-[899px]:px-3">
-          {conversation.archived ? 'This channel is archived. You can read it, but you cannot send messages.' : 'Join the channel to reply.'}
+          {conversation.archived ? t('thread.archivedNotice') : t('thread.joinToReply')}
         </p>
       )}
     </>
@@ -138,6 +140,7 @@ function ThreadBody({ conversation, root, state, focusMessageId, announce, list 
  * composer. It marks the thread read by the same rule as a conversation.
  */
 export function ThreadView({ conversationId, rootId, variant, focusMessageId, canResize = true }: ThreadViewProps) {
+  const { t } = useTranslation('chat')
   const { currentUserId } = useChatContext()
   const people = useChatPeople()
   const { closePane, closeThreadFull } = useChatNavigation()
@@ -171,7 +174,7 @@ export function ThreadView({ conversationId, rootId, variant, focusMessageId, ca
     <section
       data-slot="thread-view"
       data-variant={variant}
-      aria-label="Thread"
+      aria-label={t('thread.title')}
       // A size container: the composer grows to half of this column's height (`50cqh`).
       className="relative flex h-full min-h-0 min-w-0 flex-1 flex-col bg-background [container-type:size]"
       onKeyDown={onKeyDown}
@@ -199,13 +202,13 @@ export function ThreadView({ conversationId, rootId, variant, focusMessageId, ca
         />
       ) : thread.isError ? (
         <div role="alert" className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
-          <p className="text-sm text-muted-foreground">Could not load this thread. It may have been deleted.</p>
+          <p className="text-sm text-muted-foreground">{t('thread.loadFailed')}</p>
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => void thread.refetch()}>
-              Try again
+              {t('thread.tryAgain')}
             </Button>
             <Button variant="ghost" onClick={close}>
-              Close thread
+              {t('thread.close')}
             </Button>
           </div>
         </div>

@@ -1,3 +1,4 @@
+import { i18n } from '@/i18n'
 import type { Category, Conversation, ConversationState, FollowedThread } from '../api/types'
 
 export interface RowBadge {
@@ -93,11 +94,11 @@ export function dmProfilePerson<T extends ChatPerson>(conversation: Conversation
 
 /** A DM has no name: its title is the other members' names. */
 export function dmTitle(conversation: Conversation, people: readonly ChatPerson[], currentUserId: string): string {
-  const nameOf = (id: string) => people.find((person) => person.id === id)?.name ?? 'Unknown'
-  if (isSelfDm(conversation)) return `${nameOf(currentUserId)} (you)`
+  const nameOf = (id: string) => people.find((person) => person.id === id)?.name ?? i18n.t('chat:conversation.people.unknown')
+  if (isSelfDm(conversation)) return i18n.t('chat:conversation.people.you', { name: nameOf(currentUserId) })
   const peers = dmPeerIds(conversation, currentUserId)
   // the other members left the workspace
-  if (peers.length === 0) return 'Former member'
+  if (peers.length === 0) return i18n.t('chat:conversation.people.formerMember')
   return peers.map(nameOf).join(', ')
 }
 
@@ -147,7 +148,7 @@ export function buildSidebarSections(
     sections.push({
       key: 'favorites',
       kind: 'favorites',
-      title: 'Favorites',
+      title: i18n.t('chat:conversation.sections.favorites'),
       category: null,
       conversations: [
         ...favorites.filter((conversation) => conversation.kind !== 'dm').sort((a, b) => a.name.localeCompare(b.name)),
@@ -168,7 +169,7 @@ export function buildSidebarSections(
     sections.push({
       key: 'channels',
       kind: 'channels',
-      title: 'Channels',
+      title: i18n.t('chat:conversation.sections.channels'),
       category: null,
       conversations: uncategorized.sort(byPosition),
     })
@@ -176,7 +177,7 @@ export function buildSidebarSections(
   sections.push({
     key: 'dms',
     kind: 'dms',
-    title: 'Direct messages',
+    title: i18n.t('chat:conversation.sections.directMessages'),
     category: null,
     conversations: rest
       .filter((conversation) => conversation.kind === 'dm')

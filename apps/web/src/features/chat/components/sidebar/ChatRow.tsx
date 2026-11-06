@@ -1,4 +1,5 @@
 import type { ComponentProps } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { ArrowLeft } from 'reicon-react'
 import { cn } from 'cn'
@@ -65,11 +66,12 @@ export function CountBadge({ count, className }: { count: number; className?: st
 
 /** Phones only: back from a conversation, a view or a thread to the chat list. */
 export function ChatBackLink({ className }: { className?: string }) {
+  const { t } = useTranslation('chat')
   return (
     <Link
       data-slot="chat-back-link"
       to={CHAT_PATH}
-      aria-label="Back to conversations"
+      aria-label={t('sidebar.backToConversations')}
       className={cn(buttonVariants({ variant: 'ghost', size: 'icon' }), 'hidden text-muted-foreground max-[899px]:inline-flex', className)}
     >
       <ArrowLeft className="size-5" />

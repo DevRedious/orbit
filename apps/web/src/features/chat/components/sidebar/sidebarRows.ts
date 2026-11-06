@@ -1,3 +1,4 @@
+import { i18n } from '@/i18n'
 import type { Conversation, NotifyLevel } from '@/features/chat/api/types'
 import type { RowBadge, SidebarSection } from '@/features/chat/lib/sidebar'
 
@@ -57,12 +58,11 @@ export function visibleRows(
 export function rowLabel(title: string, badge: RowBadge, notify: NotifyLevel | undefined, draft = false): string {
   const parts = [title]
   if (badge.count > 0) {
-    const noun = notify === 'all' ? 'message' : 'mention'
-    parts.push(`${badge.count} unread ${noun}${badge.count === 1 ? '' : 's'}`)
+    parts.push(notify === 'all' ? i18n.t('chat:sidebar.row.unreadMessages', { count: badge.count }) : i18n.t('chat:sidebar.row.unreadMentions', { count: badge.count }))
   } else if (badge.bold) {
-    parts.push('unread')
+    parts.push(i18n.t('chat:sidebar.row.unread'))
   }
-  if (notify === 'muted') parts.push('muted')
-  if (draft) parts.push('draft')
+  if (notify === 'muted') parts.push(i18n.t('chat:sidebar.row.muted'))
+  if (draft) parts.push(i18n.t('chat:sidebar.row.draft'))
   return parts.join(', ')
 }

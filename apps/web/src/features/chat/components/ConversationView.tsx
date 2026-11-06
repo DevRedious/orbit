@@ -1,5 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState, type DragEvent, type KeyboardEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { useChatContext } from '../api/chatContext'
@@ -22,15 +23,16 @@ function hasFiles(event: DragEvent): boolean {
 }
 
 function JoinBar({ conversation, title }: { conversation: Conversation; title: string }) {
+  const { t } = useTranslation('chat')
   const { mutate: join, isPending } = useJoinChannel()
   return (
     <div data-slot="join-bar" className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-border px-4 py-3 max-[899px]:px-3">
-      <p className="text-sm text-muted-foreground">You are viewing {title}. Join it to send messages.</p>
+      <p className="text-sm text-muted-foreground">{t('conversation.view.viewing', { title })}</p>
       <Button
         disabled={isPending}
-        onClick={() => join(conversation.id, { onError: () => toast.error(`Could not join ${title}. Try again.`) })}
+        onClick={() => join(conversation.id, { onError: () => toast.error(t('conversation.view.joinFailed', { title })) })}
       >
-        Join {title}
+        {t('conversation.view.join', { title })}
       </Button>
     </div>
   )
@@ -45,6 +47,7 @@ interface ColumnProps {
 
 /** Mounted once for each opened conversation (keyed by id), so what it captures on open lasts until the user leaves. */
 function ConversationColumn({ conversation, state, focusMessageId }: ColumnProps) {
+  const { t } = useTranslation('chat')
   const { currentUserId, workspaceId } = useChatContext()
   const queryClient = useQueryClient()
   const people = useChatPeople()
@@ -147,16 +150,16 @@ function ConversationColumn({ conversation, state, focusMessageId }: ColumnProps
     >
       {query.isError ? (
         <div role="alert" className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
-          <p className="text-sm text-muted-foreground">Could not load the messages of {title}.</p>
+          <p className="text-sm text-muted-foreground">{t('conversation.view.loadFailed', { title })}</p>
           <Button variant="outline" onClick={() => void query.refetch()}>
-            Try again
+            {t('conversation.view.retry')}
           </Button>
         </div>
       ) : (
         <MessageList
           key={`${view.around ?? 'latest'}-${view.turn}`}
           ref={list}
-          label={`Messages in ${title}`}
+          label={t('conversation.view.messagesIn', { title })}
           messages={messages}
           loading={query.isPending}
           hasOlder={query.hasPreviousPage}
@@ -199,7 +202,7 @@ function ConversationColumn({ conversation, state, focusMessageId }: ColumnProps
         </>
       ) : conversation.archived ? (
         <p data-slot="archived-notice" className="shrink-0 border-t border-border px-4 py-3 text-sm text-muted-foreground max-[899px]:px-3">
-          This channel is archived. You can read it, but you cannot send messages.
+          {t('conversation.view.archived')}
         </p>
       ) : (
         <JoinBar conversation={conversation} title={title} />
@@ -209,7 +212,7 @@ function ConversationColumn({ conversation, state, focusMessageId }: ColumnProps
           data-slot="drop-hint"
           className="pointer-events-none absolute inset-2 z-30 flex items-center justify-center rounded-lg border-2 border-dashed border-primary bg-background/80 text-sm font-medium"
         >
-          Drop files to add them to your message
+          {t('conversation.view.dropFiles')}
         </div>
       ) : null}
     </section>

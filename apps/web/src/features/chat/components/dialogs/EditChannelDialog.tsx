@@ -1,4 +1,5 @@
 import { useId, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Hashtag } from 'reicon-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -23,17 +24,18 @@ interface EditChannelDialogProps {
 
 /** Name, topic, category and visibility of a channel. The form is mounted only while the dialog is open, so it starts from the saved values each time. */
 export function EditChannelDialog({ conversationId, open, onOpenChange }: EditChannelDialogProps) {
+  const { t } = useTranslation('chat')
   const conversation = useConversation(conversationId).data
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="overflow-y-auto sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Edit channel</DialogTitle>
+          <DialogTitle>{t('dialogs.edit.title')}</DialogTitle>
         </DialogHeader>
         {conversation && conversation.kind !== 'dm' ? (
           <EditChannelForm conversation={conversation} onDone={() => onOpenChange(false)} />
         ) : (
-          <p className="text-sm text-muted-foreground">This channel is not available.</p>
+          <p className="text-sm text-muted-foreground">{t('dialogs.edit.unavailable')}</p>
         )}
       </DialogContent>
     </Dialog>
@@ -41,6 +43,7 @@ export function EditChannelDialog({ conversationId, open, onOpenChange }: EditCh
 }
 
 function EditChannelForm({ conversation, onDone }: { conversation: Conversation; onDone: () => void }) {
+  const { t } = useTranslation('chat')
   const categories = useCategories().data ?? []
   const updateChannel = useUpdateChannel()
   const [name, setName] = useState(conversation.name)
@@ -54,7 +57,7 @@ function EditChannelForm({ conversation, onDone }: { conversation: Conversation;
 
   const finalName = channelNameFinal(name)
   const nameTaken = updateChannel.error instanceof ChatError && updateChannel.error.code === 'conflict'
-  const categoryOptions = [{ value: NO_CATEGORY, label: 'No category' }, ...categories.map((item) => ({ value: item.id, label: item.name }))]
+  const categoryOptions = [{ value: NO_CATEGORY, label: t('dialogs.channel.noCategory') }, ...categories.map((item) => ({ value: item.id, label: item.name }))]
   const categoryValue = categoryOptions.some((option) => option.value === category) ? category : NO_CATEGORY
 
   const submit = async () => {
@@ -85,7 +88,7 @@ function EditChannelForm({ conversation, onDone }: { conversation: Conversation;
       }}
     >
       <Field data-invalid={nameTaken || undefined}>
-        <FieldLabel htmlFor={nameId}>Name</FieldLabel>
+        <FieldLabel htmlFor={nameId}>{t('dialogs.channel.name')}</FieldLabel>
         <InputGroup>
           <InputGroupAddon>
             <Hashtag aria-hidden />
@@ -106,16 +109,16 @@ function EditChannelForm({ conversation, onDone }: { conversation: Conversation;
             }}
           />
         </InputGroup>
-        {nameTaken ? <FieldError>A channel with this name already exists.</FieldError> : null}
+        {nameTaken ? <FieldError>{t('dialogs.channel.nameTaken')}</FieldError> : null}
       </Field>
 
       <Field>
-        <FieldLabel htmlFor={topicId}>Topic</FieldLabel>
-        <Input id={topicId} value={topic} maxLength={250} placeholder="What this channel is about" onChange={(event) => setTopic(event.target.value)} />
+        <FieldLabel htmlFor={topicId}>{t('dialogs.channel.topic')}</FieldLabel>
+        <Input id={topicId} value={topic} maxLength={250} placeholder={t('dialogs.channel.topicPlaceholder')} onChange={(event) => setTopic(event.target.value)} />
       </Field>
 
       <Field>
-        <FieldLabel htmlFor={categoryId}>Category</FieldLabel>
+        <FieldLabel htmlFor={categoryId}>{t('dialogs.channel.category')}</FieldLabel>
         <Select items={categoryOptions} value={categoryValue} onValueChange={(value) => setCategory(value as string)}>
           <SelectTrigger id={categoryId}>
             <SelectValue />
@@ -132,13 +135,13 @@ function EditChannelForm({ conversation, onDone }: { conversation: Conversation;
 
       <Field orientation="horizontal" data-disabled={conversation.isDefault || undefined}>
         <FieldContent>
-          <FieldLabel htmlFor={privateId}>Private channel</FieldLabel>
+          <FieldLabel htmlFor={privateId}>{t('dialogs.edit.private')}</FieldLabel>
           <FieldDescription>
             {conversation.isDefault
-              ? `#${conversation.name} is the default channel. Everybody is in it, so it cannot be private.`
+              ? t('dialogs.edit.defaultChannel', { name: conversation.name })
               : isPrivate
-                ? 'Only the people in it can see it. New people must be added.'
-                : 'Everyone in the workspace is in it.'}
+                ? t('dialogs.edit.privateHint')
+                : t('dialogs.channel.publicHint')}
           </FieldDescription>
         </FieldContent>
         <Switch id={privateId} checked={isPrivate} disabled={conversation.isDefault} onCheckedChange={setIsPrivate} />
@@ -146,17 +149,17 @@ function EditChannelForm({ conversation, onDone }: { conversation: Conversation;
 
       {updateChannel.isError && !nameTaken ? (
         <p role="alert" className="text-sm text-destructive">
-          {chatErrorMessage(updateChannel.error, 'The changes were not saved. Try again.', {
-            forbidden: 'Only the channel creator and workspace owners and admins can edit this channel.',
-            not_found: 'This channel or its category no longer exists.',
+          {chatErrorMessage(updateChannel.error, t('dialogs.edit.saveFailed'), {
+            forbidden: t('dialogs.edit.forbidden'),
+            not_found: t('dialogs.edit.notFound'),
           })}
         </p>
       ) : null}
 
       <DialogFooter>
-        <DialogClose render={<Button type="button" variant="outline" />}>Cancel</DialogClose>
+        <DialogClose render={<Button type="button" variant="outline" />}>{t('dialogs.cancel')}</DialogClose>
         <Button type="submit" disabled={!finalName || updateChannel.isPending}>
-          {updateChannel.isPending ? 'Saving…' : 'Save changes'}
+          {updateChannel.isPending ? t('dialogs.edit.saving') : t('dialogs.edit.save')}
         </Button>
       </DialogFooter>
     </form>

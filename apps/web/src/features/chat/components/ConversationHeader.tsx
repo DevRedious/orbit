@@ -1,4 +1,5 @@
 import { useRef, useState, type ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Layer, MoreH, Paperclip2, People, PinTack, Search4, Xmark } from 'reicon-react'
 import { cn } from 'cn'
 import { PaneHeader, PaneTitle } from '@/components/common/Pane'
@@ -41,6 +42,7 @@ function PaneToggle({ label, pressed, className, onToggle, children }: { label: 
  * (search opens from its icon; Threads, Pins and Files are in the `…` menu).
  */
 export function ConversationHeader({ conversation }: { conversation: Conversation }) {
+  const { t } = useTranslation('chat')
   const location = useChatLocation()
   const navigation = useChatNavigation()
   const { workspaceId, currentUserId } = useChatContext()
@@ -100,16 +102,16 @@ export function ConversationHeader({ conversation }: { conversation: Conversatio
             <Search4 />
           </InputGroupAddon>
           {/* keyed by the query, so the field follows `?q=` (back, forward, a closed pane) without an effect */}
-          <InputGroupInput key={query} ref={searchInput} name="q" type="search" defaultValue={query} placeholder="Search" aria-label={`Search in ${title}`} autoComplete="off" />
+          <InputGroupInput key={query} ref={searchInput} name="q" type="search" defaultValue={query} placeholder={t('conversation.header.search')} aria-label={t('conversation.header.searchIn', { title })} autoComplete="off" />
         </InputGroup>
       </form>
-      <Tip label="Close search" side="bottom">
+      <Tip label={t('conversation.header.closeSearch')} side="bottom">
         <Button
           type="button"
           variant="ghost"
           size="icon"
           className="hidden text-muted-foreground group-data-searching/header:inline-flex"
-          aria-label="Close search"
+          aria-label={t('conversation.header.closeSearch')}
           onClick={() => setSearching(false)}
         >
           <Xmark size={20} />
@@ -117,13 +119,13 @@ export function ConversationHeader({ conversation }: { conversation: Conversatio
       </Tip>
 
       <div className="flex shrink-0 items-center gap-2 group-data-searching/header:hidden max-[899px]:gap-0.5 @max-[620px]/header:gap-0.5">
-        <Tip label="Search" side="bottom">
+        <Tip label={t('conversation.header.search')} side="bottom">
           <Button
             type="button"
             variant="ghost"
             size="icon"
             className="hidden text-muted-foreground @max-[620px]/header:inline-flex"
-            aria-label="Search"
+            aria-label={t('conversation.header.search')}
             onClick={() => {
               setSearching(true)
               // the field is displayed by this state change: focus it once it is
@@ -133,36 +135,36 @@ export function ConversationHeader({ conversation }: { conversation: Conversatio
             <Search4 size={20} />
           </Button>
         </Tip>
-        <PaneToggle label="Threads" pressed={openPane === 'threads'} className="max-[899px]:hidden" onToggle={toggle('threads')}>
+        <PaneToggle label={t('conversation.header.threads')} pressed={openPane === 'threads'} className="max-[899px]:hidden" onToggle={toggle('threads')}>
           <Layer size={20} />
         </PaneToggle>
-        <PaneToggle label="Pinned messages" pressed={openPane === 'pins'} className="max-[899px]:hidden" onToggle={toggle('pins')}>
+        <PaneToggle label={t('conversation.header.pins')} pressed={openPane === 'pins'} className="max-[899px]:hidden" onToggle={toggle('pins')}>
           <PinTack size={20} />
         </PaneToggle>
-        <PaneToggle label="Files" pressed={openPane === 'files'} className="max-[899px]:hidden" onToggle={toggle('files')}>
+        <PaneToggle label={t('conversation.header.files')} pressed={openPane === 'files'} className="max-[899px]:hidden" onToggle={toggle('files')}>
           <Paperclip2 size={20} />
         </PaneToggle>
-        <PaneToggle label="Members" pressed={openPane === 'members'} onToggle={toggle('members')}>
+        <PaneToggle label={t('conversation.header.members')} pressed={openPane === 'members'} onToggle={toggle('members')}>
           <People size={20} />
         </PaneToggle>
         <DropdownMenu>
-          <Tip label="Options" side="bottom">
-            <DropdownMenuTrigger render={<Button type="button" variant="ghost" size="icon" className="text-muted-foreground" aria-label={`Options for ${title}`} />}>
+          <Tip label={t('conversation.header.options')} side="bottom">
+            <DropdownMenuTrigger render={<Button type="button" variant="ghost" size="icon" className="text-muted-foreground" aria-label={t('conversation.header.optionsFor', { title })} />}>
               <MoreH size={20} />
             </DropdownMenuTrigger>
           </Tip>
           <DropdownMenuContent align="end" className="w-auto min-w-48">
             <DropdownMenuItem className="min-[900px]:hidden" onClick={toggle('threads')}>
               <Layer size={16} />
-              Threads
+              {t('conversation.header.threads')}
             </DropdownMenuItem>
             <DropdownMenuItem className="min-[900px]:hidden" onClick={toggle('pins')}>
               <PinTack size={16} />
-              Pinned messages
+              {t('conversation.header.pins')}
             </DropdownMenuItem>
             <DropdownMenuItem className="min-[900px]:hidden" onClick={toggle('files')}>
               <Paperclip2 />
-              Files
+              {t('conversation.header.files')}
             </DropdownMenuItem>
             <DropdownMenuSeparator className="min-[900px]:hidden" />
             <ConversationMenuItems actions={actions} placement="header" onEdit={() => setEditOpen(true)} />

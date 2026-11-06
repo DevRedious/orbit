@@ -1,4 +1,5 @@
 import { useState, type PointerEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Edit, MoreH } from 'reicon-react'
 import { Button } from '@/components/ui/button'
 import { Tip } from '@/components/common/Tip'
@@ -41,6 +42,7 @@ export function ConversationRow({
   drag?: ConversationRowDrag
   onEdit: (conversationId: string) => void
 }) {
+  const { t } = useTranslation('chat')
   const { workspaceId, currentUserId } = useChatContext()
   const actions = useConversationActions(conversation)
   const hasDraft = useHasDraft(workspaceId, conversation.id)
@@ -84,14 +86,14 @@ export function ConversationRow({
       </ChatRowLink>
       <ChatRowEnd>
         <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
-          <Tip label="Options">
+          <Tip label={t('sidebar.row.options')}>
             <DropdownMenuTrigger
               render={
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon-xs"
-                  aria-label={`Options for ${title}`}
+                  aria-label={t('sidebar.row.optionsFor', { title })}
                   className="text-muted-foreground transition-none hover-fine:opacity-0 hover-fine:group-focus-within/row:opacity-100 hover-fine:group-hover/row:opacity-100 hover-fine:aria-expanded:opacity-100"
                 />
               }

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Paperclip2, Search4 } from 'reicon-react'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -19,6 +20,7 @@ const ANYONE = 'anyone'
 
 /** Search results for the query in the conversation header, with filters. A click on a result goes to the message. */
 export function SearchPane({ conversationId, query }: { conversationId: string; query: string }) {
+  const { t, i18n } = useTranslation('chat')
   const { workspaceId, currentUserId } = useChatContext()
   const members = useMembers(workspaceId).data ?? []
   const conversations = useConversations().data ?? []
@@ -37,17 +39,17 @@ export function SearchPane({ conversationId, query }: { conversationId: string; 
   // the same rule as the hook: nothing is searched until there is a query or a filter
   const searching = text !== '' || authorId !== ANYONE || hasFile
   const hits = search.data?.pages.flatMap((page) => page.items) ?? []
-  const authorOptions = [{ value: ANYONE, label: 'Anyone' }, ...[...members].sort((a, b) => a.name.localeCompare(b.name)).map((member) => ({ value: member.id, label: member.name }))]
+  const authorOptions = [{ value: ANYONE, label: t('panes.search.anyone') }, ...[...members].sort((a, b) => a.name.localeCompare(b.name, i18n.language)).map((member) => ({ value: member.id, label: member.name }))]
 
   return (
-    <RightPane title="Search">
-      <div role="group" aria-label="Filters" className="flex shrink-0 flex-wrap items-center gap-1.5 border-b p-2">
+    <RightPane title={t('panes.search.title')}>
+      <div role="group" aria-label={t('panes.search.filters')} className="flex shrink-0 flex-wrap items-center gap-1.5 border-b p-2">
         <Toggle variant="outline" size="sm" pressed={thisConversation} onPressedChange={setThisConversation}>
-          This conversation
+          {t('panes.search.thisConversation')}
         </Toggle>
         <Select items={authorOptions} value={authorId} onValueChange={(value) => setAuthorId(value as string)}>
-          <SelectTrigger size="sm" aria-label="From a member" className="w-auto max-w-44">
-            <SelectValue>{(value: string) => (value === ANYONE ? 'From…' : `From ${members.find((member) => member.id === value)?.name ?? 'a member'}`)}</SelectValue>
+          <SelectTrigger size="sm" aria-label={t('panes.search.fromMember')} className="w-auto max-w-44">
+            <SelectValue>{(value: string) => (value === ANYONE ? t('panes.search.fromAnyone') : t('panes.search.fromPerson', { name: members.find((member) => member.id === value)?.name ?? t('panes.search.aMember') }))}</SelectValue>
           </SelectTrigger>
           <SelectContent align="start" alignItemWithTrigger={false} className="w-auto min-w-44">
             {authorOptions.map((option) => (
@@ -58,32 +60,32 @@ export function SearchPane({ conversationId, query }: { conversationId: string; 
           </SelectContent>
         </Select>
         <Toggle variant="outline" size="sm" pressed={hasFile} onPressedChange={setHasFile}>
-          Has file
+          {t('panes.search.hasFile')}
         </Toggle>
       </div>
       <RightPaneBody>
         {!searching ? (
-          <RightPaneEmpty icon={Search4} title="Search messages" description="Type in the search field of the conversation, or choose a filter." />
+          <RightPaneEmpty icon={Search4} title={t('panes.search.idleTitle')} description={t('panes.search.idleDescription')} />
         ) : search.isPending ? (
           <RightPaneLoading />
         ) : search.isError ? (
-          <RightPaneError title="The search results could not be loaded." onRetry={() => void search.refetch()} />
+          <RightPaneError title={t('panes.search.loadFailed')} onRetry={() => void search.refetch()} />
         ) : hits.length === 0 ? (
           <RightPaneEmpty
             icon={Search4}
-            title={text ? `No results for "${text}"` : 'No results'}
-            description={thisConversation ? 'Nothing matches in this conversation.' : 'Try other words or remove a filter.'}
+            title={text ? t('panes.search.noResultsFor', { query: text }) : t('panes.search.noResults')}
+            description={thisConversation ? t('panes.search.nothingHere') : t('panes.search.tryOther')}
             action={
               thisConversation ? (
                 <Button variant="outline" size="sm" onClick={() => setThisConversation(false)}>
-                  Search all conversations
+                  {t('panes.search.searchAll')}
                 </Button>
               ) : null
             }
           />
         ) : (
           <>
-            <ul aria-label="Search results" className="flex flex-col gap-1">
+            <ul aria-label={t('panes.search.results')} className="flex flex-col gap-1">
               {hits.map((hit) => (
                 <li key={hit.message.id}>
                   <SearchResult
@@ -100,7 +102,7 @@ export function SearchPane({ conversationId, query }: { conversationId: string; 
             </ul>
             {search.hasNextPage ? (
               <Button variant="outline" size="sm" className="mx-auto mt-2" disabled={search.isFetchingNextPage} onClick={() => void search.fetchNextPage()}>
-                {search.isFetchingNextPage ? 'Loading…' : 'Load more'}
+                {search.isFetchingNextPage ? t('panes.search.loading') : t('panes.search.loadMore')}
               </Button>
             ) : null}
           </>
@@ -124,6 +126,7 @@ interface SearchResultProps {
  * marked (`ranges` are offsets in the stored body), mentions shown as names.
  */
 function SearchResult({ hit, members, conversations, conversation, currentUserId, onOpen }: SearchResultProps) {
+  const { t } = useTranslation('chat')
   const { message } = hit
   const segments = leadToFirstMatch(splitByRanges(message.body, hit.ranges))
   // `#name` can point to a channel only; a DM has no name
@@ -134,8 +137,9 @@ function SearchResult({ hit, members, conversations, conversation, currentUserId
       <MessageByline message={message} members={members}>
         {conversation ? (
           <span className="truncate text-xs text-muted-foreground">
-            in {conversation.kind === 'dm' ? '' : '#'}
-            {conversationTitle(conversation, members, currentUserId)}
+            {conversation.kind === 'dm'
+              ? t('panes.search.inDm', { name: conversationTitle(conversation, members, currentUserId) })
+              : t('panes.search.inChannel', { name: conversationTitle(conversation, members, currentUserId) })}
           </span>
         ) : null}
       </MessageByline>
@@ -155,7 +159,7 @@ function SearchResult({ hit, members, conversations, conversation, currentUserId
       {files > 0 ? (
         <span className="flex items-center gap-1 text-xs text-muted-foreground">
           <Paperclip2 aria-hidden className="size-3.5" />
-          {files === 1 ? message.attachments[0].fileName : `${files} files`}
+          {files === 1 ? message.attachments[0].fileName : t('panes.search.fileCount', { count: files })}
         </span>
       ) : null}
     </Button>

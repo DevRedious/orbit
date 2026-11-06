@@ -1,4 +1,5 @@
 import { useState, type ComponentType, type PointerEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Add, Brush, ChevronDown, ChevronRight, DirectInbox, Edit, Hashtag, Layer, MoreH, Trash } from 'reicon-react'
 import { confirmAction } from '@/components/common/confirmAction'
@@ -65,9 +66,10 @@ function useCollapsedSections(workspaceId: string): [ReadonlySet<string>, (key: 
 
 /** `Unreads` and `Threads`: pinned above the scrolling list, each with its count. */
 function PinnedRow({ to, icon: Icon, label, count, active }: { to: string; icon: ComponentType<{ size?: number; className?: string }>; label: string; count: number; active: boolean }) {
+  const { t } = useTranslation('chat')
   return (
     <ChatRow data-active={active} data-unread={count > 0}>
-      <ChatRowLink to={to} className="pr-2" aria-current={active ? 'page' : undefined} aria-label={count > 0 ? `${label}, ${count} unread` : label}>
+      <ChatRowLink to={to} className="pr-2" aria-current={active ? 'page' : undefined} aria-label={count > 0 ? t('sidebar.pinnedUnread', { label, count }) : label}>
         <span className="flex size-[18px] shrink-0 items-center justify-center text-muted-foreground">
           <Icon size={16} />
         </span>
@@ -107,18 +109,19 @@ function SectionHeader({
   onAdd: (() => void) | null
   onRename: (category: Category) => void
 }) {
+  const { t } = useTranslation('chat')
   const deleteCategory = useDeleteCategory()
   const category = admin ? section.category : null
   const Chevron = collapsed ? ChevronRight : ChevronDown
 
   const remove = async (target: Category) => {
     const confirmed = await confirmAction({
-      title: `Delete the category “${target.name}”?`,
-      description: 'Its channels are kept and move to “Channels”.',
-      confirmLabel: 'Delete category',
+      title: t('sidebar.section.deleteTitle', { name: target.name }),
+      description: t('sidebar.section.deleteDescription'),
+      confirmLabel: t('sidebar.section.deleteCategory'),
       danger: true,
     })
-    if (confirmed) deleteCategory.mutate(target.id, { onError: () => void toast.error('Could not delete the category. Try again.') })
+    if (confirmed) deleteCategory.mutate(target.id, { onError: () => void toast.error(t('sidebar.section.deleteFailed')) })
   }
 
   return (
@@ -142,9 +145,9 @@ function SectionHeader({
       <span className="flex shrink-0 items-center gap-0.5 hover-fine:opacity-0 hover-fine:group-focus-within/row:opacity-100 hover-fine:group-hover/row:opacity-100 hover-fine:has-[[aria-expanded=true]]:opacity-100">
         {category ? (
           <DropdownMenu>
-            <Tip label="Options">
+            <Tip label={t('sidebar.section.options')}>
               <DropdownMenuTrigger
-                render={<Button type="button" variant="ghost" size="icon-xs" className="text-muted-foreground transition-none" aria-label={`Options for the category ${category.name}`} />}
+                render={<Button type="button" variant="ghost" size="icon-xs" className="text-muted-foreground transition-none" aria-label={t('sidebar.section.categoryOptions', { name: category.name })} />}
               >
                 <MoreH className="size-4" />
               </DropdownMenuTrigger>
@@ -152,24 +155,24 @@ function SectionHeader({
             <DropdownMenuContent className="w-auto min-w-44">
               <DropdownMenuItem onClick={() => onRename(category)}>
                 <Edit />
-                Rename
+                {t('sidebar.section.rename')}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem variant="destructive" onClick={() => void remove(category)}>
                 <Trash />
-                Delete category
+                {t('sidebar.section.deleteCategory')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         ) : null}
         {onAdd ? (
-          <Tip label={section.kind === 'dms' ? 'New message' : 'New channel'}>
+          <Tip label={section.kind === 'dms' ? t('sidebar.newMessage') : t('sidebar.newChannel')}>
             <Button
               type="button"
               variant="ghost"
               size="icon-xs"
               className="text-muted-foreground transition-none"
-              aria-label={section.kind === 'dms' ? 'New message' : `New channel in ${section.title}`}
+              aria-label={section.kind === 'dms' ? t('sidebar.newMessage') : t('sidebar.newChannelIn', { section: section.title })}
               onClick={onAdd}
             >
               <Add className="size-4" />
@@ -187,6 +190,7 @@ function SectionHeader({
  * on the other chat screens).
  */
 export function ChatSidebar() {
+  const { t } = useTranslation('chat')
   const location = useChatLocation()
   const { workspaceId, currentUserId } = useChatContext()
   const conversations = useConversations()
@@ -230,7 +234,7 @@ export function ChatSidebar() {
       const order = built.flatMap((section) => (section.category ? [section.category] : []))
       placeCategory.mutate(
         { categoryId: dragged.id, beforeId: dropBefore(order, dragged.id, target.id, target.zone) },
-        { onError: () => void toast.error('Could not move the category. Try again.') },
+        { onError: () => void toast.error(t('sidebar.moveCategoryFailed')) },
       )
       return
     }
@@ -248,7 +252,7 @@ export function ChatSidebar() {
         categoryId: section?.category?.id ?? null,
         beforeId: section && target.kind === 'row' ? dropBefore(section.conversations, dragged.id, target.id, target.zone) : null,
       },
-      { onError: () => void toast.error('Could not move the channel. Try again.') },
+      { onError: () => void toast.error(t('sidebar.moveChannelFailed')) },
     )
   }
   const { drag, drop, start } = useSidebarDrag(onDrop)
@@ -256,7 +260,7 @@ export function ChatSidebar() {
   const sections =
     drag?.kind === 'channel' && !built.some((section) => section.kind === 'channels')
       ? built.flatMap((section): SidebarSection[] =>
-          section.kind === 'dms' ? [{ key: 'channels', kind: 'channels', title: 'Channels', category: null, conversations: [] }, section] : [section],
+          section.kind === 'dms' ? [{ key: 'channels', kind: 'channels', title: t('conversation.sections.channels'), category: null, conversations: [] }, section] : [section],
         )
       : built
 
@@ -265,66 +269,66 @@ export function ChatSidebar() {
     {/* in the app sidebar it takes that sidebar's width, and its colours (the sidebar carries the custom theme): no resize there */}
     <aside
       data-slot="chat-sidebar"
-      aria-label="Chat"
+      aria-label={t('sidebar.label')}
       className={cn('relative flex min-h-0 flex-col', inAppSidebar ? 'flex-1' : 'shrink-0 border-r bg-background max-[899px]:w-full! max-[899px]:border-r-0 max-[899px]:pt-[env(safe-area-inset-top,0px)] max-[899px]:group-data-[view=detail]/chat:hidden')}
       data-themed={theme && !inAppSidebar ? '' : undefined}
       style={inAppSidebar ? undefined : { width, ...customSidebarVariables(theme) }}
     >
       {inAppSidebar ? (
         // the Back row above says "Chat"; the theme moves into ⋯ so only two small buttons remain
-        <SidebarListHeader label="Conversations">
+        <SidebarListHeader label={t('sidebar.conversations')}>
           <DropdownMenu>
-            <Tip label="Chat options" side="bottom">
-              <DropdownMenuTrigger render={<Button type="button" variant="ghost" size="icon-xs" aria-label="Chat options" />}>
+            <Tip label={t('sidebar.chatOptions')} side="bottom">
+              <DropdownMenuTrigger render={<Button type="button" variant="ghost" size="icon-xs" aria-label={t('sidebar.chatOptions')} />}>
                 <MoreH />
               </DropdownMenuTrigger>
             </Tip>
             <DropdownMenuContent align="end" className="w-auto min-w-44">
-              <DropdownMenuItem onClick={() => show({ kind: 'browse' })}>Browse channels</DropdownMenuItem>
-              {admin ? <DropdownMenuItem onClick={() => show({ kind: 'category' })}>New category</DropdownMenuItem> : null}
+              <DropdownMenuItem onClick={() => show({ kind: 'browse' })}>{t('sidebar.browseChannels')}</DropdownMenuItem>
+              {admin ? <DropdownMenuItem onClick={() => show({ kind: 'category' })}>{t('sidebar.newCategory')}</DropdownMenuItem> : null}
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => show({ kind: 'theme' })}>
                 <Brush />
-                Custom theme
+                {t('sidebar.customTheme')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
           <DropdownMenu>
-            <Tip label="New" side="bottom">
-              <DropdownMenuTrigger render={<Button type="button" variant="ghost" size="icon-xs" aria-label="New" />}>
+            <Tip label={t('sidebar.new')} side="bottom">
+              <DropdownMenuTrigger render={<Button type="button" variant="ghost" size="icon-xs" aria-label={t('sidebar.new')} />}>
                 <Add />
               </DropdownMenuTrigger>
             </Tip>
             <DropdownMenuContent align="end" className="w-auto min-w-44">
-              <DropdownMenuItem onClick={() => show({ kind: 'message' })}>New message</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => show({ kind: 'channel', categoryId: null })}>New channel</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => show({ kind: 'message' })}>{t('sidebar.newMessage')}</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => show({ kind: 'channel', categoryId: null })}>{t('sidebar.newChannel')}</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </SidebarListHeader>
       ) : (
         <PaneHeader className="gap-1 pr-2">
           <PaneTitle render={<h1 />} className="flex-1">
-            Chat
+            {t('sidebar.title')}
           </PaneTitle>
-          <Tip label="Custom theme" side="bottom">
-            <Button type="button" variant="ghost" size="icon" className="text-muted-foreground" aria-label="Custom theme" onClick={() => show({ kind: 'theme' })}>
+          <Tip label={t('sidebar.customTheme')} side="bottom">
+            <Button type="button" variant="ghost" size="icon" className="text-muted-foreground" aria-label={t('sidebar.customTheme')} onClick={() => show({ kind: 'theme' })}>
               <Brush size={20} />
             </Button>
           </Tip>
           <DropdownMenu>
-            <Tip label="New" side="bottom">
-              <DropdownMenuTrigger render={<Button type="button" variant="ghost" size="icon" className="text-muted-foreground" aria-label="New" />}>
+            <Tip label={t('sidebar.new')} side="bottom">
+              <DropdownMenuTrigger render={<Button type="button" variant="ghost" size="icon" className="text-muted-foreground" aria-label={t('sidebar.new')} />}>
                 <Add size={20} />
               </DropdownMenuTrigger>
             </Tip>
             <DropdownMenuContent align="end" className="w-auto min-w-44">
-              <DropdownMenuItem onClick={() => show({ kind: 'message' })}>New message</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => show({ kind: 'channel', categoryId: null })}>New channel</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => show({ kind: 'browse' })}>Browse channels</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => show({ kind: 'message' })}>{t('sidebar.newMessage')}</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => show({ kind: 'channel', categoryId: null })}>{t('sidebar.newChannel')}</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => show({ kind: 'browse' })}>{t('sidebar.browseChannels')}</DropdownMenuItem>
               {admin ? (
                 <>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => show({ kind: 'category' })}>New category</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => show({ kind: 'category' })}>{t('sidebar.newCategory')}</DropdownMenuItem>
                 </>
               ) : null}
             </DropdownMenuContent>
@@ -333,8 +337,8 @@ export function ChatSidebar() {
       )}
 
       <div className="flex shrink-0 flex-col gap-px px-2 pt-2">
-        <PinnedRow to={UNREADS_PATH} icon={DirectInbox} label="Unreads" count={badges.unreads} active={location.view === 'unreads'} />
-        <PinnedRow to={THREADS_PATH} icon={Layer} label="Threads" count={badges.threads} active={location.view === 'threads'} />
+        <PinnedRow to={UNREADS_PATH} icon={DirectInbox} label={t('sidebar.unreads')} count={badges.unreads} active={location.view === 'unreads'} />
+        <PinnedRow to={THREADS_PATH} icon={Layer} label={t('sidebar.threads')} count={badges.threads} active={location.view === 'threads'} />
         {unjoined > 0 ? (
           // the list below shows joined channels only: this row says there are more, and opens the browser
           <ChatRow>
@@ -347,7 +351,7 @@ export function ChatSidebar() {
                 <Hashtag size={16} />
               </span>
               <span className="min-w-0 flex-1 truncate text-muted-foreground">
-                {unjoined} more {unjoined === 1 ? 'channel' : 'channels'} to join
+                {t('sidebar.moreToJoin', { count: unjoined })}
               </span>
               <ChevronRight size={14} className="shrink-0 text-muted-foreground/70" />
             </button>
@@ -355,12 +359,12 @@ export function ChatSidebar() {
         ) : null}
       </div>
 
-      <nav aria-label="Conversations" className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-2 pt-3">
+      <nav aria-label={t('sidebar.conversations')} className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-2 pt-3">
         {conversations.isError ? (
           <div className="flex flex-col items-start gap-2 px-2 text-[13px] text-muted-foreground" role="alert">
-            Could not load your conversations.
+            {t('sidebar.loadFailed')}
             <Button type="button" variant="outline" size="sm" onClick={() => void conversations.refetch()}>
-              Try again
+              {t('sidebar.tryAgain')}
             </Button>
           </div>
         ) : null}
@@ -416,7 +420,7 @@ export function ChatSidebar() {
               ))}
               {hidden > 0 ? (
                 <Button type="button" variant="ghost" size="sm" className="justify-start px-2 font-normal text-muted-foreground transition-none" onClick={() => setShowAllDms(true)}>
-                  Show {hidden} more
+                  {t('sidebar.showMore', { count: hidden })}
                 </Button>
               ) : null}
             </section>
@@ -428,7 +432,7 @@ export function ChatSidebar() {
       {inAppSidebar ? null : (
         <>
           <ChatUserBar />
-          <ResizeHandle edge="right" width={width} range={SIDEBAR_WIDTH} label="Resize the chat sidebar" onResize={setWidth} />
+          <ResizeHandle edge="right" width={width} range={SIDEBAR_WIDTH} label={t('sidebar.resize')} onResize={setWidth} />
         </>
       )}
 

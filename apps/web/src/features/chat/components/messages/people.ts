@@ -1,4 +1,5 @@
 import { useMembers } from '@/features/workspaces/api'
+import { i18n } from '@/i18n'
 import type { User } from '@/features/workspaces/models'
 import { buildMentionTokens, type MentionToken } from '@/lib/mentions'
 import { useChatContext } from '../../api/chatContext'
@@ -52,6 +53,6 @@ export function useChatPeople(): ChatPeople {
 export function conversationTitle(conversation: Conversation, people: ChatPeople, currentUserId: string | null): string {
   if (conversation.kind !== 'dm') return `#${conversation.name}`
   const others = conversation.memberIds.filter((id) => id !== currentUserId)
-  const names = (others.length > 0 ? others : conversation.memberIds).map((id) => people.byId.get(id)?.name ?? 'Unknown')
+  const names = (others.length > 0 ? others : conversation.memberIds).map((id) => people.byId.get(id)?.name ?? i18n.t('chat:messages.unknown'))
   return names.join(', ')
 }

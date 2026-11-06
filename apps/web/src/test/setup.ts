@@ -1,7 +1,13 @@
 import { afterEach } from 'bun:test'
 import { cleanup } from '@testing-library/react'
+import { i18n } from '@/i18n'
 
-afterEach(() => cleanup())
+// Tests assert the English UI whatever the machine's language; a test that switches language switches back here.
+void i18n.changeLanguage('en')
+afterEach(async () => {
+  cleanup()
+  if (i18n.language !== 'en') await i18n.changeLanguage('en')
+})
 
 /**
  * No test talks to a server socket. happy-dom's WebSocket fails to connect with an unhandled error event, so

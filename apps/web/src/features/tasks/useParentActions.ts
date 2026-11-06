@@ -1,6 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { apiClient } from '@/api/client'
+import { i18n } from '@/i18n'
 import { getTask, updateTask } from '@orbit/api/generated/sdk.gen'
 import type { BulkItem, TaskRecord } from '@orbit/api/generated/types.gen'
 import { queryKeys } from '@/api/queryKeys'
@@ -82,7 +83,7 @@ export function useParentActions(workspaceId: string) {
     })
     toast.success(keepIdentifiersTogether(parentToastMessage(changed.map((task) => task.identifier), parent?.identifier ?? null)), {
       duration: UNDO_TOAST_DURATION,
-      action: { label: 'Undo', onClick: () => void restore(records.filter((record) => previous.has(record.id)), previous, closed) },
+      action: { label: i18n.t('tasks:undo'), onClick: () => void restore(records.filter((record) => previous.has(record.id)), previous, closed) },
     })
   }
   /**

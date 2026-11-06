@@ -1,5 +1,5 @@
 import { cn } from 'cn'
-import { format } from 'date-fns'
+import { useTranslation } from 'react-i18next'
 import { Diamonds } from 'reicon-react'
 import { Tip } from '@/components/common/Tip'
 import { targetLabel } from '@/features/tasks/planningLib'
@@ -18,6 +18,7 @@ export function TimelineHeader({ range, pxPerDay, today, lane, milestones, cycle
   milestones: MilestoneMark[]
   cycles: CycleBand[]
 }) {
+  const { t, i18n } = useTranslation('tasks')
   const todayX = xOf(range, today, pxPerDay) + pxPerDay / 2
   return (
     <div className={cn('relative shrink-0', lane ? 'h-[72px]' : 'h-[52px]')} style={{ width: range.days * pxPerDay }}>
@@ -72,7 +73,7 @@ export function TimelineHeader({ range, pxPerDay, today, lane, milestones, cycle
       <span
         className={cn('absolute mt-0.5 -translate-x-1/2 rounded-full bg-primary px-1.5 text-[0.6875rem] leading-5 font-semibold text-primary-foreground tabular-nums', lane ? 'top-12' : 'top-7')}
         style={{ left: todayX }}
-        aria-label={`Today, ${format(today, 'MMM d')}`}
+        aria-label={t('timeline.todayLabel', { date: today.toLocaleDateString(i18n.language, { month: 'short', day: 'numeric' }) })}
       >
         {today.getDate()}
       </span>

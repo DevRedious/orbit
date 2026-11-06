@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { MoreH } from 'reicon-react'
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb'
 import { Button } from '@/components/ui/button'
@@ -18,6 +19,7 @@ interface TaskBreadcrumbProps {
 
 /** Header trail: the project, ancestors (identifier + short title) root first, then the current identifier; >3 ancestors fold the middle. */
 export function TaskBreadcrumb({ project, ancestors, identifier, onOpen, onOpenProject }: TaskBreadcrumbProps) {
+  const { t } = useTranslation('tasks')
   const { head, hidden, tail } = breadcrumbParts(ancestors)
   const crumb = (ref: TaskKeyRef) => [
     <BreadcrumbItem key={ref.id} className="min-w-0">
@@ -27,7 +29,7 @@ export function TaskBreadcrumb({ project, ancestors, identifier, onOpen, onOpenP
       >
         <span className="shrink-0 tabular-nums">{refIdentifier(ref)}</span>
         {/* titles give way first: identifiers alone on narrow screens */}
-        <span className="max-w-40 truncate max-[899px]:hidden">{ref.title || 'Untitled'}</span>
+        <span className="max-w-40 truncate max-[899px]:hidden">{ref.title || t('untitled')}</span>
       </BreadcrumbLink>
     </BreadcrumbItem>,
     <BreadcrumbSeparator key={`${ref.id}:separator`} />,
@@ -38,7 +40,7 @@ export function TaskBreadcrumb({ project, ancestors, identifier, onOpen, onOpenP
         {project ? (
           <>
             <BreadcrumbItem className="min-w-0">
-              <Tip label={`Open ${project.name}`} side="bottom">
+              <Tip label={t('breadcrumb.openProject', { name: project.name })} side="bottom">
                 <BreadcrumbLink
                   render={<Button type="button" variant="link" onClick={() => onOpenProject?.(project.id)} />}
                   className="h-auto min-w-0 gap-1.5 p-0 text-xs font-medium text-foreground"
@@ -56,9 +58,9 @@ export function TaskBreadcrumb({ project, ancestors, identifier, onOpen, onOpenP
           <>
             <BreadcrumbItem>
               <DropdownMenu modal={false}>
-                <Tip label={`Show ${hidden.length} more parents`} side="bottom">
+                <Tip label={t('breadcrumb.moreParents', { count: hidden.length })} side="bottom">
                   <DropdownMenuTrigger render={
-                    <Button variant="ghost" size="icon-xs" className="size-5 text-muted-foreground" aria-label={`Show ${hidden.length} more parents`}>
+                    <Button variant="ghost" size="icon-xs" className="size-5 text-muted-foreground" aria-label={t('breadcrumb.moreParents', { count: hidden.length })}>
                       <MoreH />
                     </Button>
                   } />
@@ -67,7 +69,7 @@ export function TaskBreadcrumb({ project, ancestors, identifier, onOpen, onOpenP
                   {hidden.map((ref) => (
                     <DropdownMenuItem key={ref.id} onClick={() => onOpen(ref.id)}>
                       <span className="shrink-0 text-xs text-muted-foreground tabular-nums">{refIdentifier(ref)}</span>
-                      <span className="truncate">{ref.title || 'Untitled'}</span>
+                      <span className="truncate">{ref.title || t('untitled')}</span>
                     </DropdownMenuItem>
                   ))}
                 </DropdownMenuContent>

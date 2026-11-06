@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { cn } from 'cn'
 import { Button } from '@/components/ui/button'
 import { Tip } from '@/components/common/Tip'
@@ -29,16 +30,17 @@ export function StatusPicker({ task, statuses, size, align = 'start', className,
   className?: string
   onRequestDuplicate?: () => void
 }) {
-  const save = useTaskPickerUpdate(task, 'Status update failed.')
+  const { t } = useTranslation('tasks')
+  const save = useTaskPickerUpdate(task, t('status.updateFailed'))
   const status = statuses.find((item) => item.id === task.statusId)
   const options = statusPickerOptions(statuses, task.projectId, Boolean(onRequestDuplicate))
   return (
     <div className="flex shrink-0" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
       <DropdownMenu modal={false}>
-        <Tip label="Change status">
+        <Tip label={t('status.change')}>
           <DropdownMenuTrigger
             render={
-              <Button variant="ghost" size="icon-sm" className={cn('size-[22px]', className)} aria-label={`Status: ${status?.name ?? 'None'}`}>
+              <Button variant="ghost" size="icon-sm" className={cn('size-[22px]', className)} aria-label={t('status.current', { status: status?.name ?? t('status.noneShort') })}>
                 <TaskStatusIcon status={status} size={size} />
               </Button>
             }

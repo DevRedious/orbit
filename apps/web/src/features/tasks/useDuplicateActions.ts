@@ -1,6 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { apiClient } from '@/api/client'
+import { i18n } from '@/i18n'
 import type { TaskRecord } from '@orbit/api/generated/types.gen'
 import { queryKeys } from '@/api/queryKeys'
 import { announceAutoClosed } from '@/features/tasks/api/autoClosed'
@@ -70,7 +71,7 @@ export function useDuplicateActions(workspaceId: string) {
       settle([record], record)
       toast.success(keepIdentifiersTogether(duplicateToastMessage(1, target.identifier)), {
         duration: UNDO_TOAST_DURATION,
-        action: { label: 'Undo', onClick: () => void restore([record], previousTargets([task])) },
+        action: { label: i18n.t('tasks:undo'), onClick: () => void restore([record], previousTargets([task])) },
       })
       return record
     } catch (error) {
@@ -86,7 +87,7 @@ export function useDuplicateActions(workspaceId: string) {
       settle(page.items, page)
       toast.success(keepIdentifiersTogether(duplicateToastMessage(tasks.length, target.identifier)), {
         duration: UNDO_TOAST_DURATION,
-        action: { label: 'Undo', onClick: () => void restore(page.items, previousTargets(tasks)) },
+        action: { label: i18n.t('tasks:undo'), onClick: () => void restore(page.items, previousTargets(tasks)) },
       })
     } catch (error) {
       settle([])

@@ -1,10 +1,11 @@
 import { toast } from 'sonner'
 import type { BulkItem } from '@orbit/api/generated/types.gen'
-import { ApiProblem } from '@orbit/api/problem'
 import { isTaskVersionConflict } from '@/features/tasks/api/conflicts'
 import { taskIdentifier, type Project, type Task } from '@/features/tasks/api/models'
 import { useBulkTasks } from '@/features/tasks/api/tasks'
 import { keepIdentifiersTogether } from '@/lib/toast'
+import { i18n } from '@/i18n'
+import { problemMessage } from '@/i18n/problem'
 
 /** A move to another project. The server maps each task's status and gives it the project's next number; tasks already there are left out. */
 export function projectUpdates(tasks: ReadonlyArray<Pick<Task, 'id' | 'version' | 'projectId'>>, projectId: string): BulkItem[] {
@@ -13,8 +14,8 @@ export function projectUpdates(tasks: ReadonlyArray<Pick<Task, 'id' | 'version' 
 
 /** "Moved to OPS-3" for one task (its new identifier), "Moved 3 tasks to Operations" for several. */
 export function moveToastMessage(project: Pick<Project, 'key' | 'name'>, moved: ReadonlyArray<{ id: string; number?: number }>): string {
-  if (moved.length === 1) return `Moved to ${taskIdentifier(moved[0]!.id, project, moved[0]!.number)}`
-  return `Moved ${moved.length} tasks to ${project.name}`
+  if (moved.length === 1) return i18n.t('tasks:move.movedOne', { identifier: taskIdentifier(moved[0]!.id, project, moved[0]!.number) })
+  return i18n.t('tasks:move.movedMany', { count: moved.length, project: project.name })
 }
 
 /** Moves tasks to another project in one bulk request (the context menu, the command menu and the detail sidebar). */
@@ -28,7 +29,7 @@ export function useMoveToProject(workspaceId: string) {
       onError: (error) => {
         // a stale version asks to refresh (useBulkTasks); anything else (a GitHub-synced task) is explained here
         if (isTaskVersionConflict(error)) return
-        toast.error(error instanceof ApiProblem ? error.detail : 'Could not move the task.')
+        toast.error(problemMessage(error, i18n.t('tasks:move.failed')))
       },
     })
   }

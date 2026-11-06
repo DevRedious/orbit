@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { SearchPicker } from '@/components/common/SearchPicker'
 import { Button } from '@/components/ui/button'
 import type { Project, Task } from '@/features/tasks/api/models'
@@ -11,6 +12,7 @@ import { ProjectChip } from './TaskPropertyChips'
  * number; a task the server keeps in its project (synced with GitHub) stays, with a toast that says why.
  */
 export function ProjectPicker({ task, projects, className }: { task: Pick<Task, 'id' | 'version' | 'projectId'>; projects: Project[]; className?: string }) {
+  const { t } = useTranslation('tasks')
   const { workspace } = useWorkspace()
   const moveToProject = useMoveToProject(workspace.id)
   const project = projects.find((item) => item.id === task.projectId)
@@ -18,8 +20,8 @@ export function ProjectPicker({ task, projects, className }: { task: Pick<Task, 
   return (
     <div className={className} onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
       <SearchPicker
-        label="Move to project"
-        tip="Move to project"
+        label={t('project.move')}
+        tip={t('project.move')}
         placeholder="Move to project…"
         emptyText="No projects match"
         options={projects.map(projectOption)}
@@ -29,7 +31,7 @@ export function ProjectPicker({ task, projects, className }: { task: Pick<Task, 
           if (target && id !== task.projectId) moveToProject([task], target)
         }}
         trigger={
-          <Button type="button" variant="link" className="h-auto min-w-0 p-0 text-[length:inherit] font-normal" aria-label={`Project: ${project?.name ?? 'none'}`}>
+          <Button type="button" variant="link" className="h-auto min-w-0 p-0 text-[length:inherit] font-normal" aria-label={project ? t('project.current', { name: project.name }) : t('project.currentNone')}>
             <ProjectChip project={project} className="hover:text-foreground" />
           </Button>
         }

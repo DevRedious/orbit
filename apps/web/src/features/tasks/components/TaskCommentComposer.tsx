@@ -1,5 +1,6 @@
 import { useShortcutTitle } from '@/shortcuts/shortcutText'
 import { Suspense, useCallback, useMemo, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { ArrowUp, Paperclip2 as Paperclip } from 'reicon-react'
 import { cn } from 'cn'
@@ -35,6 +36,7 @@ export function TaskCommentComposer({
   compact?: boolean
   onSend: (bodyJson: unknown[]) => Promise<unknown>
 }) {
+  const { t } = useTranslation('tasks')
   const editorRef = useRef<PageEditorHandle | null>(null)
   const input = useRef<HTMLInputElement>(null)
   /** A reply field mounts its editor when it is first used (a thread list would mount one per thread). */
@@ -54,7 +56,7 @@ export function TaskCommentComposer({
   const [hasContent, setHasContent] = useState(false)
   // `pending` arrives a render late; this blocks a second send before it does
   const sending = useRef(false)
-  const sendTitle = useShortcutTitle('detail.sendComment', 'Send')
+  const sendTitle = useShortcutTitle('detail.sendComment', t('composer.send'))
 
   const send = async () => {
     const content = trimBlocks(editorRef.current?.getContent() ?? [])
@@ -76,13 +78,13 @@ export function TaskCommentComposer({
       try {
         return await uploadInlineFile(workspaceId, taskId, file)
       } catch (failure) {
-        toast.error(storageQuotaDetail(failure) ?? `Could not upload “${file.name}”.`)
+        toast.error(storageQuotaDetail(failure) ?? t('composer.uploadFailed', { name: file.name }))
         throw failure
       } finally {
         setUploads((count) => count - 1)
       }
     },
-    [workspaceId, taskId],
+    [workspaceId, taskId, t],
   )
   const attach = async (files: File[]) => {
     for (const file of files) {
@@ -106,7 +108,7 @@ export function TaskCommentComposer({
           setActive(true)
         }}
       >
-        Leave a reply…
+        {t('composer.replyPlaceholder')}
       </button>
     )
   }
@@ -123,7 +125,7 @@ export function TaskCommentComposer({
             profile="task"
             fileScope={fileScope}
             placeholder={compact ? 'reply' : 'comment'}
-            ariaLabel={compact ? 'Reply' : 'Comment'}
+            ariaLabel={compact ? t('composer.reply') : t('composer.comment')}
             editable={!pending}
             onChange={(content) => setHasContent(!isEmptyRichText(content))}
             submitShortcut={() => void send()}
@@ -141,17 +143,17 @@ export function TaskCommentComposer({
           type="file"
           multiple
           hidden
-          aria-label="Attach comment files"
+          aria-label={t('composer.attachFiles')}
           onChange={(event) => {
             void attach(Array.from(event.target.files ?? []))
             event.target.value = ''
           }}
         />
-        <Tip label="Attach files"><Button variant="ghost" size="icon-sm" type="button" className="text-muted-foreground" aria-label="Attach" onClick={() => input.current?.click()}><Paperclip /></Button></Tip>
+        <Tip label={t('attachFiles')}><Button variant="ghost" size="icon-sm" type="button" className="text-muted-foreground" aria-label={t('attach')} onClick={() => input.current?.click()}><Paperclip /></Button></Tip>
         {error ? (
-          <Button type="button" size="sm" disabled={pending} onClick={() => void send()}>Retry</Button>
+          <Button type="button" size="sm" disabled={pending} onClick={() => void send()}>{t('retry')}</Button>
         ) : (
-          <Tip label={sendTitle}><Button type="button" size="icon-sm" className="rounded-full" aria-label={pending ? 'Sending…' : 'Send'} disabled={pending || !hasContent || uploads > 0} onClick={() => void send()}><ArrowUp /></Button></Tip>
+          <Tip label={sendTitle}><Button type="button" size="icon-sm" className="rounded-full" aria-label={pending ? t('composer.sending') : t('composer.send')} disabled={pending || !hasContent || uploads > 0} onClick={() => void send()}><ArrowUp /></Button></Tip>
         )}
       </div>
     </div>

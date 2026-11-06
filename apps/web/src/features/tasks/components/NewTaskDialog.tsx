@@ -1,6 +1,7 @@
 import { useCommand } from '@/shortcuts/useCommand'
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
+import { useTranslation } from 'react-i18next'
 import { Calendar, ChevronRight, Diamonds, Hierarchy2, Link2, Paperclip2 as Paperclip, RefreshCircle, Tag, Triangle, User as UserIcon, Xmark as X } from 'reicon-react'
 import { apiClient } from '@/api/client'
 import { createTaskRelation, updateTask } from '@orbit/api/generated/sdk.gen'
@@ -51,7 +52,12 @@ import { TaskStatusIcon } from './TaskStatusIcon'
 const CREATE_MORE_KEY = 'orbit:new_task_create_more'
 // a duplicate needs a Duplicate status, which a new task cannot have
 const RELATION_OPTIONS = ADD_RELATION_OPTIONS.filter((option) => option.kind !== 'duplicate')
-const RELATION_LABEL: Record<RelationKind, string> = { blocks: 'Blocks', blocked_by: 'Blocked by', related: 'Related to', duplicate: 'Duplicate of' }
+const RELATION_LABEL = {
+  blocks: 'newTaskDialog.relation.blocks',
+  blocked_by: 'newTaskDialog.relation.blocked_by',
+  related: 'newTaskDialog.relation.related',
+  duplicate: 'newTaskDialog.relation.duplicate',
+} as const satisfies Record<RelationKind, string>
 
 type PendingRelation = { kind: Exclude<RelationKind, 'duplicate'>; task: Task }
 
@@ -70,6 +76,7 @@ interface NewTaskDialogProps {
 /** Creates tasks without leaving the page. Callers mount it while open. With "Create more" on, the
     dialog stays open after each task and keeps the properties, so a batch needs only titles. */
 export function NewTaskDialog({ defaults = {}, initialTitle = '', initialDescription = '', onClose, onOpenTask }: NewTaskDialogProps) {
+  const { t } = useTranslation('tasks')
   const { workspace } = useWorkspace()
   const projects = useProjects(workspace.id).data ?? []
   const statuses = useAllStatuses(workspace.id, projects).data
@@ -177,7 +184,7 @@ export function NewTaskDialog({ defaults = {}, initialTitle = '', initialDescrip
       })
       if (relations.length > 0) {
         const results = await Promise.allSettled(relations.map((relation) => createTaskRelation({ client: apiClient, path: { workspace_id: workspace.id, task_id: task.id }, body: { type: relation.kind, task_id: relation.task.id }, throwOnError: true })))
-        if (results.some((result) => result.status === 'rejected')) toast.error('The task was created, but some relations were not added.')
+        if (results.some((result) => result.status === 'rejected')) toast.error(t('newTaskDialog.relationsFailed'))
       }
       const heldUrls = [...new Set(fileUrls(content).filter((url) => held.current.has(url)))]
       if (files.length > 0 || heldUrls.length > 0) {
@@ -192,7 +199,7 @@ export function NewTaskDialog({ defaults = {}, initialTitle = '', initialDescrip
           await updateTask({ client: apiClient, path: { workspace_id: workspace.id, task_id: task.id }, body: { expected_version: task.version, description_json: [...text, ...blocks] }, throwOnError: true })
         } catch {
           // the task exists; its page can take the files again
-          toast.error('The task was created, but some files were not added.')
+          toast.error(t('newTaskDialog.filesFailed'))
         } finally {
           setUploading(false)
         }
@@ -257,14 +264,14 @@ export function NewTaskDialog({ defaults = {}, initialTitle = '', initialDescrip
               // the status follows by name into the other project's workflow
               onSelect={(id) => setDraft((current) => ({ ...current, projectId: id, statusId: resolveStatusId(statuses, id, status ? statusKeyOf(status) : null) }))}
               trigger={
-                <Button type="button" variant="outline" size="xs" className="max-w-48 font-normal" aria-label={`Project: ${project?.name ?? 'none'}`}>
+                <Button type="button" variant="outline" size="xs" className="max-w-48 font-normal" aria-label={project ? t('project.current', { name: project.name }) : t('project.currentNone')}>
                   <ColorDot color={project?.color} />
-                  <span className="truncate">{project?.name ?? 'No project'}</span>
+                  <span className="truncate">{project?.name ?? t('newTaskDialog.noProject')}</span>
                 </Button>
               }
             />
             <ChevronRight aria-hidden className="size-3 text-muted-foreground/70" />
-            <DialogTitle className="text-xs font-normal text-muted-foreground">New task</DialogTitle>
+            <DialogTitle className="text-xs font-normal text-muted-foreground">{t('newTask')}</DialogTitle>
           </div>
 
           <div className="flex min-h-0 flex-col gap-1.5 overflow-y-auto">
@@ -272,8 +279,8 @@ export function NewTaskDialog({ defaults = {}, initialTitle = '', initialDescrip
               ref={titleRef}
               className="h-auto rounded-none border-0 bg-transparent p-0 text-lg font-medium focus-visible:ring-0 md:text-lg dark:bg-transparent"
               value={title}
-              placeholder="Task title"
-              aria-label="Task title"
+              placeholder={t('text.title')}
+              aria-label={t('text.title')}
               readOnly={busy}
               onChange={(event) => setTitle(event.target.value)}
               onKeyDown={(event) => {
@@ -336,7 +343,7 @@ export function NewTaskDialog({ defaults = {}, initialTitle = '', initialDescrip
                     submitShortcut={() => void submit()}
                     mentions={{ members, candidates: audience.filter((member) => !member.suspended), privatePage: false }}
                     sideMenu={false}
-                    ariaLabel="New task description"
+                    ariaLabel={t('newTaskDialog.description')}
                   />
                 </Suspense>
               </div>
@@ -346,22 +353,22 @@ export function NewTaskDialog({ defaults = {}, initialTitle = '', initialDescrip
                     <span key={`${file.name}:${index}`} className="inline-flex h-6 max-w-56 items-center gap-1 rounded-md border pr-0.5 pl-1.5 text-xs text-muted-foreground">
                       <Paperclip aria-hidden className="size-3 shrink-0" />
                       <span className="truncate">{file.name}</span>
-                      <Button type="button" variant="ghost" size="icon-xs" className="size-4 rounded-full" aria-label={`Remove ${file.name}`} disabled={busy} onClick={() => setFiles((current) => current.filter((_, at) => at !== index))}>
+                      <Button type="button" variant="ghost" size="icon-xs" className="size-4 rounded-full" aria-label={t('composer.removeFile', { name: file.name })} disabled={busy} onClick={() => setFiles((current) => current.filter((_, at) => at !== index))}>
                         <X />
                       </Button>
                     </span>
                   ))}
                 </div>
               ) : null}
-              <input ref={fileInputRef} type="file" multiple hidden aria-label="Attach files" onChange={(event) => { attach(event.target.files); event.target.value = '' }} />
+              <input ref={fileInputRef} type="file" multiple hidden aria-label={t('attachFiles')} onChange={(event) => { attach(event.target.files); event.target.value = '' }} />
               {relations.length > 0 ? (
                 <div className="mt-2 flex flex-wrap gap-1">
                   {relations.map((relation) => (
                     <span key={`${relation.kind}:${relation.task.id}`} className="inline-flex h-6 max-w-72 items-center gap-1 rounded-md border pr-0.5 pl-1.5 text-xs">
-                      <span className="shrink-0 text-muted-foreground">{RELATION_LABEL[relation.kind]}</span>
+                      <span className="shrink-0 text-muted-foreground">{t(RELATION_LABEL[relation.kind])}</span>
                       <span className="shrink-0 text-muted-foreground tabular-nums">{relation.task.identifier}</span>
-                      <span className="truncate">{relation.task.title || 'Untitled'}</span>
-                      <Button type="button" variant="ghost" size="icon-xs" className="size-4 rounded-full" aria-label={`Remove relation to ${relation.task.identifier}`} disabled={busy} onClick={() => setRelations((current) => current.filter((item) => item !== relation))}>
+                      <span className="truncate">{relation.task.title || t('untitled')}</span>
+                      <Button type="button" variant="ghost" size="icon-xs" className="size-4 rounded-full" aria-label={t('relations.remove', { identifier: relation.task.identifier })} disabled={busy} onClick={() => setRelations((current) => current.filter((item) => item !== relation))}>
                         <X />
                       </Button>
                     </span>
@@ -371,7 +378,7 @@ export function NewTaskDialog({ defaults = {}, initialTitle = '', initialDescrip
               <div className="mt-1.5 -ml-2 flex items-center">
                 <Button type="button" variant="ghost" className="text-xs text-muted-foreground/70" disabled={busy} onClick={() => fileInputRef.current?.click()}>
                   <Paperclip className="size-3.5" />
-                  Attach
+                  {t('attach')}
                 </Button>
                 <AddRelationMenu options={RELATION_OPTIONS} onChoose={(kind) => setPicker(kind as PendingRelation['kind'])} />
               </div>
@@ -382,9 +389,9 @@ export function NewTaskDialog({ defaults = {}, initialTitle = '', initialDescrip
             <DropdownMenu>
               <DropdownMenuTrigger
                 render={
-                  <Button type="button" variant="outline" size="sm" className="font-normal" aria-label={`Status: ${status?.name ?? 'none'}`}>
+                  <Button type="button" variant="outline" size="sm" className="font-normal" aria-label={t('status.current', { status: status?.name ?? t('status.noneShort') })}>
                     <TaskStatusIcon status={status} />
-                    {status?.name ?? 'No status'}
+                    {status?.name ?? t('status.none')}
                   </Button>
                 }
               />
@@ -405,9 +412,9 @@ export function NewTaskDialog({ defaults = {}, initialTitle = '', initialDescrip
             <DropdownMenu>
               <DropdownMenuTrigger
                 render={
-                  <Button type="button" variant="outline" size="sm" className="font-normal" aria-label={`Priority: ${PRIORITY_LABEL[draft.priority]}`}>
+                  <Button type="button" variant="outline" size="sm" className="font-normal" aria-label={t('priority.current', { priority: PRIORITY_LABEL[draft.priority] })}>
                     <PriorityIcon priority={draft.priority} />
-                    {draft.priority === 'none' ? 'Priority' : PRIORITY_LABEL[draft.priority]}
+                    {draft.priority === 'none' ? t('menu.priority') : PRIORITY_LABEL[draft.priority]}
                   </Button>
                 }
               />
@@ -427,14 +434,14 @@ export function NewTaskDialog({ defaults = {}, initialTitle = '', initialDescrip
             </DropdownMenu>
             <SearchPicker
               multiple
-              label="Assignees"
+              label={t('assignee.title')}
               placeholder="Assign to…"
               emptyText="No people match"
               options={audience.map(personOption)}
               selected={draft.assigneeIds}
               onSelect={(id) => setDraft((current) => ({ ...current, assigneeIds: current.assigneeIds.includes(id) ? current.assigneeIds.filter((item) => item !== id) : [...current.assigneeIds, id] }))}
               trigger={
-                <Button type="button" variant="outline" size="sm" className="max-w-56 font-normal" aria-label="Assignees">
+                <Button type="button" variant="outline" size="sm" className="max-w-56 font-normal" aria-label={t('assignee.title')}>
                   {assignees.length > 0 ? (
                     <>
                       <UserAvatarStack users={assignees} size={16} />
@@ -443,7 +450,7 @@ export function NewTaskDialog({ defaults = {}, initialTitle = '', initialDescrip
                   ) : (
                     <>
                       <UserIcon aria-hidden="true" className="text-muted-foreground" />
-                      Assignee
+                      {t('menu.assignee')}
                     </>
                   )}
                 </Button>
@@ -456,7 +463,7 @@ export function NewTaskDialog({ defaults = {}, initialTitle = '', initialDescrip
               labels={labels}
               onChange={(labelIds) => setDraft((current) => ({ ...current, labelIds }))}
               trigger={
-                <Button type="button" variant="outline" size="sm" className="max-w-56 font-normal" disabled={!project} aria-label={chosenLabels.length > 0 ? `Labels: ${chosenLabels.map((label) => label.name).join(', ')}` : 'Labels'}>
+                <Button type="button" variant="outline" size="sm" className="max-w-56 font-normal" disabled={!project} aria-label={chosenLabels.length > 0 ? t('labels.current', { names: chosenLabels.map((label) => label.name).join(', ') }) : t('labels.title')}>
                   {chosenLabels.length > 0 ? (
                     <>
                       <span aria-hidden="true" className="flex -space-x-0.5">
@@ -467,7 +474,7 @@ export function NewTaskDialog({ defaults = {}, initialTitle = '', initialDescrip
                   ) : (
                     <>
                       <Tag aria-hidden="true" className="text-muted-foreground" />
-                      Labels
+                      {t('labels.title')}
                     </>
                   )}
                 </Button>
@@ -512,9 +519,9 @@ export function NewTaskDialog({ defaults = {}, initialTitle = '', initialDescrip
             <Popover open={dueDateOpen} onOpenChange={setDueDateOpen}>
               <PopoverTrigger
                 render={
-                  <Button type="button" variant="outline" size="sm" className="font-normal" aria-label="Due date">
+                  <Button type="button" variant="outline" size="sm" className="font-normal" aria-label={t('detail.dueDate')}>
                     <Calendar aria-hidden="true" />
-                    {draft.dueAt ? dueDateLabel(draft.dueAt, draft.dueStartAt) : 'Due date'}
+                    {draft.dueAt ? dueDateLabel(draft.dueAt, draft.dueStartAt) : t('detail.dueDate')}
                   </Button>
                 }
               />
@@ -534,30 +541,30 @@ export function NewTaskDialog({ defaults = {}, initialTitle = '', initialDescrip
               <DropdownMenu>
                 <DropdownMenuTrigger
                   render={
-                    <Button type="button" variant="outline" size="sm" className="max-w-64 font-normal" aria-label={`Parent: ${draft.parent.identifier} ${draft.parent.title}`}>
+                    <Button type="button" variant="outline" size="sm" className="max-w-64 font-normal" aria-label={t('detail.parent', { identifier: draft.parent.identifier, title: draft.parent.title })}>
                       <Hierarchy2 aria-hidden="true" />
                       <span className="shrink-0 text-muted-foreground tabular-nums">{draft.parent.identifier}</span>
-                      <span className="truncate">{draft.parent.title || 'Untitled'}</span>
+                      <span className="truncate">{draft.parent.title || t('untitled')}</span>
                     </Button>
                   }
                 />
                 <DropdownMenuContent className="w-auto min-w-45">
-                  <DropdownMenuItem onClick={() => setPicker('parent')}>Change parent…</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setDraft((current) => ({ ...current, parent: null }))}>Remove parent</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setPicker('parent')}>{t('detail.changeParent')}</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setDraft((current) => ({ ...current, parent: null }))}>{t('menu.removeParent')}</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
               <Button type="button" variant="outline" size="sm" className="font-normal" onClick={() => setPicker('parent')}>
                 <Hierarchy2 aria-hidden="true" className="text-muted-foreground" />
-                Parent
+                {t('newTaskDialog.parent')}
               </Button>
             )}
             <Popover open={sourceOpen} onOpenChange={setSourceOpen}>
               <PopoverTrigger
                 render={
-                  <Button type="button" variant="outline" size="sm" className="max-w-56 font-normal" aria-label={draft.sourceUrl ? `Source: ${draft.sourceUrl}` : 'Source'}>
+                  <Button type="button" variant="outline" size="sm" className="max-w-56 font-normal" aria-label={draft.sourceUrl ? t('newTaskDialog.sourceCurrent', { url: draft.sourceUrl }) : t('detail.source')}>
                     <Link2 aria-hidden="true" className="text-muted-foreground" />
-                    <span className="truncate">{draft.sourceUrl ? draft.sourceUrl.replace(/^https?:\/\//, '').split('/')[0] : 'Source'}</span>
+                    <span className="truncate">{draft.sourceUrl ? draft.sourceUrl.replace(/^https?:\/\//, '').split('/')[0] : t('detail.source')}</span>
                   </Button>
                 }
               />
@@ -572,9 +579,9 @@ export function NewTaskDialog({ defaults = {}, initialTitle = '', initialDescrip
                     setSourceOpen(false)
                   }}
                 >
-                  <label htmlFor="new-task-source-url" className="text-xs font-medium">Source URL</label>
+                  <label htmlFor="new-task-source-url" className="text-xs font-medium">{t('detail.sourceUrl')}</label>
                   <Input id="new-task-source-url" name="source_url" type="url" placeholder="https://..." defaultValue={draft.sourceUrl ?? ''} />
-                  <Button type="submit" size="sm">Save</Button>
+                  <Button type="submit" size="sm">{t('save')}</Button>
                 </form>
               </PopoverContent>
             </Popover>
@@ -583,16 +590,16 @@ export function NewTaskDialog({ defaults = {}, initialTitle = '', initialDescrip
           <DialogFooter className="items-center py-2.5 sm:justify-between">
             <div className="min-w-0 text-xs">
               {createTask.isError ? (
-                <span role="alert" className="text-destructive">The task was not created. Try again.</span>
+                <span role="alert" className="text-destructive">{t('newTaskDialog.createFailed')}</span>
               ) : created ? (
                 <span role="status" className="flex items-center gap-1 text-muted-foreground">
-                  Created
+                  {t('newTaskDialog.created')}
                   <Button type="button" variant="link" size="xs" className="px-0" onClick={() => openTask(created)}>
                     {taskIdentifier(created.id, projects.find((candidate) => candidate.id === created.project_id), created.number)}
                   </Button>
                 </span>
               ) : projects.length === 0 ? (
-                <span className="text-muted-foreground">Create a project before you add tasks.</span>
+                <span className="text-muted-foreground">{t('newTaskDialog.noProjects')}</span>
               ) : null}
             </div>
             <div className="flex items-center gap-3">
@@ -605,11 +612,11 @@ export function NewTaskDialog({ defaults = {}, initialTitle = '', initialDescrip
                     window.localStorage.setItem(CREATE_MORE_KEY, checked ? '1' : '0')
                   }}
                 />
-                Create more
+                {t('newTaskDialog.createMore')}
               </Label>
               <Tip label="Ctrl/⌘ + Enter">
                 <Button type="submit" disabled={!canCreate}>
-                  {uploading ? 'Attaching…' : createTask.isPending ? 'Creating…' : 'Create task'}
+                  {uploading ? t('newTaskDialog.attaching') : createTask.isPending ? t('creating') : t('newTaskDialog.create')}
                 </Button>
               </Tip>
             </div>
@@ -619,7 +626,7 @@ export function NewTaskDialog({ defaults = {}, initialTitle = '', initialDescrip
           <TaskPickerDialog
             open
             onOpenChange={(next) => { if (!next) setPicker(null) }}
-            title={picker === 'parent' ? 'New task: Parent…' : `New task: ${RELATION_LABEL[picker]}…`}
+            title={picker === 'parent' ? t('newTaskDialog.pickerTitleParent') : t('newTaskDialog.pickerTitle', { relation: t(RELATION_LABEL[picker]) })}
             statuses={statuses}
             excludeIds={picker === 'parent' ? [] : relations.map((relation) => relation.task.id)}
             onSelect={(target) => {

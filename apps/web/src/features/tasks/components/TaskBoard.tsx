@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { focusAdjacentColumn, taskRowTarget, useVirtualTaskRows } from '@/shortcuts/taskTarget'
 import { memo, useCallback, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { defaultRangeExtractor, measureElement as measureSize, useVirtualizer } from '@tanstack/react-virtual'
@@ -74,6 +75,7 @@ function estimatedSize(sizeKey: string, taskId: string) {
  * cards near the view are in the DOM.
  */
 export function TaskBoard({ tasks, users, labels, statuses, projects, display, groupContext, collapseScope, activeTaskId, onOpen }: TaskBoardProps) {
+  const { t } = useTranslation('tasks')
   const { workspace } = useWorkspace()
   const duplicates = useDuplicateActions(workspace.id)
   const [duplicateTask, setDuplicateTask] = useState<Task | null>(null)
@@ -215,11 +217,11 @@ export function TaskBoard({ tasks, users, labels, statuses, projects, display, g
               onOpen(task.parent!.id)
             }}
           >
-            <span className="truncate">{task.parent.title || 'Untitled'}</span>
+            <span className="truncate">{task.parent.title || t('untitled')}</span>
             <span aria-hidden className="shrink-0 text-muted-foreground/50">›</span>
           </Button>
         ) : null}
-        <h3 className="text-[0.8125rem] leading-[1.125rem] font-medium text-foreground">{task.title || 'Untitled'}</h3>
+        <h3 className="text-[0.8125rem] leading-[1.125rem] font-medium text-foreground">{task.title || t('untitled')}</h3>
         {cardLabels.length > 0 ? (
           <div className="flex flex-wrap gap-1">
             {cardLabels.map((label) => <LabelPill key={label.id} label={label} />)}
@@ -320,7 +322,7 @@ export function TaskBoard({ tasks, users, labels, statuses, projects, display, g
                 // sticks to the left edge while the board scrolls sideways, so the lane name stays in view
                 className="sticky left-3 gap-2 px-1.5 text-xs font-semibold text-muted-foreground group-data-drop-over/lane:text-primary"
                 aria-expanded={open}
-                aria-label={`${open ? 'Collapse' : 'Expand'} ${lane.label}`}
+                aria-label={t(open ? 'list.collapse' : 'list.expand', { group: lane.label })}
                 onClick={() => toggle(laneId)}
               >
                 <DisclosureChevron open={open} />
@@ -393,6 +395,7 @@ const topIn = (scroller: HTMLElement, element: HTMLElement) =>
  * (unmounting the drag source cancels the browser drag), and the drop placeholder pushes the cards below it down.
  */
 function BoardZone({ variant, zone, values, cell, header, scroller, savedTop, sizeKey, dragId, drop, dragHeight, keepId, zoneProps, renderCard }: BoardZoneProps) {
+  const { t } = useTranslation('tasks')
   const list = useRef<HTMLDivElement>(null)
   const [margin, setMargin] = useState(0)
   const [near, setNear] = useState(false)
@@ -499,7 +502,7 @@ function BoardZone({ variant, zone, values, cell, header, scroller, savedTop, si
       {header}
       <div className="min-h-[120px] px-[7px] pb-[7px]">
         {cards}
-        {others === 0 && drop?.zone !== zone ? <div className="flex h-[72px] items-center justify-center text-xs text-muted-foreground/70">No tasks</div> : null}
+        {others === 0 && drop?.zone !== zone ? <div className="flex h-[72px] items-center justify-center text-xs text-muted-foreground/70">{t('noTasks')}</div> : null}
       </div>
     </section>
   )

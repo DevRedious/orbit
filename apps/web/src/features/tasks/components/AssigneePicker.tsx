@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { cn } from 'cn'
 import { Button } from '@/components/ui/button'
 import { UserAvatar, UserAvatarStack } from '@/components/common/UserAvatar'
@@ -28,7 +29,8 @@ export function AssigneePicker({ task, users, size = 18, max = 2, align = 'end',
   align?: 'start' | 'end'
   className?: string
 }) {
-  const save = useTaskPickerUpdate(task, 'Assignee update failed.')
+  const { t } = useTranslation('tasks')
+  const save = useTaskPickerUpdate(task, t('assignee.updateFailed'))
   const assignees = users.filter((user) => task.assigneeIds.includes(user.id))
   return (
     <div className={cn('flex shrink-0', className)} onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
@@ -39,7 +41,7 @@ export function AssigneePicker({ task, users, size = 18, max = 2, align = 'end',
               type="button"
               variant="ghost"
               className="h-auto rounded-full p-0"
-              aria-label={assignees.length > 0 ? `Assignees: ${assignees.map((user) => user.name).join(', ')}` : 'Assign task'}
+              aria-label={assignees.length > 0 ? t('assignee.current', { names: assignees.map((user) => user.name).join(', ') }) : t('assignee.assign')}
             >
               <UserAvatarStack users={assignees} size={size} max={max} />
             </Button>
@@ -47,7 +49,7 @@ export function AssigneePicker({ task, users, size = 18, max = 2, align = 'end',
         />
         <DropdownMenuContent align={align} className="w-auto min-w-45">
           <DropdownMenuGroup>
-            <DropdownMenuLabel>Assignees</DropdownMenuLabel>
+            <DropdownMenuLabel>{t('assignee.title')}</DropdownMenuLabel>
             {users.map((user) => (
               <DropdownMenuCheckboxItem
                 key={user.id}

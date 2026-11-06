@@ -1,9 +1,10 @@
 import { ApiProblem } from '@orbit/api/problem'
+import { i18n } from '@/i18n'
 
 export function taskUnavailableDescription(error: unknown): string {
   if (error instanceof ApiProblem && error.status === 404) {
-    return 'This task may have been deleted, or you may no longer have access to it.'
+    return i18n.t('tasks:availability.notFound')
   }
 
-  return 'The server could not load this task.'
+  return i18n.t('tasks:availability.failed')
 }

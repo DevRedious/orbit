@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { cn } from 'cn'
 import { Button } from '@/components/ui/button'
 import { DisclosureChevron } from '@/features/views/components/GroupIcon'
@@ -25,6 +26,7 @@ export interface TreeGutterProps {
  * Stretch it to the row height (`self-stretch`, cancel the row's vertical padding) so guides join between rows.
  */
 export function TreeGutter({ depth, hasChildren, expanded, onToggle, identifier, inset = 0, className }: TreeGutterProps) {
+  const { t } = useTranslation('tasks')
   const indent = Math.min(depth, MAX_TREE_INDENT)
   const pad = inset + indent * TREE_INDENT_PX
   // border-box width: the padding plus the 16px chevron slot, so a leaf needs no spacer element
@@ -39,7 +41,7 @@ export function TreeGutter({ depth, hasChildren, expanded, onToggle, identifier,
           variant="ghost"
           size="icon-xs"
           aria-expanded={expanded}
-          aria-label={`${expanded ? 'Collapse' : 'Expand'} sub-issues of ${identifier}`}
+          aria-label={t(expanded ? 'subIssues.collapse' : 'subIssues.expand', { identifier })}
           // the ::after overlay grows the 16px chevron to a 24px hit area; no open fill, every expanded row has one
           className="relative size-4 rounded-sm text-muted-foreground after:absolute after:-inset-1 aria-expanded:bg-transparent"
           onClick={(event) => {

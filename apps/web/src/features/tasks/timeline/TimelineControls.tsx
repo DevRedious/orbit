@@ -1,16 +1,18 @@
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { ZOOM_PRESETS, presetOf, type ZoomPreset } from './timelineLib'
 
-const LABEL: Record<ZoomPreset, string> = { week: 'Week', month: 'Month', quarter: 'Quarter' }
+const LABEL = { week: 'timeline.zoom.week', month: 'timeline.zoom.month', quarter: 'timeline.zoom.quarter' } as const satisfies Record<ZoomPreset, string>
 
 /** Header controls shown only in the timeline layout. */
 export function TimelineControls({ pxPerDay, onZoomChange, onToday }: { pxPerDay: number; onZoomChange: (px: number) => void; onToday: () => void }) {
+  const { t } = useTranslation('tasks')
   const active = presetOf(pxPerDay)
   return (
     <>
       <ToggleGroup
-        aria-label="Timeline zoom"
+        aria-label={t('timeline.zoom.label')}
         variant="outline"
         size="sm"
         spacing={0}
@@ -24,11 +26,11 @@ export function TimelineControls({ pxPerDay, onZoomChange, onToday }: { pxPerDay
       >
         {(Object.keys(ZOOM_PRESETS) as ZoomPreset[]).map((preset) => (
           <ToggleGroupItem key={preset} value={preset}>
-            {LABEL[preset]}
+            {t(LABEL[preset])}
           </ToggleGroupItem>
         ))}
       </ToggleGroup>
-      <Button variant="ghost" onClick={onToday}>Today</Button>
+      <Button variant="ghost" onClick={onToday}>{t('timeline.today')}</Button>
     </>
   )
 }

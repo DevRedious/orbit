@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { Calendar, Diamonds, RefreshCircle, Repeat, Triangle } from 'reicon-react'
 import { cn } from 'cn'
 import type { Cycle, Milestone, Project, Task, TaskStatusDef } from '@/features/tasks/api/models'
@@ -11,12 +12,13 @@ import { ColorDot } from '@/components/common/ColorDot'
  * the calendar (the picker's tooltip names the rule). Font size comes from the caller.
  */
 export function DueDateChip({ task, status, className }: { task: Task; status: TaskStatusDef | undefined; className?: string }) {
+  const { t } = useTranslation('tasks')
   if (!task.dueAt) return null
   const overdue = isOverdue(task, status?.category, new Date())
   return (
     <span
       data-property="due_date"
-      title={task.recurrence ? undefined : `Due ${fullDate(task.dueAt)}`}
+      title={task.recurrence ? undefined : t('chips.due', { date: fullDate(task.dueAt) })}
       className={cn('inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-muted-foreground tabular-nums', overdue && 'text-destructive', className)}
     >
       {task.recurrence ? <Repeat aria-hidden className="size-[1.1em]" /> : <Calendar aria-hidden className="size-[1.1em]" />}
@@ -78,8 +80,9 @@ export function EstimateChip({ task, className }: { task: Task; className?: stri
 
 /** Created/updated date; the full date and which one it is live in the tooltip. */
 export function DateStamp({ property, iso, className }: { property: 'created' | 'updated'; iso: string; className?: string }) {
+  const { t } = useTranslation('tasks')
   return (
-    <span data-property={property} title={`${property === 'created' ? 'Created' : 'Updated'} ${fullDate(iso)}`} className={cn('shrink-0 whitespace-nowrap tabular-nums', className)}>
+    <span data-property={property} title={t(property === 'created' ? 'chips.created' : 'chips.updated', { date: fullDate(iso) })} className={cn('shrink-0 whitespace-nowrap tabular-nums', className)}>
       {shortDate(iso)}
     </span>
   )

@@ -1,7 +1,8 @@
-import { addDays, addMonths, differenceInCalendarDays, eachMonthOfInterval, format, max, min, startOfDay, startOfMonth } from 'date-fns'
+import { addDays, addMonths, differenceInCalendarDays, eachMonthOfInterval, max, min, startOfDay, startOfMonth } from 'date-fns'
 import type { Cycle, Milestone, StatusCategory, Task, TaskStatusDef } from '@/features/tasks/api/models'
 import { cycleName, cycleTiming, planningProgress, targetDay } from '@/features/tasks/planningLib'
 import { isClosedCategory } from '@/features/tasks/taskMeta'
+import { i18n } from '@/i18n'
 import type { TaskGroup } from '@/features/views/grouping'
 
 export type ZoomPreset = 'week' | 'month' | 'quarter'
@@ -71,7 +72,7 @@ export function monthMarks(range: TimeRange, px: number): MonthMark[] {
   return eachMonthOfInterval({ start: range.start, end: last }).map((month, index) => {
     const from = Math.max(0, dayIndex(range, month))
     const to = Math.min(range.days, dayIndex(range, addMonths(month, 1)))
-    const label = index === 0 || month.getMonth() === 0 ? format(month, 'MMMM yyyy') : format(month, 'MMMM')
+    const label = month.toLocaleDateString(i18n.language, index === 0 || month.getMonth() === 0 ? { month: 'long', year: 'numeric' } : { month: 'long' })
     return { x: from * px, width: (to - from) * px, label }
   })
 }
@@ -270,7 +271,8 @@ export function isSameEdit(task: TaskDates, edit: DateEdit): boolean {
 
 export function spanLabel(span: { start: Date; end: Date }): string {
   const days = differenceInCalendarDays(span.end, span.start) + 1
-  const dayText = `${days} ${days === 1 ? 'day' : 'days'}`
-  if (days === 1) return `${format(span.start, 'MMM d')} · ${dayText}`
-  return `${format(span.start, 'MMM d')} → ${format(span.end, 'MMM d')} · ${dayText}`
+  const day = (date: Date) => date.toLocaleDateString(i18n.language, { month: 'short', day: 'numeric' })
+  const dayText = i18n.t('tasks:timeline.days', { count: days })
+  if (days === 1) return i18n.t('tasks:timeline.spanDay', { start: day(span.start), days: dayText })
+  return i18n.t('tasks:timeline.spanRange', { start: day(span.start), end: day(span.end), days: dayText })
 }

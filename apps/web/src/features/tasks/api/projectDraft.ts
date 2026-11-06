@@ -1,4 +1,5 @@
 import type { ProjectBody } from '@orbit/api/generated/types.gen'
+import { i18n } from '@/i18n'
 
 /** A new project from its name: a key of up to five letters and digits, with the smallest free number after it
  * when an existing project already has that key (`GENER` → `GENER2`), and violet. */
@@ -15,5 +16,5 @@ export function projectSettingsPath(projectId: string | null): string | null {
 }
 
 export function projectSettingsLabel(): string {
-  return 'Project settings'
+  return i18n.t('tasks:projectSettings.title')
 }

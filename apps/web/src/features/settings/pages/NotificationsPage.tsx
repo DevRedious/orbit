@@ -23,7 +23,7 @@ import {
 } from '@/features/settings/api/notifications'
 import { FieldGrid, RowIcon, SettingsRow } from '@/features/settings/components/SettingsParts'
 import { shortDate } from '@/lib/format'
-import { MIN_VOLUME, playSound, SOUND_SETS, type SoundSet, useSoundSettings } from '@/lib/sounds'
+import { MIN_VOLUME, playSound, SOUND_SETS, type SoundSet, soundSetLabel, useSoundSettings } from '@/lib/sounds'
 import { LoadingText } from '@/components/ui/spinner'
 import { useIsGuest } from '@/features/workspaces/permissions'
 
@@ -191,6 +191,7 @@ function Sounds() {
   const [settings, setSettings] = useSoundSettings()
   // A preview plays with the sound switch off too: the user is choosing what it would sound like.
   const preview = (kind: 'message' | 'mention') => playSound(kind, { ...settings, enabled: true })
+  const soundOptions = SOUND_SETS.map((option) => ({ value: option.value, label: soundSetLabel(option.value) }))
 
   return (
     <div className="flex flex-col gap-4">
@@ -201,12 +202,12 @@ function Sounds() {
       <FieldGrid>
         <Field>
           <FieldLabel htmlFor="sound-set">{t('notifications.sound')}</FieldLabel>
-          <Select items={SOUND_SETS} value={settings.set} onValueChange={(value) => setSettings({ set: value as SoundSet })}>
+          <Select items={soundOptions} value={settings.set} onValueChange={(value) => setSettings({ set: value as SoundSet })}>
             <SelectTrigger id="sound-set">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {SOUND_SETS.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
+              {soundOptions.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
             </SelectContent>
           </Select>
         </Field>

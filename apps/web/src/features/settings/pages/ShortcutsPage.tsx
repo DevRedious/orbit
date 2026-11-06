@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { applyRebind, findConflict, findConflicts, isReserved, parseKeys, resolveBindings } from '@/shortcuts/bindings'
 import { COMMANDS, isMailCommand, type Command, type Group } from '@/shortcuts/commands'
 import { useMailEnabled } from '@/features/mail/enabled'
+import { commandTitle } from '@/shortcuts/commandText'
 import { KeyRecorder } from '@/shortcuts/KeyRecorder'
 import { ShortcutKeys } from '@/shortcuts/Shortcut'
 import { useShortcutBindings } from '@/shortcuts/useShortcutBindings'
@@ -30,7 +31,7 @@ export function ShortcutsPage() {
 
   const needle = query.trim().toLowerCase()
   const mail = useMailEnabled()
-  const shown = ALL.filter((command) => (mail || !isMailCommand(command.id))).filter((command) => !needle || command.title.toLowerCase().includes(needle) || (bindings[command.id] ?? '').toLowerCase().includes(needle))
+  const shown = ALL.filter((command) => (mail || !isMailCommand(command.id))).filter((command) => !needle || commandTitle(command).toLowerCase().includes(needle) || (bindings[command.id] ?? '').toLowerCase().includes(needle))
   const changed = Object.keys(overrides).length > 0
 
   const record = (command: Command, keys: string) => {
@@ -84,13 +85,13 @@ export function ShortcutsPage() {
                 // a default that another command's override took over
                 const clash = keys && !rowNotice ? findConflict(bindings, command.id, keys) : null
                 return (
-                  <li key={command.id} aria-label={command.title} className="px-4 py-1.5 text-[0.8125rem]">
+                  <li key={command.id} aria-label={commandTitle(command)} className="px-4 py-1.5 text-[0.8125rem]">
                     {/* a fixed height, so a row does not move when its recorder or keys change */}
                     <div className="flex h-8 items-center gap-2">
-                      <span className="min-w-0 flex-1 truncate">{command.title}</span>
+                      <span className="min-w-0 flex-1 truncate">{commandTitle(command)}</span>
                       {command.id in overrides && !command.fixed ? (
                         <Tip label={t('shortcuts.resetTip')}>
-                          <Button type="button" variant="ghost" size="icon-xs" className="animate-in text-muted-foreground/70 duration-150 ease-out fade-in-0" aria-label={t('shortcuts.resetAria', { title: command.title })} onClick={() => save(applyRebind(overrides, command.id, command.keys, false))}>
+                          <Button type="button" variant="ghost" size="icon-xs" className="animate-in text-muted-foreground/70 duration-150 ease-out fade-in-0" aria-label={t('shortcuts.resetAria', { title: commandTitle(command) })} onClick={() => save(applyRebind(overrides, command.id, command.keys, false))}>
                             <RotateLeft />
                           </Button>
                         </Tip>
@@ -100,7 +101,7 @@ export function ShortcutsPage() {
                       ) : recording === command.id ? (
                         <KeyRecorder onRecord={(next) => record(command, next)} onCancel={() => setRecording(null)} onClear={() => { setRecording(null); save(applyRebind(overrides, command.id, null, false)) }} />
                       ) : (
-                        <Button type="button" variant="ghost" className="h-7 min-w-28 justify-end px-2 text-xs font-normal text-muted-foreground active:scale-[0.97] motion-reduce:active:scale-100" aria-label={t('shortcuts.changeAria', { title: command.title })} onClick={() => start(command.id)}>
+                        <Button type="button" variant="ghost" className="h-7 min-w-28 justify-end px-2 text-xs font-normal text-muted-foreground active:scale-[0.97] motion-reduce:active:scale-100" aria-label={t('shortcuts.changeAria', { title: commandTitle(command) })} onClick={() => start(command.id)}>
                           {keys ? <ShortcutKeys keys={keys} /> : t('shortcuts.none')}
                         </Button>
                       )}
@@ -111,7 +112,7 @@ export function ShortcutsPage() {
                       <div role="alert" className="flex animate-in flex-wrap items-center gap-2 pb-1.5 text-xs text-muted-foreground duration-150 ease-out fade-in-0">
                         <ShortcutKeys keys={rowNotice.keys} />
                         {/* a swap is an exchange of two shortcuts: not with a fixed one, and not with several at once */}
-                        <span>{rowNotice.more > 0 ? t('shortcuts.usedByMore', { title: rowNotice.other.title, count: rowNotice.more }) : t('shortcuts.usedBy', { title: rowNotice.other.title })}{rowNotice.other.fixed ? ` ${t('shortcuts.otherFixed')}` : ''}</span>
+                        <span>{rowNotice.more > 0 ? t('shortcuts.usedByMore', { title: commandTitle(rowNotice.other), count: rowNotice.more }) : t('shortcuts.usedBy', { title: commandTitle(rowNotice.other) })}{rowNotice.other.fixed ? ` ${t('shortcuts.otherFixed')}` : ''}</span>
                         {rowNotice.other.fixed || rowNotice.more > 0 ? null : (
                           <Button type="button" size="xs" variant="outline" onClick={() => { save(applyRebind(overrides, command.id, rowNotice.keys, true)); setNotice(null) }}>{t('shortcuts.swap')}</Button>
                         )}
@@ -121,7 +122,7 @@ export function ShortcutsPage() {
                     {clash ? (
                       <p className="flex items-center gap-1.5 pb-1.5 text-xs text-muted-foreground">
                         <Danger aria-hidden className="size-3.5 text-destructive" />
-                        {t('shortcuts.alsoUsed', { title: clash.title })}
+                        {t('shortcuts.alsoUsed', { title: commandTitle(clash) })}
                       </p>
                     ) : null}
                   </li>

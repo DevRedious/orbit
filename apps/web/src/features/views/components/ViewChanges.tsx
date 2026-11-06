@@ -1,10 +1,11 @@
 import { useCommand, useShortcutLabel } from '@/shortcuts/useCommand'
 import { useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Bookmark } from 'reicon-react'
 import { toast } from 'sonner'
-import { ApiProblem } from '@orbit/api/problem'
 import { Button } from '@/components/ui/button'
 import { Tip } from '@/components/common/Tip'
+import { problemMessage } from '@/i18n/problem'
 import type { ViewStateController } from '../useViewState'
 import { ConflictDialog } from './ConflictDialog'
 
@@ -19,6 +20,7 @@ export interface ViewChangesProps {
  * Mounted only while the view is dirty. Cmd/Ctrl+S updates the view (or, for non-editors, saves it as new).
  */
 export function ViewChanges({ controller, onSaveAsNew }: ViewChangesProps) {
+  const { t } = useTranslation('views')
   const [saving, setSaving] = useState(false)
   // read by the shortcut: a second Cmd/Ctrl+S before the re-render must still see the save in flight
   const savingRef = useRef(false)
@@ -34,7 +36,7 @@ export function ViewChanges({ controller, onSaveAsNew }: ViewChangesProps) {
       // a 409 resolves and sets `controller.conflict`, which opens the conflict dialog with the edits kept
       await controller.save(overwrite ? { overwrite: true } : undefined)
     } catch (error) {
-      toast.error(error instanceof ApiProblem ? error.detail : "Orbit couldn't update the view. Try again.")
+      toast.error(problemMessage(error, t('changes.updateFailed')))
     } finally {
       savingRef.current = false
       setSaving(false)
@@ -50,25 +52,25 @@ export function ViewChanges({ controller, onSaveAsNew }: ViewChangesProps) {
   const keyShortcuts = useShortcutLabel('view.save')
 
   return (
-    <div role="group" aria-label="Unsaved view changes" className="flex shrink-0 animate-view-bar-enter items-center gap-1.5">
-      <Tip label="Go back to the saved view">
+    <div role="group" aria-label={t('changes.aria')} className="flex shrink-0 animate-view-bar-enter items-center gap-1.5">
+      <Tip label={t('changes.resetTitle')}>
         <Button type="button" variant="ghost" size="sm" className="text-muted-foreground" onClick={() => controller.discard()}>
-          Reset
+          {t('changes.reset')}
         </Button>
       </Tip>
       {canEdit ? (
         <>
           <Button type="button" variant="ghost" size="sm" className="text-muted-foreground" onClick={() => onSaveAsNew()}>
-            Save as new view
+            {t('changes.saveAsNew')}
           </Button>
           <Button type="button" variant="outline" size="sm" disabled={saving} aria-keyshortcuts={keyShortcuts} onClick={() => void save()}>
-            Update view
+            {t('changes.update')}
           </Button>
         </>
       ) : (
         <Button type="button" variant="outline" size="sm" aria-keyshortcuts={keyShortcuts} onClick={() => onSaveAsNew()}>
           <Bookmark className="size-3.5" />
-          Save as new view
+          {t('changes.saveAsNew')}
         </Button>
       )}
       <ConflictDialog

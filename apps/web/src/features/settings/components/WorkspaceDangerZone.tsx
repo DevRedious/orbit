@@ -1,4 +1,5 @@
 import { useId, useRef, useState } from 'react'
+import { Trans, useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { Modal } from '@/components/common/Modal'
 import { Button } from '@/components/ui/button'
@@ -12,6 +13,7 @@ import { useWorkspace } from '@/features/workspaces/workspaceContext'
 import { SettingsCard } from '@/components/common/SettingsCard'
 
 export function WorkspaceDangerZone() {
+  const { t } = useTranslation('settings')
   const { workspace, workspaces } = useWorkspace()
   const canDelete = useCan('workspace.delete')
   const navigate = useNavigate()
@@ -43,23 +45,23 @@ export function WorkspaceDangerZone() {
   }
 
   return <>
-    <SettingsCard className="shadow-[0_0_0_1px_var(--destructive)] hover:shadow-[0_0_0_1px_var(--destructive)] [&_h3]:text-destructive [&>div]:bg-transparent [&>div]:shadow-none" title="Danger zone" description="Delete this workspace and remove access for all members.">
-      <Button type="button" variant="destructive" onClick={() => { setConfirmation(''); deletion.reset(); setOpen(true) }}>Delete workspace</Button>
+    <SettingsCard className="shadow-[0_0_0_1px_var(--destructive)] hover:shadow-[0_0_0_1px_var(--destructive)] [&_h3]:text-destructive [&>div]:bg-transparent [&>div]:shadow-none" title={t('dangerZone.title')} description={t('dangerZone.description')}>
+      <Button type="button" variant="destructive" onClick={() => { setConfirmation(''); deletion.reset(); setOpen(true) }}>{t('dangerZone.delete')}</Button>
     </SettingsCard>
     {open ? (
-      <Modal title="Delete workspace?" description={`Deleting "${workspace.name}" removes access to its projects and tasks for everyone.`} onClose={() => setOpen(false)} dismissible={!deletion.isPending} className="sm:max-w-120">
+      <Modal title={t('dangerZone.confirmTitle')} description={t('dangerZone.confirmDescription', { name: workspace.name })} onClose={() => setOpen(false)} dismissible={!deletion.isPending} className="sm:max-w-120">
         <form onSubmit={(event) => { event.preventDefault(); void deleteConfirmed() }}>
-          {workspaces.length === 1 ? <p className="my-3 text-[13px] text-destructive">This is your last workspace. After deletion, you will have no workspace access.</p> : null}
-          {subscribed ? <p className="my-3 text-[13px] text-destructive">Deleting cancels the subscription at once, with no refund for the rest of the billing period. The workspace stays in the trash for 30 days; restoring it does not restore the subscription.</p> : null}
+          {workspaces.length === 1 ? <p className="my-3 text-[13px] text-destructive">{t('dangerZone.lastWorkspace')}</p> : null}
+          {subscribed ? <p className="my-3 text-[13px] text-destructive">{t('dangerZone.subscription')}</p> : null}
           <Field>
-            <FieldLabel htmlFor={inputId}>Confirm workspace name</FieldLabel>
-            <FieldDescription>Type <strong>{workspace.name}</strong> to confirm deletion.</FieldDescription>
+            <FieldLabel htmlFor={inputId}>{t('dangerZone.confirmLabel')}</FieldLabel>
+            <FieldDescription><Trans t={t} i18nKey="dangerZone.confirmHint" values={{ name: workspace.name }} components={{ strong: <strong /> }} /></FieldDescription>
             <Input id={inputId} autoComplete="off" required value={confirmation} readOnly={deletion.isPending} onChange={(event) => setConfirmation(event.target.value)} />
           </Field>
-          {deletion.isError ? <p role="alert" className="my-3 text-[13px] text-destructive">Workspace deletion failed. Try again, or refresh the page if the workspace has changed.</p> : null}
+          {deletion.isError ? <p role="alert" className="my-3 text-[13px] text-destructive">{t('dangerZone.failed')}</p> : null}
           <DialogFooter className="mt-4">
-            <DialogClose render={<Button type="button" variant="ghost" disabled={deletion.isPending} />}>Cancel</DialogClose>
-            <Button type="submit" variant="destructive" className="aria-disabled:cursor-not-allowed aria-disabled:opacity-50" disabled={confirmation !== workspace.name} aria-disabled={deletion.isPending || undefined}>{deletion.isPending ? 'Deleting…' : 'Delete workspace'}</Button>
+            <DialogClose render={<Button type="button" variant="ghost" disabled={deletion.isPending} />}>{t('cancel')}</DialogClose>
+            <Button type="submit" variant="destructive" className="aria-disabled:cursor-not-allowed aria-disabled:opacity-50" disabled={confirmation !== workspace.name} aria-disabled={deletion.isPending || undefined}>{deletion.isPending ? t('dangerZone.deleting') : t('dangerZone.delete')}</Button>
           </DialogFooter>
         </form>
       </Modal>

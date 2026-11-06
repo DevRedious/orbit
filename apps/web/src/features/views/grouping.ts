@@ -3,6 +3,7 @@ import type { Task, TaskPriority, TaskStatusDef } from '@/features/tasks/api/mod
 import { labelKeyOf, labelRepresentatives, PRIORITY_LABEL, PRIORITY_ORDER, projectLabels, statusKeyOf } from '@/features/tasks/taskMeta'
 import { statusGroups } from '@/features/tasks/tasksLib'
 import type { User } from '@/features/workspaces/models'
+import { i18n } from '@/i18n'
 import { isGroup, resolveDateValue, type Condition, type DateValue, type FilterGroup, type GroupBy } from '@/features/views/viewState'
 
 export type TaskGroup = { key: string; field: GroupBy; value: string | null; label: string; tasks: Task[] }
@@ -27,15 +28,15 @@ function bucketsFor(groupBy: GroupBy, ctx: GroupContext): Bucket[] {
     case 'assignee': {
       const me = ctx.members.filter((member) => member.id === ctx.currentUserId)
       const others = ctx.members.filter((member) => member.id !== ctx.currentUserId).sort(byName)
-      return [...[...me, ...others].map((member): Bucket => ({ value: member.id, label: member.name })), { value: null, label: 'No assignee' }]
+      return [...[...me, ...others].map((member): Bucket => ({ value: member.id, label: member.name })), { value: null, label: i18n.t('views:grouping.noAssignee') }]
     }
     // same-named labels of different projects share a group, keyed by their representative's id
     case 'label':
-      return [...labelRepresentatives(ctx.labels).labels.map((label): Bucket => ({ value: label.id, label: label.name })), { value: null, label: 'No label' }]
+      return [...labelRepresentatives(ctx.labels).labels.map((label): Bucket => ({ value: label.id, label: label.name })), { value: null, label: i18n.t('views:grouping.noLabel') }]
     case 'project':
       return [...ctx.projects].sort(byName).map((project): Bucket => ({ value: project.id, label: project.name }))
     case 'none':
-      return [{ value: null, label: 'All tasks' }]
+      return [{ value: null, label: i18n.t('views:grouping.allTasks') }]
   }
 }
 
@@ -112,6 +113,8 @@ function swapValue(current: string[], from: string | null, to: string | null): s
   return next.length === current.length && next.every((id, index) => id === current[index]) ? null : next
 }
 
+const projectName = (task: Task, ctx: GroupContext) => ctx.projects.find((project) => project.id === task.projectId)?.name ?? i18n.t('views:grouping.thisProject')
+
 /** The task update for dragging `task` from group value `from` to `to` (spec §4 "Drag across groups"). */
 export function dropUpdate(task: Task, field: GroupBy, from: string | null, to: string | null, ctx: GroupContext): DropUpdate {
   if (from === to) return null
@@ -120,7 +123,7 @@ export function dropUpdate(task: Task, field: GroupBy, from: string | null, to: 
     case 'status': {
       if (to === null) return null
       const target = ctx.statuses.find((status) => status.projectId === task.projectId && statusKeyOf(status) === to)
-      if (!target) return { error: `No matching status in ${ctx.projects.find((project) => project.id === task.projectId)?.name ?? 'this project'}` }
+      if (!target) return { error: i18n.t('views:grouping.noMatchingStatus', { project: projectName(task, ctx) }) }
       return target.id === task.statusId ? null : update({ status_id: target.id })
     }
     case 'priority':
@@ -137,7 +140,7 @@ export function dropUpdate(task: Task, field: GroupBy, from: string | null, to: 
         return group ? own.find((label) => labelKeyOf(label) === labelKeyOf(group)) : undefined
       }
       const target = ownWithKeyOf(to)
-      if (to !== null && !target) return { error: `No matching label in ${ctx.projects.find((project) => project.id === task.projectId)?.name ?? 'this project'}` }
+      if (to !== null && !target) return { error: i18n.t('views:grouping.noMatchingLabel', { project: projectName(task, ctx) }) }
       const next = swapValue(task.labels, ownWithKeyOf(from)?.id ?? null, target?.id ?? null)
       return next ? update({ label_ids: next }) : null
     }

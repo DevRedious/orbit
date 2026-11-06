@@ -1,9 +1,9 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { cn } from 'cn'
 import type { StorageFile, WorkspaceBucketView } from '@orbit/api/generated/types.gen'
 import { canDeleteStorageFile, storageFileLabel, storageFilesPage } from '@orbit/api/storage'
-import { ApiProblem } from '@orbit/api/problem'
 import { confirmAction } from '@/components/common/confirmAction'
 import { SettingsCard } from '@/components/common/SettingsCard'
 import { Button } from '@/components/ui/button'
@@ -14,12 +14,7 @@ import { useDeleteStorageFile, useRemoveWorkspaceBucket, useSaveWorkspaceBucket,
 import { useCan } from '@/features/workspaces/permissions'
 import { useWorkspace } from '@/features/workspaces/workspaceContext'
 import { formatBytes } from '@/lib/formatBytes'
-
-const TITLE = 'Own bucket'
-
-function problemText(error: unknown, fallback: string) {
-  return error instanceof ApiProblem ? error.detail : fallback
-}
+import { problemMessage } from '@/i18n/problem'
 
 /** The workspace's own S3 bucket, which only admins manage, and its storage use, which every member sees. */
 export function FileStoragePage() {
@@ -35,53 +30,55 @@ export function FileStoragePage() {
 
 /** The workspace's own S3 bucket for its files, instead of the installation's storage. */
 function BucketSettings({ workspaceId }: { workspaceId: string }) {
+  const { t } = useTranslation('settings')
   const bucket = useWorkspaceBucket(workspaceId, true)
-  if (bucket.isPending) return <SettingsCard title={TITLE}><p role="status">Loading settings…</p></SettingsCard>
-  if (bucket.isError) return <SettingsCard title={TITLE}><p role="alert">Settings could not be loaded. <Button variant="ghost" onClick={() => void bucket.refetch()}>Retry</Button></p></SettingsCard>
+  if (bucket.isPending) return <SettingsCard title={t('fileStorage.title')}><p role="status">{t('fileStorage.loading')}</p></SettingsCard>
+  if (bucket.isError) return <SettingsCard title={t('fileStorage.title')}><p role="alert">{t('fileStorage.loadFailed')} <Button variant="ghost" onClick={() => void bucket.refetch()}>{t('retry')}</Button></p></SettingsCard>
   // Remount on save so the form shows what the server stored.
   return <BucketForm key={JSON.stringify(bucket.data.s3)} workspaceId={workspaceId} bucket={bucket.data} />
 }
 
 function BucketForm({ workspaceId, bucket }: { workspaceId: string; bucket: WorkspaceBucketView }) {
+  const { t } = useTranslation('settings')
   const save = useSaveWorkspaceBucket(workspaceId)
   const remove = useRemoveWorkspaceBucket(workspaceId)
 
   async function removeBucket() {
     const confirmed = await confirmAction({
-      title: 'Remove the bucket?',
-      description: "New files go to Orbit's storage. Files in the bucket move back and are deleted from it.",
-      confirmLabel: 'Remove',
+      title: t('fileStorage.removeTitle'),
+      description: t('fileStorage.removeDescription'),
+      confirmLabel: t('s3.remove'),
       danger: true,
     })
     if (!confirmed) return
     remove.mutate(undefined, {
-      onSuccess: () => toast("Files move back to Orbit's storage"),
-      onError: (error) => toast.error(problemText(error, 'The bucket could not be removed.')),
+      onSuccess: () => toast(t('fileStorage.removed')),
+      onError: (error) => toast.error(problemMessage(error, t('fileStorage.removeFailed'))),
     })
   }
 
-  const count = `${bucket.files_to_move} ${bucket.files_to_move === 1 ? 'file' : 'files'}`
+  const count = bucket.files_to_move
   const moving = bucket.checking
-    ? 'Checking which files to move…'
-    : bucket.files_to_move > 0
-      ? (bucket.removing ? `${count} left to move back to Orbit's storage.` : `${count} left to move to your bucket.`)
+    ? t('fileStorage.checking')
+    : count > 0
+      ? (bucket.removing ? t('fileStorage.leftToMoveBack', { count }) : t('fileStorage.leftToMove', { count }))
       : null
   return (
     <S3BucketForm
       s3={bucket.s3 ?? null}
-      title={TITLE}
-      description="Keep this workspace's files in your own S3-compatible bucket (AWS S3, Cloudflare R2, …) instead of Orbit's storage. After you save, new files go to the bucket and existing files move there in the background. Orbit writes, reads and deletes a test file before it saves. The endpoint must be an https URL on the public internet."
+      title={t('fileStorage.title')}
+      description={t('fileStorage.description')}
       endpointPlaceholder="https://s3.eu-central-1.amazonaws.com"
       saving={save.isPending}
       removing={remove.isPending}
       onSave={(body) => save.mutate(body, {
-        onSuccess: () => toast('Bucket saved'),
-        onError: (error) => toast.error(problemText(error, 'The bucket could not be saved.')),
+        onSuccess: () => toast(t('fileStorage.saved')),
+        onError: (error) => toast.error(problemMessage(error, t('fileStorage.saveFailed'))),
       })}
       onRemove={bucket.s3 && !bucket.removing ? () => void removeBucket() : undefined}
     >
       <div className="mt-4 flex flex-col gap-1 text-xs text-muted-foreground empty:hidden">
-        {bucket.removing ? <span>Removing: files move back to Orbit's storage. Save the bucket again to keep using it.</span> : null}
+        {bucket.removing ? <span>{t('fileStorage.removing')}</span> : null}
         {moving ? (
           <span role="status" className="flex items-center gap-1.5">
             {/* The spinner stops when moving failed; Orbit only tries again later. */}
@@ -89,7 +86,7 @@ function BucketForm({ workspaceId, bucket }: { workspaceId: string; bucket: Work
             {moving}
           </span>
         ) : null}
-        {bucket.move_error ? <span role="alert" className="text-destructive">Moving files stopped: {bucket.move_error} Orbit tries again every ten minutes.</span> : null}
+        {bucket.move_error ? <span role="alert" className="text-destructive">{t('fileStorage.moveError', { error: bucket.move_error })}</span> : null}
       </div>
     </S3BucketForm>
   )
@@ -98,6 +95,7 @@ function BucketForm({ workspaceId, bucket }: { workspaceId: string; bucket: Work
 /** How much of its storage quota the workspace uses. Every member sees it; admins also see (and can delete) the
     largest files. */
 function StorageCard({ workspaceId }: { workspaceId: string }) {
+  const { t } = useTranslation('settings')
   const [offset, setOffset] = useState(0)
   const storage = useWorkspaceStorage(workspaceId, offset)
   const files = storage.data?.largest_files ?? []
@@ -111,31 +109,31 @@ function StorageCard({ workspaceId }: { workspaceId: string }) {
 
   async function remove(file: StorageFile) {
     const { name } = storageFileLabel(file)
-    if (!await confirmAction({ title: `Delete ${name}?`, description: 'It frees its storage at once. Tasks, pages and messages that use it show “Deleted file” instead. You cannot undo this.', confirmLabel: 'Delete', danger: true })) return
-    deleteFile.mutate(file.id, { onError: () => toast.error('The file could not be deleted.') })
+    if (!await confirmAction({ title: t('fileStorage.deleteTitle', { name }), description: t('fileStorage.deleteDescription'), confirmLabel: t('delete'), danger: true })) return
+    deleteFile.mutate(file.id, { onError: () => toast.error(t('fileStorage.deleteFailed')) })
   }
 
   return (
     <SettingsCard
-      title="Usage"
-      description="Files, emoji and stickers of this workspace. A file attached more than once counts once; a deleted file stops counting about a day after the trash is emptied."
+      title={t('fileStorage.usageTitle')}
+      description={t('fileStorage.usageDescription')}
     >
-      {storage.isPending ? <p role="status" className="text-[13px] text-muted-foreground">Loading storage…</p> : null}
-      {storage.isError ? <p role="alert" className="text-[13px] text-destructive">Storage use could not be loaded.</p> : null}
+      {storage.isPending ? <p role="status" className="text-[13px] text-muted-foreground">{t('fileStorage.loadingUsage')}</p> : null}
+      {storage.isError ? <p role="alert" className="text-[13px] text-destructive">{t('fileStorage.usageFailed')}</p> : null}
       {storage.data ? (
         <Progress
           value={quota ? percent : null}
           className={cn('gap-2', !quota && '[&_[data-slot=progress-track]]:hidden', percent >= 90 && '[&_[data-slot=progress-indicator]]:bg-destructive')}
         >
-          <ProgressLabel className="text-[13px] text-foreground">Used</ProgressLabel>
+          <ProgressLabel className="text-[13px] text-foreground">{t('fileStorage.used')}</ProgressLabel>
           <span className="ml-auto text-[13px] text-muted-foreground tabular-nums">
-            {quota ? `${formatBytes(used)} of ${formatBytes(quota)}` : `${formatBytes(used)} · no limit`}
+            {quota ? t('fileStorage.usedOf', { used: formatBytes(used), quota: formatBytes(quota) }) : t('fileStorage.usedNoLimit', { used: formatBytes(used) })}
           </span>
         </Progress>
       ) : null}
       {storage.data?.largest_files.length ? (
         <div className="mt-5 flex flex-col gap-2">
-          <h3 className="text-[13px] font-medium text-foreground">Largest files</h3>
+          <h3 className="text-[13px] font-medium text-foreground">{t('fileStorage.largest')}</h3>
           <ul className="flex flex-col divide-y rounded-lg border">
             {storage.data.largest_files.map((file) => {
               const { name, where } = storageFileLabel(file)
@@ -147,7 +145,7 @@ function StorageCard({ workspaceId }: { workspaceId: string }) {
                   </div>
                   <span className="shrink-0 text-[13px] text-muted-foreground tabular-nums">{formatBytes(file.byte_size)}</span>
                   {canDeleteStorageFile(file) ? (
-                    <Button variant="ghost" size="sm" aria-label={`Delete ${name}`} disabled={deleteFile.isPending} onClick={() => void remove(file)}>Delete</Button>
+                    <Button variant="ghost" size="sm" aria-label={t('fileStorage.deleteAria', { name })} disabled={deleteFile.isPending} onClick={() => void remove(file)}>{t('delete')}</Button>
                   ) : null}
                 </li>
               )
@@ -156,8 +154,8 @@ function StorageCard({ workspaceId }: { workspaceId: string }) {
           {page.previous !== null || page.next !== null ? (
             <div className="flex items-center gap-2">
               <span className="mr-auto text-xs text-muted-foreground tabular-nums">{page.label}</span>
-              <Button variant="outline" size="sm" disabled={page.previous === null || storage.isFetching} onClick={() => page.previous !== null && setOffset(page.previous)}>Previous</Button>
-              <Button variant="outline" size="sm" disabled={page.next === null || storage.isFetching} onClick={() => page.next !== null && setOffset(page.next)}>Next</Button>
+              <Button variant="outline" size="sm" disabled={page.previous === null || storage.isFetching} onClick={() => page.previous !== null && setOffset(page.previous)}>{t('fileStorage.previous')}</Button>
+              <Button variant="outline" size="sm" disabled={page.next === null || storage.isFetching} onClick={() => page.next !== null && setOffset(page.next)}>{t('fileStorage.next')}</Button>
             </div>
           ) : null}
         </div>

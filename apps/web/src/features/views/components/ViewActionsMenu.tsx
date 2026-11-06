@@ -1,11 +1,12 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Copy, Edit, Link2, MoreH, Trash } from 'reicon-react'
 import { toast } from 'sonner'
 import { cn } from 'cn'
-import { ApiProblem } from '@orbit/api/problem'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Tip } from '@/components/common/Tip'
+import { problemMessage } from '@/i18n/problem'
 import { useDeleteView, type SavedView } from '../api/views'
 import { confirmDeleteView, copyViewLink } from '../viewActions'
 
@@ -24,6 +25,7 @@ export interface ViewActionsMenuProps {
 
 /** Edit, Duplicate, Copy link, and Delete view for a saved view (view header, Views page rows). */
 export function ViewActionsMenu({ workspaceId, view, onEdit, onDuplicate, onDeleted, named = false, align = 'start', className }: ViewActionsMenuProps) {
+  const { t } = useTranslation('views')
   const deleteView = useDeleteView(workspaceId)
   const [open, setOpen] = useState(false)
 
@@ -33,20 +35,20 @@ export function ViewActionsMenu({ workspaceId, view, onEdit, onDuplicate, onDele
       await deleteView.mutateAsync(view.id)
       onDeleted?.()
     } catch (error) {
-      toast.error(error instanceof ApiProblem ? error.detail : "Orbit couldn't delete the view.")
+      toast.error(problemMessage(error, t('actions.deleteFailed')))
     }
   }
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen} modal={false}>
-      <Tip label="View options">
+      <Tip label={t('actions.options')}>
         <DropdownMenuTrigger
           render={
             <Button
               type="button"
               variant="ghost"
               size="icon-xs"
-              aria-label={named ? `${view.name} options` : 'View options'}
+              aria-label={named ? t('actions.optionsNamed', { name: view.name }) : t('actions.options')}
               className={cn('text-muted-foreground', className)}
             >
               <MoreH />
@@ -55,13 +57,13 @@ export function ViewActionsMenu({ workspaceId, view, onEdit, onDuplicate, onDele
         />
       </Tip>
       <DropdownMenuContent align={align} className="w-auto min-w-44">
-        {view.can_edit ? <DropdownMenuItem onClick={onEdit}><Edit />Edit view</DropdownMenuItem> : null}
-        <DropdownMenuItem onClick={onDuplicate}><Copy />Duplicate</DropdownMenuItem>
-        <DropdownMenuItem onClick={() => void copyViewLink(workspaceId, view.id)}><Link2 />Copy link</DropdownMenuItem>
+        {view.can_edit ? <DropdownMenuItem onClick={onEdit}><Edit />{t('actions.editView')}</DropdownMenuItem> : null}
+        <DropdownMenuItem onClick={onDuplicate}><Copy />{t('actions.duplicate')}</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => void copyViewLink(workspaceId, view.id)}><Link2 />{t('actions.copyLink')}</DropdownMenuItem>
         {view.can_edit ? (
           <>
             <DropdownMenuSeparator />
-            <DropdownMenuItem variant="destructive" onClick={() => void remove()}><Trash />Delete view</DropdownMenuItem>
+            <DropdownMenuItem variant="destructive" onClick={() => void remove()}><Trash />{t('actions.deleteView')}</DropdownMenuItem>
           </>
         ) : null}
       </DropdownMenuContent>

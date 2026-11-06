@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Add as Plus, Trash } from 'reicon-react'
 import { cn } from 'cn'
 import { Button } from '@/components/ui/button'
@@ -6,7 +7,7 @@ import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, Di
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
-import { FIELD_META, FIELD_ORDER, defaultValue, listValue, operatorLabel, operatorNeedsValue, valueSummary, withOperator, type FilterOptions } from '../filterFields'
+import { FIELD_META, FIELD_ORDER, defaultValue, fieldLabel, listValue, operatorLabel, operatorNeedsValue, valueSummary, withOperator, type FilterOptions } from '../filterFields'
 import {
   MAX_FILTER_CONDITIONS,
   MAX_FILTER_DEPTH,
@@ -78,6 +79,7 @@ function nodeAt(root: FilterGroup, path: NodePath): FilterNode | undefined {
 }
 
 function TreeEditor({ open, filter, options, onApply, validate, onClose }: TreeEditorProps) {
+  const { t } = useTranslation('views')
   const [draft, setDraft] = useState<FilterGroup>(() => structuredClone(filter))
   const [issue, setIssue] = useState<FilterIssue | null>(null)
   const [checking, setChecking] = useState(false)
@@ -111,7 +113,7 @@ function TreeEditor({ open, filter, options, onApply, validate, onClose }: TreeE
       try {
         serverIssue = await validate(draft)
       } catch {
-        serverIssue = { path: 'filter', message: "Orbit couldn't check this filter. Try again." }
+        serverIssue = { path: 'filter', message: t('advancedFilter.checkFailed') }
       }
       if (!active.current) return
       setChecking(false)
@@ -127,8 +129,8 @@ function TreeEditor({ open, filter, options, onApply, validate, onClose }: TreeE
   return (
     <>
       <DialogHeader className="gap-1 border-b px-4 py-3 pr-10">
-        <DialogTitle>Advanced filter</DialogTitle>
-        <DialogDescription className="text-xs">Combine conditions with and/or groups, up to three levels deep.</DialogDescription>
+        <DialogTitle>{t('advancedFilter.title')}</DialogTitle>
+        <DialogDescription className="text-xs">{t('advancedFilter.description')}</DialogDescription>
       </DialogHeader>
       {/* disabled while the server checks, so the draft that passes is the draft that gets applied */}
       <fieldset disabled={checking} className="m-0 flex max-h-[60vh] min-w-0 flex-col gap-2 overflow-y-auto border-0 px-4 py-3">
@@ -141,11 +143,11 @@ function TreeEditor({ open, filter, options, onApply, validate, onClose }: TreeE
       </fieldset>
       <DialogFooter className="mx-0 mb-0 items-center px-4 py-3">
         <Button type="button" variant="ghost" className="sm:mr-auto" disabled={checking || draft.children.length === 0} onClick={() => edit(emptyFilter())}>
-          Clear all
+          {t('advancedFilter.clearAll')}
         </Button>
-        <DialogClose render={<Button type="button" variant="outline" />}>Cancel</DialogClose>
+        <DialogClose render={<Button type="button" variant="outline" />}>{t('cancel')}</DialogClose>
         <Button type="button" disabled={checking} onClick={() => void apply()}>
-          {checking ? 'Checking…' : 'Apply filter'}
+          {checking ? t('advancedFilter.checking') : t('advancedFilter.apply')}
         </Button>
       </DialogFooter>
     </>
@@ -164,17 +166,18 @@ interface NodeEditorProps {
 const nodeNumber = (path: NodePath) => path.map((index) => index + 1).join('.')
 
 function GroupEditor({ group, path, root, options, issue, issueNode, onChange }: NodeEditorProps & { group: FilterGroup }) {
+  const { t } = useTranslation('views')
   const depth = path.length + 1
   const full = countConditions(root) >= MAX_FILTER_CONDITIONS
-  const label = path.length === 0 ? 'Root group' : `Group ${nodeNumber(path)}`
+  const label = path.length === 0 ? t('advancedFilter.rootGroup') : t('advancedFilter.group', { number: nodeNumber(path) })
   const error = path.length > 0 && issue && samePath(issueNode, path) ? issue.message : null
   const setOp = (op: FilterGroup['op']) => onChange(updateNode(root, path, (node) => (isGroup(node) ? { ...node, op } : node)))
   return (
     <div role="group" aria-label={label} className={cn('flex flex-col gap-2', path.length > 0 && 'border-l-2 py-1 pl-3', error && 'border-destructive/60')}>
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
-        <span>Match</span>
+        <span>{t('advancedFilter.match')}</span>
         <ToggleGroup
-          aria-label={`${label} operator`}
+          aria-label={t('advancedFilter.operatorAria', { label })}
           variant="outline"
           size="sm"
           spacing={0}
@@ -185,20 +188,20 @@ function GroupEditor({ group, path, root, options, issue, issueNode, onChange }:
           }}
         >
           <ToggleGroupItem value="and" className="h-6 text-xs text-muted-foreground aria-pressed:text-foreground">
-            And
+            {t('advancedFilter.and')}
           </ToggleGroupItem>
           <ToggleGroupItem value="or" className="h-6 text-xs text-muted-foreground aria-pressed:text-foreground">
-            Or
+            {t('advancedFilter.or')}
           </ToggleGroupItem>
         </ToggleGroup>
-        <span>{group.op === 'and' ? 'every condition below' : 'any condition below'}</span>
+        <span>{group.op === 'and' ? t('advancedFilter.everyCondition') : t('advancedFilter.anyCondition')}</span>
         {path.length > 0 ? (
           <Button
             type="button"
             variant="ghost"
             size="icon-xs"
             className="ml-auto text-muted-foreground"
-            aria-label={`Delete ${label.toLowerCase()}`}
+            aria-label={t('advancedFilter.deleteGroup', { number: nodeNumber(path) })}
             onClick={() => onChange(updateNode(root, path, () => null))}
           >
             <Trash />
@@ -210,7 +213,7 @@ function GroupEditor({ group, path, root, options, issue, issueNode, onChange }:
           {error}
         </p>
       ) : null}
-      {group.children.length === 0 ? <p className="text-xs text-muted-foreground">No conditions. This group matches every task.</p> : null}
+      {group.children.length === 0 ? <p className="text-xs text-muted-foreground">{t('advancedFilter.emptyGroup')}</p> : null}
       {group.children.map((child, index) => {
         const childPath = [...path, index]
         return isGroup(child) ? (
@@ -222,7 +225,7 @@ function GroupEditor({ group, path, root, options, issue, issueNode, onChange }:
       <div className="-ml-2 flex gap-1">
         <Button type="button" variant="ghost" size="sm" className="text-muted-foreground" disabled={full} onClick={() => onChange(appendChild(root, path, blankCondition()))}>
           <Plus />
-          Add condition
+          {t('advancedFilter.addCondition')}
         </Button>
         {depth < MAX_FILTER_DEPTH ? (
           <Button
@@ -234,7 +237,7 @@ function GroupEditor({ group, path, root, options, issue, issueNode, onChange }:
             onClick={() => onChange(appendChild(root, path, { op: group.op === 'and' ? 'or' : 'and', children: [blankCondition()] }))}
           >
             <Plus />
-            Add group
+            {t('advancedFilter.addGroup')}
           </Button>
         ) : null}
       </div>
@@ -243,14 +246,15 @@ function GroupEditor({ group, path, root, options, issue, issueNode, onChange }:
 }
 
 function ConditionRow({ condition, path, root, options, issue, issueNode, onChange }: NodeEditorProps & { condition: Condition }) {
+  const { t } = useTranslation('views')
   const [picking, setPicking] = useState(false)
   const errorId = useId()
   const meta = FIELD_META[condition.field]
-  const label = `Condition ${nodeNumber(path)}`
+  const label = t('advancedFilter.condition', { number: nodeNumber(path) })
   const error = issue && samePath(issueNode, path) ? issue.message : null
   const count = meta.kind === 'list' || meta.kind === 'task' ? listValue(condition).length : 1
   const replace = (next: Condition) => onChange(updateNode(root, path, () => next))
-  const fieldItems = FIELD_ORDER.map((field) => ({ value: field, label: FIELD_META[field].label }))
+  const fieldItems = FIELD_ORDER.map((field) => ({ value: field, label: fieldLabel(field) }))
   const operatorItems = meta.operators.map((operator) => ({ value: operator, label: operatorLabel(operator, count) }))
   return (
     <div role="group" aria-label={label} className="flex flex-col gap-1">
@@ -265,7 +269,7 @@ function ConditionRow({ condition, path, root, options, issue, issueNode, onChan
             replace({ field, operator, value: defaultValue(field, operator) })
           }}
         >
-          <SelectTrigger size="sm" className="w-36" aria-label={`${label} field`}>
+          <SelectTrigger size="sm" className="w-36" aria-label={t('advancedFilter.fieldAria', { label })}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -283,7 +287,7 @@ function ConditionRow({ condition, path, root, options, issue, issueNode, onChan
             if (typeof value === 'string') replace(withOperator(condition, value as FilterOperator))
           }}
         >
-          <SelectTrigger size="sm" className="w-36" aria-label={`${label} operator`}>
+          <SelectTrigger size="sm" className="w-36" aria-label={t('advancedFilter.operatorAria', { label })}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -303,11 +307,11 @@ function ConditionRow({ condition, path, root, options, issue, issueNode, onChan
                   variant="outline"
                   size="sm"
                   className={cn('max-w-60 min-w-0 justify-start font-normal', !valueSummary(condition, options) && 'text-muted-foreground')}
-                  aria-label={`${label} value`}
+                  aria-label={t('advancedFilter.valueAria', { label })}
                   aria-invalid={error ? true : undefined}
                   aria-describedby={error ? errorId : undefined}
                 >
-                  <span className="truncate">{valueSummary(condition, options) || 'Choose…'}</span>
+                  <span className="truncate">{valueSummary(condition, options) || t('filterBar.choose')}</span>
                 </Button>
               }
             />
@@ -323,7 +327,7 @@ function ConditionRow({ condition, path, root, options, issue, issueNode, onChan
           variant="ghost"
           size="icon-xs"
           className="ml-auto text-muted-foreground"
-          aria-label={`Delete ${label.toLowerCase()}`}
+          aria-label={t('advancedFilter.deleteCondition', { number: nodeNumber(path) })}
           onClick={() => onChange(updateNode(root, path, () => null))}
         >
           <Trash />

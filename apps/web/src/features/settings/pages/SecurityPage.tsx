@@ -1,6 +1,8 @@
 import { useId, useState } from 'react'
 import { flushSync } from 'react-dom'
 import { toast } from 'sonner'
+import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { Copy, DocumentDownload, FingerScan, Mobile } from 'reicon-react'
 import { ApiProblem } from '@orbit/api/problem'
 import type { ConnectedAccount, PasskeyRecord, Provider, TotpSetup } from '@orbit/api/generated/types.gen'
@@ -29,17 +31,20 @@ import {
 } from '@/features/settings/api/security'
 import { RowIcon, SettingsRow } from '@/features/settings/components/SettingsParts'
 import { relativeTime } from '@/lib/format'
+import { i18n } from '@/i18n'
+import { problemMessage } from '@/i18n/problem'
 
-function problemDetail(error: unknown, fallback: string) {
-  return error instanceof ApiProblem ? error.detail : fallback
-}
+const WEEK = 7 * 24 * 60 * 60_000
 
-/** "5m ago", "3d ago", or "on Sep 4" for older dates. */
+/** "5m ago", "3d ago", or "on Sep 4" for older dates (`relativeTime` gives a short date from a week on). */
 function ago(iso: string) {
+  const age = Date.now() - new Date(iso).getTime()
+  if (age < 60_000) return i18n.t('settings:security.justNow')
   const relative = relativeTime(iso)
-  if (relative === 'now') return 'just now'
-  return /^\d+[mhd]$/.test(relative) ? `${relative} ago` : `on ${relative}`
+  return age < WEEK ? i18n.t('settings:security.ago', { time: relative }) : i18n.t('settings:security.on', { date: relative })
 }
+
+type SettingsT = TFunction<'settings'>
 
 /** Where `connect` and `confirm` flows come back to. */
 const SECURITY_PATH = '/profile/security'
@@ -63,6 +68,7 @@ export function SecurityPage() {
 type AuthenticatorDialog = 'setup' | 'regenerate' | 'disable' | null
 
 function AuthenticatorCard() {
+  const { t } = useTranslation('settings')
   const status = useTwoFactor()
   const [dialog, setDialog] = useState<AuthenticatorDialog>(null)
   const enabled = status.data?.totp_enabled === true
@@ -70,34 +76,34 @@ function AuthenticatorCard() {
 
   return (
     <SettingsCard
-      title="Authenticator app"
-      description="Sign-in asks for a code from an app such as 1Password, Authy or Google Authenticator after your password."
+      title={t('security.authenticator.title')}
+      description={t('security.authenticator.description')}
       actions={status.data ? (
         enabled ? (
           <>
-            <Button type="button" variant="outline" onClick={() => setDialog('regenerate')}>New recovery codes</Button>
-            <Button type="button" variant="destructive" onClick={() => setDialog('disable')}>Turn off</Button>
+            <Button type="button" variant="outline" onClick={() => setDialog('regenerate')}>{t('security.authenticator.newCodes')}</Button>
+            <Button type="button" variant="destructive" onClick={() => setDialog('disable')}>{t('security.authenticator.turnOff')}</Button>
           </>
         ) : (
-          <Button type="button" variant="outline" onClick={() => setDialog('setup')}>Set up</Button>
+          <Button type="button" variant="outline" onClick={() => setDialog('setup')}>{t('security.authenticator.setUp')}</Button>
         )
       ) : undefined}
       flush
     >
-      {status.isPending ? <SettingsRow role="status">Loading…</SettingsRow> : null}
-      {status.isError ? <SettingsRow role="alert">Two-factor sign-in could not be loaded. <Button variant="ghost" onClick={() => void status.refetch()}>Retry</Button></SettingsRow> : null}
+      {status.isPending ? <SettingsRow role="status">{t('loading')}</SettingsRow> : null}
+      {status.isError ? <SettingsRow role="alert">{t('security.authenticator.loadFailed')} <Button variant="ghost" onClick={() => void status.refetch()}>{t('retry')}</Button></SettingsRow> : null}
       {status.data ? (
         <SettingsRow className="flex-nowrap">
           <RowIcon><Mobile /></RowIcon>
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
             <span className="flex items-center gap-2 text-[13px] font-medium text-foreground">
-              Two-factor sign-in
-              {enabled ? <Badge>On</Badge> : <Badge variant="secondary">Off</Badge>}
+              {t('security.authenticator.twoFactor')}
+              {enabled ? <Badge>{t('security.authenticator.on')}</Badge> : <Badge variant="secondary">{t('security.authenticator.off')}</Badge>}
             </span>
             <span className="text-xs text-muted-foreground/70">
               {enabled
-                ? `On · ${status.data.recovery_codes_left} recovery ${status.data.recovery_codes_left === 1 ? 'code' : 'codes'} left`
-                : 'Only your password is needed to sign in.'}
+                ? t('security.authenticator.codesLeft', { count: status.data.recovery_codes_left })
+                : t('security.authenticator.passwordOnly')}
             </span>
           </div>
         </SettingsRow>
@@ -110,6 +116,7 @@ function AuthenticatorCard() {
 }
 
 function SetupTotpDialog({ onClose }: { onClose: () => void }) {
+  const { t } = useTranslation('settings')
   const setup = useSetupTotp()
   const enable = useEnableTotp()
   const hasPassword = useHasPassword()
@@ -123,26 +130,26 @@ function SetupTotpDialog({ onClose }: { onClose: () => void }) {
     <Dialog open onOpenChange={(open) => { if (!open) onClose() }}>
       <DialogContent>
         {codes ? (
-          <RecoveryCodesStep codes={codes} title="Two-factor sign-in is on" onDone={onClose} />
+          <RecoveryCodesStep codes={codes} title={t('security.setup.enabledTitle')} onDone={onClose} />
         ) : secret ? (
           <form className="grid gap-4" onSubmit={(event) => {
             event.preventDefault()
             enable.mutate(code.trim(), { onSuccess: setCodes })
           }}>
             <DialogHeader>
-              <DialogTitle>Scan the QR code</DialogTitle>
-              <DialogDescription>Scan it with your authenticator app, or enter the key by hand. Then enter the code the app shows.</DialogDescription>
+              <DialogTitle>{t('security.setup.scanTitle')}</DialogTitle>
+              <DialogDescription>{t('security.setup.scanDescription')}</DialogDescription>
             </DialogHeader>
-            <img src={secret.qr_code} alt="QR code for your authenticator app" className="size-48 justify-self-center rounded-lg bg-white p-3" />
-            <CopyField label="Setup key" value={secret.secret} />
+            <img src={secret.qr_code} alt={t('security.setup.qrAlt')} className="size-48 justify-self-center rounded-lg bg-white p-3" />
+            <CopyField label={t('security.setup.setupKey')} copyLabel={t('security.setup.copySetupKey')} value={secret.secret} />
             <Field data-invalid={enable.isError ? true : undefined}>
-              <FieldLabel htmlFor={codeId}>Code from the app</FieldLabel>
+              <FieldLabel htmlFor={codeId}>{t('security.setup.code')}</FieldLabel>
               <Input id={codeId} required autoComplete="one-time-code" inputMode="numeric" spellCheck={false} aria-invalid={enable.isError ? true : undefined} value={code} onChange={(event) => setCode(event.target.value)} />
-              {enable.isError ? <FieldError>{problemDetail(enable.error, 'Two-factor sign-in could not be turned on.')}</FieldError> : null}
+              {enable.isError ? <FieldError>{problemMessage(enable.error, t('security.setup.enableFailed'))}</FieldError> : null}
             </Field>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-              <Button type="submit" disabled={enable.isPending || !code.trim()}>{enable.isPending ? 'Turning on…' : 'Turn on'}</Button>
+              <Button type="button" variant="outline" onClick={onClose}>{t('cancel')}</Button>
+              <Button type="submit" disabled={enable.isPending || !code.trim()}>{enable.isPending ? t('security.setup.turningOn') : t('security.setup.turnOn')}</Button>
             </DialogFooter>
           </form>
         ) : (
@@ -151,13 +158,13 @@ function SetupTotpDialog({ onClose }: { onClose: () => void }) {
             setup.mutate(hasPassword ? password : null, { onSuccess: setSecret })
           }}>
             <DialogHeader>
-              <DialogTitle>Set up an authenticator app</DialogTitle>
-              <DialogDescription>{hasPassword ? 'Confirm your password to start.' : 'Orbit makes a key for your authenticator app.'}</DialogDescription>
+              <DialogTitle>{t('security.setup.title')}</DialogTitle>
+              <DialogDescription>{hasPassword ? t('security.setup.confirmPassword') : t('security.setup.noPassword')}</DialogDescription>
             </DialogHeader>
-            <CurrentPassword returnTo={SECURITY_PATH} hasPassword={hasPassword} value={password} onChange={setPassword} error={setup.error} fallback="The setup could not start." />
+            <CurrentPassword returnTo={SECURITY_PATH} hasPassword={hasPassword} value={password} onChange={setPassword} error={setup.error} fallback={t('security.setup.startFailed')} />
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-              <Button type="submit" disabled={setup.isPending || (hasPassword && !password)}>{setup.isPending ? 'Please wait…' : 'Continue'}</Button>
+              <Button type="button" variant="outline" onClick={onClose}>{t('cancel')}</Button>
+              <Button type="submit" disabled={setup.isPending || (hasPassword && !password)}>{setup.isPending ? t('pleaseWait') : t('continue')}</Button>
             </DialogFooter>
           </form>
         )}
@@ -167,6 +174,7 @@ function SetupTotpDialog({ onClose }: { onClose: () => void }) {
 }
 
 function RegenerateCodesDialog({ onClose }: { onClose: () => void }) {
+  const { t } = useTranslation('settings')
   const regenerate = useRegenerateRecoveryCodes()
   const hasPassword = useHasPassword()
   const [password, setPassword] = useState('')
@@ -175,20 +183,20 @@ function RegenerateCodesDialog({ onClose }: { onClose: () => void }) {
     <Dialog open onOpenChange={(open) => { if (!open) onClose() }}>
       <DialogContent>
         {codes ? (
-          <RecoveryCodesStep codes={codes} title="New recovery codes" onDone={onClose} />
+          <RecoveryCodesStep codes={codes} title={t('security.regenerate.title')} onDone={onClose} />
         ) : (
           <form className="grid gap-4" onSubmit={(event) => {
             event.preventDefault()
             regenerate.mutate(hasPassword ? password : null, { onSuccess: setCodes })
           }}>
             <DialogHeader>
-              <DialogTitle>New recovery codes</DialogTitle>
-              <DialogDescription>Your current recovery codes stop working.</DialogDescription>
+              <DialogTitle>{t('security.regenerate.title')}</DialogTitle>
+              <DialogDescription>{t('security.regenerate.description')}</DialogDescription>
             </DialogHeader>
-            <CurrentPassword returnTo={SECURITY_PATH} hasPassword={hasPassword} value={password} onChange={setPassword} error={regenerate.error} fallback="New recovery codes could not be made." />
+            <CurrentPassword returnTo={SECURITY_PATH} hasPassword={hasPassword} value={password} onChange={setPassword} error={regenerate.error} fallback={t('security.regenerate.failed')} />
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-              <Button type="submit" disabled={regenerate.isPending || (hasPassword && !password)}>{regenerate.isPending ? 'Please wait…' : 'Make new codes'}</Button>
+              <Button type="button" variant="outline" onClick={onClose}>{t('cancel')}</Button>
+              <Button type="submit" disabled={regenerate.isPending || (hasPassword && !password)}>{regenerate.isPending ? t('pleaseWait') : t('security.regenerate.submit')}</Button>
             </DialogFooter>
           </form>
         )}
@@ -198,6 +206,7 @@ function RegenerateCodesDialog({ onClose }: { onClose: () => void }) {
 }
 
 function DisableTwoFactorDialog({ onClose }: { onClose: () => void }) {
+  const { t } = useTranslation('settings')
   const disable = useDisableTwoFactor()
   const hasPassword = useHasPassword()
   const [password, setPassword] = useState('')
@@ -208,19 +217,19 @@ function DisableTwoFactorDialog({ onClose }: { onClose: () => void }) {
           event.preventDefault()
           disable.mutate(hasPassword ? password : null, {
             onSuccess: () => {
-              toast('Two-factor sign-in is off')
+              toast(t('security.disable.done'))
               onClose()
             },
           })
         }}>
           <DialogHeader>
-            <DialogTitle>Turn off two-factor sign-in?</DialogTitle>
-            <DialogDescription>Sign-in no longer asks for a code, and your recovery codes stop working.</DialogDescription>
+            <DialogTitle>{t('security.disable.title')}</DialogTitle>
+            <DialogDescription>{t('security.disable.description')}</DialogDescription>
           </DialogHeader>
-          <CurrentPassword returnTo={SECURITY_PATH} hasPassword={hasPassword} value={password} onChange={setPassword} error={disable.error} fallback="Two-factor sign-in could not be turned off." />
+          <CurrentPassword returnTo={SECURITY_PATH} hasPassword={hasPassword} value={password} onChange={setPassword} error={disable.error} fallback={t('security.disable.failed')} />
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-            <Button type="submit" variant="destructive" disabled={disable.isPending || (hasPassword && !password)}>{disable.isPending ? 'Turning off…' : 'Turn off'}</Button>
+            <Button type="button" variant="outline" onClick={onClose}>{t('cancel')}</Button>
+            <Button type="submit" variant="destructive" disabled={disable.isPending || (hasPassword && !password)}>{disable.isPending ? t('security.disable.turningOff') : t('security.disable.submit')}</Button>
           </DialogFooter>
         </form>
       </DialogContent>
@@ -229,14 +238,15 @@ function DisableTwoFactorDialog({ onClose }: { onClose: () => void }) {
 }
 
 /** A read-only value with a copy button. */
-function CopyField({ label, value }: { label: string; value: string }) {
+function CopyField({ label, copyLabel, value }: { label: string; copyLabel: string; value: string }) {
+  const { t } = useTranslation('settings')
   const id = useId()
   return (
     <Field>
       <FieldLabel htmlFor={id}>{label}</FieldLabel>
       <div className="flex items-center gap-2">
         <Input id={id} readOnly value={value} className="font-mono" onFocus={(event) => event.target.select()} />
-        <Button type="button" variant="outline" size="icon" aria-label={`Copy ${label.toLowerCase()}`} onClick={() => void copyText(value)}>
+        <Button type="button" variant="outline" size="icon" aria-label={copyLabel} onClick={() => void copyText(t, value)}>
           <Copy />
         </Button>
       </div>
@@ -244,17 +254,17 @@ function CopyField({ label, value }: { label: string; value: string }) {
   )
 }
 
-async function copyText(text: string) {
+async function copyText(t: SettingsT, text: string) {
   try {
     await navigator.clipboard.writeText(text)
-    toast('Copied')
+    toast(t('security.copied'))
   } catch {
-    toast.error('Could not copy. Select and copy it manually.')
+    toast.error(t('security.copyFailed'))
   }
 }
 
-function downloadCodes(codes: string[]) {
-  const text = `Orbit recovery codes\nEach code signs in once in place of an authenticator app code.\n\n${codes.join('\n')}\n`
+function downloadCodes(t: SettingsT, codes: string[]) {
+  const text = `${t('security.codes.fileTitle')}\n${t('security.codes.fileHint')}\n\n${codes.join('\n')}\n`
   const url = URL.createObjectURL(new Blob([text], { type: 'text/plain' }))
   const link = document.createElement('a')
   link.href = url
@@ -264,34 +274,36 @@ function downloadCodes(codes: string[]) {
 }
 
 function RecoveryCodesStep({ codes, title, onDone }: { codes: string[]; title: string; onDone: () => void }) {
+  const { t } = useTranslation('settings')
   return (
     <>
       <DialogHeader>
         <DialogTitle>{title}</DialogTitle>
         <DialogDescription>
-          Save these recovery codes somewhere safe. Each one signs you in once if you lose your authenticator app. They are shown only now.
+          {t('security.codes.description')}
         </DialogDescription>
       </DialogHeader>
-      <ul aria-label="Recovery codes" className="grid grid-cols-2 gap-x-4 gap-y-1.5 rounded-lg bg-muted p-4 font-mono text-[13px] text-foreground">
+      <ul aria-label={t('security.codes.aria')} className="grid grid-cols-2 gap-x-4 gap-y-1.5 rounded-lg bg-muted p-4 font-mono text-[13px] text-foreground">
         {codes.map((code) => <li key={code}>{code}</li>)}
       </ul>
       <DialogFooter>
-        <Button type="button" variant="outline" onClick={() => void copyText(codes.join('\n'))}><Copy />Copy</Button>
-        <Button type="button" variant="outline" onClick={() => downloadCodes(codes)}><DocumentDownload />Download</Button>
-        <Button type="button" onClick={onDone}>Done</Button>
+        <Button type="button" variant="outline" onClick={() => void copyText(t, codes.join('\n'))}><Copy />{t('security.codes.copy')}</Button>
+        <Button type="button" variant="outline" onClick={() => downloadCodes(t, codes)}><DocumentDownload />{t('security.codes.download')}</Button>
+        <Button type="button" onClick={onDone}>{t('security.codes.done')}</Button>
       </DialogFooter>
     </>
   )
 }
 
 function PasskeysCard() {
+  const { t } = useTranslation('settings')
   const options = useAuthOptions()
   const passkeys = usePasskeys()
   const remove = useDeletePasskey()
   const add = useAddPasskey()
   const [adding, setAdding] = useState(false)
   // Closing the browser prompt is a choice, not a failure.
-  const addError = !adding && add.isError && !isPasskeyCancel(add.error) ? problemDetail(add.error, add.error instanceof Error ? add.error.message : 'The passkey could not be added.') : null
+  const addError = !adding && add.isError && !isPasskeyCancel(add.error) ? problemMessage(add.error, add.error instanceof Error ? add.error.message : t('security.passkeys.addFailed')) : null
 
   function addPasskey(name: string, password: string | null) {
     add.mutate({
@@ -302,7 +314,7 @@ function PasskeysCard() {
         await new Promise((resolve) => requestAnimationFrame(resolve))
       },
     }, {
-      onSuccess: (passkey) => toast(`${passkey.name} is added`),
+      onSuccess: (passkey) => toast(t('security.passkeys.addedToast', { name: passkey.name })),
     })
   }
   const available = options.data?.passkeys_enabled === true
@@ -311,43 +323,43 @@ function PasskeysCard() {
 
   async function confirmRemove(passkey: PasskeyRecord) {
     const confirmed = await confirmAction({
-      title: `Remove ${passkey.name}?`,
-      description: 'You can no longer sign in with this passkey.',
-      confirmLabel: 'Remove passkey',
+      title: t('security.passkeys.removeTitle', { name: passkey.name }),
+      description: t('security.passkeys.removeDescription'),
+      confirmLabel: t('security.passkeys.removeConfirm'),
       danger: true,
     })
     if (!confirmed) return
     remove.mutate(passkey.id, {
-      onError: (error) => toast.error(problemDetail(error, 'The passkey could not be removed.')),
+      onError: (error) => toast.error(problemMessage(error, t('security.passkeys.removeFailed'))),
     })
   }
 
   return (
     <SettingsCard
-      title="Passkeys"
-      description="Sign in with your fingerprint, face or device screen lock instead of a password."
-      actions={available && supported ? <Button type="button" variant="outline" disabled={add.isPending} onClick={() => { add.reset(); setAdding(true) }}>Add passkey</Button> : undefined}
+      title={t('security.passkeys.title')}
+      description={t('security.passkeys.description')}
+      actions={available && supported ? <Button type="button" variant="outline" disabled={add.isPending} onClick={() => { add.reset(); setAdding(true) }}>{t('security.passkeys.add')}</Button> : undefined}
       flush
     >
       <div className="flex flex-col divide-y">
-        {options.data && !available ? <SettingsRow className="text-[13px] text-muted-foreground">Passkeys need Orbit to be opened at a domain name.</SettingsRow> : null}
-        {available && !supported ? <SettingsRow className="text-[13px] text-muted-foreground">This browser does not support passkeys.</SettingsRow> : null}
-        {!adding && add.isPending ? <SettingsRow role="status" className="text-[13px] text-muted-foreground">Confirm the new passkey in your browser…</SettingsRow> : null}
+        {options.data && !available ? <SettingsRow className="text-[13px] text-muted-foreground">{t('security.passkeys.needsDomain')}</SettingsRow> : null}
+        {available && !supported ? <SettingsRow className="text-[13px] text-muted-foreground">{t('security.passkeys.unsupported')}</SettingsRow> : null}
+        {!adding && add.isPending ? <SettingsRow role="status" className="text-[13px] text-muted-foreground">{t('security.passkeys.confirmInBrowser')}</SettingsRow> : null}
         {addError ? <SettingsRow role="alert" className="text-[13px] text-destructive">{addError}</SettingsRow> : null}
-        {passkeys.isPending ? <SettingsRow role="status">Loading passkeys…</SettingsRow> : null}
-        {passkeys.isError ? <SettingsRow role="alert">Passkeys could not be loaded. <Button variant="ghost" onClick={() => void passkeys.refetch()}>Retry</Button></SettingsRow> : null}
-        {passkeys.isSuccess && list.length === 0 && available ? <SettingsRow className="text-[13px] text-muted-foreground">No passkeys yet.</SettingsRow> : null}
+        {passkeys.isPending ? <SettingsRow role="status">{t('security.passkeys.loading')}</SettingsRow> : null}
+        {passkeys.isError ? <SettingsRow role="alert">{t('security.passkeys.loadFailed')} <Button variant="ghost" onClick={() => void passkeys.refetch()}>{t('retry')}</Button></SettingsRow> : null}
+        {passkeys.isSuccess && list.length === 0 && available ? <SettingsRow className="text-[13px] text-muted-foreground">{t('security.passkeys.empty')}</SettingsRow> : null}
         {list.map((passkey) => (
           <SettingsRow key={passkey.id} className="flex-nowrap" data-passkey={passkey.id}>
             <RowIcon><FingerScan /></RowIcon>
             <div className="flex min-w-0 flex-1 flex-col gap-0.5">
               <span className="truncate text-[13px] font-medium text-foreground">{passkey.name}</span>
               <span className="text-xs text-muted-foreground/70">
-                Added {ago(passkey.created_at)} · {passkey.last_used_at ? `Last used ${ago(passkey.last_used_at)}` : 'Never used'}
+                {t('security.passkeys.added', { when: ago(passkey.created_at) })} · {passkey.last_used_at ? t('security.passkeys.lastUsed', { when: ago(passkey.last_used_at) }) : t('security.passkeys.neverUsed')}
               </span>
             </div>
-            <Button type="button" variant="ghost" aria-label={`Remove ${passkey.name}`} disabled={remove.isPending} onClick={() => void confirmRemove(passkey)}>
-              Remove
+            <Button type="button" variant="ghost" aria-label={t('security.passkeys.removeAria', { name: passkey.name })} disabled={remove.isPending} onClick={() => void confirmRemove(passkey)}>
+              {t('remove')}
             </Button>
           </SettingsRow>
         ))}
@@ -359,6 +371,7 @@ function PasskeysCard() {
 
 /** Asks for the name and the password (if the account has one). It closes before the browser prompt opens (see `useAddPasskey`). */
 function AddPasskeyDialog({ add, onAdd, onClose }: { add: ReturnType<typeof useAddPasskey>; onAdd: (name: string, password: string | null) => void; onClose: () => void }) {
+  const { t } = useTranslation('settings')
   const hasPassword = useHasPassword()
   const [name, setName] = useState(() => defaultPasskeyName())
   const [password, setPassword] = useState('')
@@ -371,21 +384,21 @@ function AddPasskeyDialog({ add, onAdd, onClose }: { add: ReturnType<typeof useA
           onAdd(name.trim(), hasPassword ? password : null)
         }}>
           <DialogHeader>
-            <DialogTitle>Add a passkey</DialogTitle>
-            <DialogDescription>Your browser asks you to confirm with your fingerprint, face, screen lock or security key.</DialogDescription>
+            <DialogTitle>{t('security.passkeys.dialogTitle')}</DialogTitle>
+            <DialogDescription>{t('security.passkeys.dialogDescription')}</DialogDescription>
           </DialogHeader>
           <FieldGroup>
             <Field>
-              <FieldLabel htmlFor={nameId}>Name</FieldLabel>
+              <FieldLabel htmlFor={nameId}>{t('security.passkeys.name')}</FieldLabel>
               <Input id={nameId} required maxLength={64} value={name} onChange={(event) => setName(event.target.value)} />
-              <FieldDescription>So you can tell your passkeys apart, e.g. "MacBook" or "YubiKey".</FieldDescription>
+              <FieldDescription>{t('security.passkeys.nameHint')}</FieldDescription>
             </Field>
             {/* Only the password check fails while the dialog is open. */}
-            <CurrentPassword returnTo={SECURITY_PATH} hasPassword={hasPassword} value={password} onChange={setPassword} error={add.error} fallback="The passkey could not be added." />
+            <CurrentPassword returnTo={SECURITY_PATH} hasPassword={hasPassword} value={password} onChange={setPassword} error={add.error} fallback={t('security.passkeys.addFailed')} />
           </FieldGroup>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-            <Button type="submit" disabled={add.isPending || (hasPassword && !password) || !name.trim()}>{add.isPending ? 'Checking…' : 'Add passkey'}</Button>
+            <Button type="button" variant="outline" onClick={onClose}>{t('cancel')}</Button>
+            <Button type="submit" disabled={add.isPending || (hasPassword && !password) || !name.trim()}>{add.isPending ? t('security.passkeys.checking') : t('security.passkeys.add')}</Button>
           </DialogFooter>
         </form>
       </DialogContent>
@@ -395,6 +408,7 @@ function AddPasskeyDialog({ add, onAdd, onClose }: { add: ReturnType<typeof useA
 
 /** A connected account is a new way into the account, so an account with a password confirms it first. */
 function ConnectProviderDialog({ provider, onClose }: { provider: Provider; onClose: () => void }) {
+  const { t } = useTranslation('settings')
   const connect = useStartProviderSignIn()
   const [password, setPassword] = useState('')
   const name = PROVIDER_NAMES[provider]
@@ -406,13 +420,13 @@ function ConnectProviderDialog({ provider, onClose }: { provider: Provider; onCl
           connect.mutate({ provider, intent: 'connect', returnTo: SECURITY_PATH, password })
         }}>
           <DialogHeader>
-            <DialogTitle>Connect {name}</DialogTitle>
-            <DialogDescription>Confirm your password, then sign in with {name}.</DialogDescription>
+            <DialogTitle>{t('security.connect.title', { name })}</DialogTitle>
+            <DialogDescription>{t('security.connect.description', { name })}</DialogDescription>
           </DialogHeader>
-          <CurrentPassword returnTo={SECURITY_PATH} hasPassword value={password} onChange={setPassword} error={connect.error} fallback="The connection could not start." />
+          <CurrentPassword returnTo={SECURITY_PATH} hasPassword value={password} onChange={setPassword} error={connect.error} fallback={t('security.connect.failed')} />
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-            <Button type="submit" disabled={connect.isPending || connect.isSuccess || !password}>{connect.isPending ? 'Please wait…' : 'Continue'}</Button>
+            <Button type="button" variant="outline" onClick={onClose}>{t('cancel')}</Button>
+            <Button type="submit" disabled={connect.isPending || connect.isSuccess || !password}>{connect.isPending ? t('pleaseWait') : t('continue')}</Button>
           </DialogFooter>
         </form>
       </DialogContent>
@@ -421,6 +435,7 @@ function ConnectProviderDialog({ provider, onClose }: { provider: Provider; onCl
 }
 
 function ConnectedAccountsCard() {
+  const { t } = useTranslation('settings')
   const options = useAuthOptions()
   const accounts = useConnectedAccounts()
   const hasPassword = useHasPassword()
@@ -436,14 +451,14 @@ function ConnectedAccountsCard() {
   async function confirmDisconnect(account: ConnectedAccount) {
     const name = PROVIDER_NAMES[account.provider]
     const confirmed = await confirmAction({
-      title: `Disconnect ${name}?`,
-      description: `You can no longer sign in with this ${name} account.`,
-      confirmLabel: 'Disconnect',
+      title: t('security.accounts.disconnectTitle', { name }),
+      description: t('security.accounts.disconnectDescription', { name }),
+      confirmLabel: t('security.accounts.disconnect'),
       danger: true,
     })
     if (!confirmed) return
     connect.reset()
-    disconnect.mutate(account.provider, { onSuccess: () => toast(`${name} is disconnected`) })
+    disconnect.mutate(account.provider, { onSuccess: () => toast(t('security.accounts.disconnected', { name })) })
   }
 
   function connectProvider(provider: Provider) {
@@ -453,13 +468,13 @@ function ConnectedAccountsCard() {
   }
 
   return (
-    <SettingsCard title="Connected accounts" description="Sign in to Orbit with an account you already have." flush>
+    <SettingsCard title={t('security.accounts.title')} description={t('security.accounts.description')} flush>
       <div className="flex flex-col divide-y">
-        {disconnect.isError ? <SettingsRow role="alert" className="text-[13px] text-destructive">{problemDetail(disconnect.error, 'The account could not be disconnected.')}</SettingsRow> : null}
+        {disconnect.isError ? <SettingsRow role="alert" className="text-[13px] text-destructive">{problemMessage(disconnect.error, t('security.accounts.disconnectFailed'))}</SettingsRow> : null}
         {connect.error instanceof ApiProblem && connect.error.code === 'reauthentication_required'
           ? <SettingsRow><ConfirmWithProvider returnTo={SECURITY_PATH} /></SettingsRow>
-          : connect.isError ? <SettingsRow role="alert" className="text-[13px] text-destructive">{problemDetail(connect.error, 'The connection could not start.')}</SettingsRow> : null}
-        {accounts.isError ? <SettingsRow role="alert">Connected accounts could not be loaded. <Button variant="ghost" onClick={() => void accounts.refetch()}>Retry</Button></SettingsRow> : null}
+          : connect.isError ? <SettingsRow role="alert" className="text-[13px] text-destructive">{problemMessage(connect.error, t('security.connect.failed'))}</SettingsRow> : null}
+        {accounts.isError ? <SettingsRow role="alert">{t('security.accounts.loadFailed')} <Button variant="ghost" onClick={() => void accounts.refetch()}>{t('retry')}</Button></SettingsRow> : null}
         {providers.map((provider) => {
           const account = connected.find((item) => item.provider === provider)
           const name = PROVIDER_NAMES[provider]
@@ -469,13 +484,13 @@ function ConnectedAccountsCard() {
               <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                 <span className="text-[13px] font-medium text-foreground">{name}</span>
                 <span className="truncate text-xs text-muted-foreground/70">
-                  {account ? `${account.email ? `${account.email} · ` : ''}Connected ${ago(account.created_at)}` : 'Not connected'}
+                  {account ? `${account.email ? `${account.email} · ` : ''}${t('security.accounts.connected', { when: ago(account.created_at) })}` : t('security.accounts.notConnected')}
                 </span>
               </div>
               {account ? (
-                <Button type="button" variant="ghost" aria-label={`Disconnect ${name}`} disabled={disconnect.isPending} onClick={() => void confirmDisconnect(account)}>Disconnect</Button>
+                <Button type="button" variant="ghost" aria-label={t('security.accounts.disconnectAria', { name })} disabled={disconnect.isPending} onClick={() => void confirmDisconnect(account)}>{t('security.accounts.disconnect')}</Button>
               ) : accounts.isSuccess && configured.includes(provider) ? (
-                <Button type="button" variant="outline" aria-label={`Connect ${name}`} disabled={connect.isPending || connect.isSuccess} onClick={() => connectProvider(provider)}>Connect</Button>
+                <Button type="button" variant="outline" aria-label={t('security.accounts.connectAria', { name })} disabled={connect.isPending || connect.isSuccess} onClick={() => connectProvider(provider)}>{t('security.accounts.connect')}</Button>
               ) : null}
             </SettingsRow>
           )

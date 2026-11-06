@@ -1,20 +1,20 @@
 import { Calendar, Kanban, List, type IconComponent } from 'reicon-react'
+import { i18n } from '@/i18n'
 import type { GroupBy, Layout, TaskProperty } from './viewState'
 
-/** Names and icons for display options, shared by the Display popover and the Views page. */
-export const LAYOUTS: Array<{ value: Layout; label: string; icon: IconComponent }> = [
-  { value: 'list', label: 'List', icon: List },
-  { value: 'board', label: 'Board', icon: Kanban },
-  { value: 'timeline', label: 'Timeline', icon: Calendar },
+/** Layouts and their icons, shared by the Display popover and the Views page; `layoutLabel` names them. */
+export const LAYOUTS: Array<{ value: Layout; icon: IconComponent }> = [
+  { value: 'list', icon: List },
+  { value: 'board', icon: Kanban },
+  { value: 'timeline', icon: Calendar },
 ]
 
-export const GROUP_LABEL: Record<GroupBy, string> = {
-  status: 'Status',
-  assignee: 'Assignee',
-  priority: 'Priority',
-  project: 'Project',
-  label: 'Label',
-  none: 'No grouping',
+export function layoutLabel(layout: Layout): string {
+  return i18n.t(`views:display.layouts.${layout}`)
+}
+
+export function groupLabel(group: GroupBy): string {
+  return i18n.t(`views:display.groups.${group}`)
 }
 
 /** The properties a timeline row has room for; the others keep their value for list and board. */

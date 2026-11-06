@@ -1,4 +1,6 @@
 import { useRef, useState, type FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { Sticker } from 'reicon-react'
 import type { CustomStickerRecord } from '@orbit/api/generated/types.gen'
 import { ApiProblem } from '@orbit/api/problem'
@@ -16,25 +18,27 @@ import { useWorkspace } from '@/features/workspaces/workspaceContext'
 import { STICKER_IMAGE_TYPES, STICKER_NAME_MAX, stickerNameFromFile, stickerProblem } from '@/lib/customSticker'
 import { shortDate } from '@/lib/format'
 
-/** What the server can answer to a new sticker or a delete, in words for the page. */
-const SERVER_PROBLEMS: Record<string, string> = {
-  chat_forbidden: 'Only workspace owners and administrators can manage stickers.',
-  sticker_too_large: 'The image is too large. The limit is 512 KB.',
-  storage_quota_exceeded: 'The workspace storage is full. Delete files, or ask the administrator of this Orbit for a higher quota.',
-  invalid_sticker: 'The file is not a PNG, JPEG, WebP or GIF image.',
-  validation_failed: 'A name has 2 to 30 characters.',
-  sticker_name_taken: 'A sticker with this name exists already. Choose another name.',
-  sticker_limit_reached: 'The workspace has 100 stickers, which is the limit. Delete one first.',
-}
+/** What the server can answer to a new sticker or a delete, as catalog keys for the page. */
+const SERVER_PROBLEMS = {
+  chat_forbidden: 'stickers.problems.chat_forbidden',
+  sticker_too_large: 'stickers.problems.sticker_too_large',
+  storage_quota_exceeded: 'storageFull',
+  invalid_sticker: 'invalidImage',
+  validation_failed: 'stickers.problems.validation_failed',
+  sticker_name_taken: 'stickers.problems.sticker_name_taken',
+  sticker_limit_reached: 'stickers.problems.sticker_limit_reached',
+} as const
 
 /** The reason in words: ours for a known code, else what the server said (with the status), else that it did not answer. */
-function serverProblem(error: unknown, fallback: string): string {
-  if (!(error instanceof ApiProblem)) return `${fallback} Orbit did not answer. Check your connection and try again.`
-  return SERVER_PROBLEMS[error.code] ?? `${fallback} ${error.detail} (${error.status} ${error.code})`
+function serverProblem(t: TFunction<'settings'>, error: unknown, reason: string): string {
+  if (!(error instanceof ApiProblem)) return t('noAnswer', { reason })
+  if (Object.hasOwn(SERVER_PROBLEMS, error.code)) return t(SERVER_PROBLEMS[error.code as keyof typeof SERVER_PROBLEMS])
+  return t('serverSaid', { reason, detail: error.detail, status: error.status, code: error.code })
 }
 
 /** The stickers of the workspace: add one from an image, delete one. Owners and administrators only (`chat.manage`). */
 export function StickersPage() {
+  const { t } = useTranslation('settings')
   const { workspace } = useWorkspace()
   const canManage = useCan('chat.manage')
   const stickers = useCustomStickers(workspace.id, canManage)
@@ -48,7 +52,7 @@ export function StickersPage() {
   /** From the click to the answer: a second click must not send a second sticker. */
   const [submitting, setSubmitting] = useState(false)
 
-  if (!canManage) return <SettingsCard title="Stickers"><p className="m-0 text-muted-foreground">Only workspace owners and administrators can manage stickers.</p></SettingsCard>
+  if (!canManage) return <SettingsCard title={t('stickers.title')}><p className="m-0 text-muted-foreground">{t('stickers.managersOnly')}</p></SettingsCard>
 
   const memberNames = new Map<string, string>(members.data?.map((member) => [member.id, member.name]))
 
@@ -65,23 +69,23 @@ export function StickersPage() {
       setName('')
       if (fileInput.current) fileInput.current.value = ''
     } catch (error) {
-      setProblem(serverProblem(error, 'The sticker could not be added.'))
+      setProblem(serverProblem(t, error, t('stickers.addFailed')))
     } finally {
       setSubmitting(false)
     }
   }
 
   async function remove(entry: CustomStickerRecord) {
-    if (!await confirmAction({ title: `Delete ${entry.name}?`, description: 'Messages that were sent with it say that the sticker was deleted. You cannot undo this.', confirmLabel: 'Delete', danger: true })) return
+    if (!await confirmAction({ title: t('stickers.deleteTitle', { name: entry.name }), description: t('stickers.deleteDescription'), confirmLabel: t('delete'), danger: true })) return
     deleteSticker.mutate(entry)
   }
 
   return <>
-    <SettingsCard title="Add sticker" description="Stickers are for everyone in this workspace: a large image that is sent as a chat message.">
+    <SettingsCard title={t('stickers.addTitle')} description={t('stickers.addDescription')}>
       <form className="flex flex-col gap-4" onSubmit={(event) => void submit(event)}>
         <FieldGrid>
           <Field>
-            <FieldLabel htmlFor="sticker-file">Image <RequiredMark /></FieldLabel>
+            <FieldLabel htmlFor="sticker-file">{t('image')} <RequiredMark /></FieldLabel>
             <Input
               ref={fileInput}
               id="sticker-file"
@@ -94,38 +98,38 @@ export function StickersPage() {
                 if (chosen) setName(stickerNameFromFile(chosen.name))
               }}
             />
-            <FieldDescription>PNG, JPEG, WebP or GIF, at most 512 KB.</FieldDescription>
+            <FieldDescription>{t('stickers.imageHint')}</FieldDescription>
           </Field>
           <Field>
-            <FieldLabel htmlFor="sticker-name">Name <RequiredMark /></FieldLabel>
-            <Input id="sticker-name" value={name} maxLength={STICKER_NAME_MAX} placeholder="Party Parrot" onChange={(event) => { setName(event.target.value); setProblem(null) }} />
-            <FieldDescription>2 to 30 characters. People find the sticker by this name.</FieldDescription>
+            <FieldLabel htmlFor="sticker-name">{t('name')} <RequiredMark /></FieldLabel>
+            <Input id="sticker-name" value={name} maxLength={STICKER_NAME_MAX} placeholder={t('stickers.namePlaceholder')} onChange={(event) => { setName(event.target.value); setProblem(null) }} />
+            <FieldDescription>{t('stickers.nameHint')}</FieldDescription>
           </Field>
         </FieldGrid>
         <div className="flex flex-wrap items-center gap-3">
-          <Button type="submit" disabled={!file || !name.trim() || submitting}>Add sticker</Button>
+          <Button type="submit" disabled={!file || !name.trim() || submitting}>{t('stickers.add')}</Button>
           {problem ? <p className="text-xs text-destructive" role="alert">{problem}</p> : null}
         </div>
       </form>
     </SettingsCard>
     {stickers.data?.length === 0 ? (
-      <EmptyState icon={Sticker} title="No stickers yet" description="Add an image above. Everyone in the workspace can then send it in chat." />
+      <EmptyState icon={Sticker} title={t('stickers.emptyTitle')} description={t('stickers.emptyDescription')} />
     ) : (
-      <SettingsCard title="Stickers" description={stickers.data ? `${stickers.data.length} of 100 in this workspace.` : undefined} flush>
+      <SettingsCard title={t('stickers.title')} description={stickers.data ? t('stickers.count', { used: stickers.data.length }) : undefined} flush>
         <div className="flex flex-col divide-y">
-          {stickers.isPending ? <SettingsRow>Loading stickers…</SettingsRow> : null}
-          {stickers.isError ? <SettingsRow role="alert">Stickers could not be loaded.</SettingsRow> : null}
+          {stickers.isPending ? <SettingsRow>{t('stickers.loading')}</SettingsRow> : null}
+          {stickers.isError ? <SettingsRow role="alert">{t('stickers.loadFailed')}</SettingsRow> : null}
           {stickers.data?.map((entry) => (
             <SettingsRow className="flex-nowrap" key={entry.id}>
               <img src={entry.url} alt="" draggable={false} loading="lazy" className="size-16 shrink-0 object-contain" />
               <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                 <span className="truncate text-[13px] font-medium text-foreground">{entry.name}</span>
-                <span className="truncate text-xs text-muted-foreground/70">Added by {memberNames.get(entry.created_by) ?? 'a former member'} · {shortDate(entry.created_at)}</span>
+                <span className="truncate text-xs text-muted-foreground/70">{t('addedBy', { name: memberNames.get(entry.created_by) ?? t('formerMember'), date: shortDate(entry.created_at) })}</span>
               </div>
-              <Button variant="ghost" type="button" aria-label={`Delete ${entry.name}`} disabled={deleteSticker.isPending} onClick={() => void remove(entry)}>Delete</Button>
+              <Button variant="ghost" type="button" aria-label={t('stickers.deleteAria', { name: entry.name })} disabled={deleteSticker.isPending} onClick={() => void remove(entry)}>{t('delete')}</Button>
             </SettingsRow>
           ))}
-          {deleteSticker.isError ? <SettingsRow className="text-xs text-destructive" role="alert">{serverProblem(deleteSticker.error, 'The sticker could not be deleted.')}</SettingsRow> : null}
+          {deleteSticker.isError ? <SettingsRow className="text-xs text-destructive" role="alert">{serverProblem(t, deleteSticker.error, t('stickers.deleteFailed'))}</SettingsRow> : null}
         </div>
       </SettingsCard>
     )}

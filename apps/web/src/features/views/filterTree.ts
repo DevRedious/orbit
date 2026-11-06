@@ -1,3 +1,4 @@
+import { i18n } from '@/i18n'
 import { FIELD_META, MAX_FILTER_CONDITIONS, isCompleteCondition } from './filterFields'
 import { countConditions, isGroup, type Condition, type FilterGroup, type FilterNode } from './viewState'
 
@@ -72,11 +73,11 @@ export function blankCondition(): Condition {
  */
 export function firstLocalIssue(root: FilterGroup): FilterIssue | null {
   if (countConditions(root) > MAX_FILTER_CONDITIONS) {
-    return { path: 'filter', message: `Filters can have at most ${MAX_FILTER_CONDITIONS} conditions.` }
+    return { path: 'filter', message: i18n.t('views:filter.tooManyConditions', { max: MAX_FILTER_CONDITIONS }) }
   }
   const nestsUnderScope = root.op === 'or' && root.children.length > 0
   const maxNesting = SERVER_MAX_NESTING - (nestsUnderScope ? 1 : 0)
-  const depthMessage = `Groups can nest up to ${maxNesting} levels below ${nestsUnderScope ? 'an Or' : 'the'} root.`
+  const depthMessage = nestsUnderScope ? i18n.t('views:filter.tooDeepUnderOr', { max: maxNesting }) : i18n.t('views:filter.tooDeep', { max: maxNesting })
   const visit = (group: FilterGroup, path: NodePath): FilterIssue | null => {
     for (const [index, child] of group.children.entries()) {
       const childPath = [...path, index]
@@ -87,7 +88,7 @@ export function firstLocalIssue(root: FilterGroup): FilterIssue | null {
       } else if (!isCompleteCondition(child)) {
         return {
           path: `${toIssuePath(childPath)}.value`,
-          message: FIELD_META[child.field].kind === 'text' ? 'Enter text to search for.' : 'Choose a value.',
+          message: FIELD_META[child.field].kind === 'text' ? i18n.t('views:filter.enterText') : i18n.t('views:filter.chooseValue'),
         }
       }
     }

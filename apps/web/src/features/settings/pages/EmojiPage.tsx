@@ -1,4 +1,6 @@
 import { useRef, useState, type FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { SmileCircle } from 'reicon-react'
 import type { CustomEmojiRecord } from '@orbit/api/generated/types.gen'
 import { ApiProblem } from '@orbit/api/problem'
@@ -18,25 +20,27 @@ import { EMOJI_IMAGE_TYPES, emojiNameFromFile, emojiProblem } from '@/lib/custom
 import { shortDate } from '@/lib/format'
 import { EMOJI_SHORTCODES } from '@/lib/markdown'
 
-/** What the server can answer to a new emoji or a delete, in words for the page. */
-const SERVER_PROBLEMS: Record<string, string> = {
-  chat_forbidden: 'Only workspace owners and administrators can manage custom emoji.',
-  emoji_too_large: 'The image is too large. The limit is 256 KB.',
-  invalid_emoji: 'The file is not a PNG, JPEG, WebP or GIF image.',
-  validation_failed: 'A name has 2 to 32 characters: lower case letters, digits and underscores.',
-  emoji_name_taken: 'An emoji with this name exists already. Choose another name.',
-  emoji_limit_reached: 'The workspace has 200 custom emoji, which is the limit. Delete one first.',
-  storage_quota_exceeded: 'The workspace storage is full. Delete files, or ask the administrator of this Orbit for a higher quota.',
-}
+/** What the server can answer to a new emoji or a delete, as catalog keys for the page. */
+const SERVER_PROBLEMS = {
+  chat_forbidden: 'emoji.problems.chat_forbidden',
+  emoji_too_large: 'emoji.problems.emoji_too_large',
+  invalid_emoji: 'invalidImage',
+  validation_failed: 'emoji.problems.validation_failed',
+  emoji_name_taken: 'emoji.problems.emoji_name_taken',
+  emoji_limit_reached: 'emoji.problems.emoji_limit_reached',
+  storage_quota_exceeded: 'storageFull',
+} as const
 
 /** The reason in words: ours for a known code, else what the server said (with the status), else that it did not answer. */
-function serverProblem(error: unknown, fallback: string): string {
-  if (!(error instanceof ApiProblem)) return `${fallback} Orbit did not answer. Check your connection and try again.`
-  return SERVER_PROBLEMS[error.code] ?? `${fallback} ${error.detail} (${error.status} ${error.code})`
+function serverProblem(t: TFunction<'settings'>, error: unknown, reason: string): string {
+  if (!(error instanceof ApiProblem)) return t('noAnswer', { reason })
+  if (Object.hasOwn(SERVER_PROBLEMS, error.code)) return t(SERVER_PROBLEMS[error.code as keyof typeof SERVER_PROBLEMS])
+  return t('serverSaid', { reason, detail: error.detail, status: error.status, code: error.code })
 }
 
 /** The custom emoji of the workspace: add one from an image, delete one. Owners and administrators only (`chat.manage`). */
 export function EmojiPage() {
+  const { t } = useTranslation('settings')
   const { workspace } = useWorkspace()
   const canManage = useCan('chat.manage')
   const emoji = useCustomEmoji(workspace.id, canManage)
@@ -50,7 +54,7 @@ export function EmojiPage() {
   /** From the click to the answer: the emoji data loads before the request, and a second click must not send a second one. */
   const [submitting, setSubmitting] = useState(false)
 
-  if (!canManage) return <SettingsCard title="Emoji"><p className="m-0 text-muted-foreground">Only workspace owners and administrators can manage custom emoji.</p></SettingsCard>
+  if (!canManage) return <SettingsCard title={t('emoji.title')}><p className="m-0 text-muted-foreground">{t('emoji.managersOnly')}</p></SettingsCard>
 
   const memberNames = new Map<string, string>(members.data?.map((member) => [member.id, member.name]))
 
@@ -71,23 +75,23 @@ export function EmojiPage() {
       setName('')
       if (fileInput.current) fileInput.current.value = ''
     } catch (error) {
-      setProblem(serverProblem(error, 'The emoji could not be added.'))
+      setProblem(serverProblem(t, error, t('emoji.addFailed')))
     } finally {
       setSubmitting(false)
     }
   }
 
   async function remove(entry: CustomEmojiRecord) {
-    if (!await confirmAction({ title: `Delete :${entry.name}:?`, description: 'Messages and reactions that use it show its name as text. You cannot undo this.', confirmLabel: 'Delete', danger: true })) return
+    if (!await confirmAction({ title: t('emoji.deleteTitle', { name: entry.name }), description: t('emoji.deleteDescription'), confirmLabel: t('delete'), danger: true })) return
     deleteEmoji.mutate(entry)
   }
 
   return <>
-    <SettingsCard title="Add emoji" description="Custom emoji are for everyone in this workspace: in chat messages and as reactions.">
+    <SettingsCard title={t('emoji.addTitle')} description={t('emoji.addDescription')}>
       <form className="flex flex-col gap-4" onSubmit={(event) => void submit(event)}>
         <FieldGrid>
           <Field>
-            <FieldLabel htmlFor="emoji-file">Image <RequiredMark /></FieldLabel>
+            <FieldLabel htmlFor="emoji-file">{t('image')} <RequiredMark /></FieldLabel>
             <Input
               ref={fileInput}
               id="emoji-file"
@@ -100,38 +104,38 @@ export function EmojiPage() {
                 if (chosen) setName(emojiNameFromFile(chosen.name))
               }}
             />
-            <FieldDescription>PNG, JPEG, WebP or GIF, at most 256 KB.</FieldDescription>
+            <FieldDescription>{t('emoji.imageHint')}</FieldDescription>
           </Field>
           <Field>
-            <FieldLabel htmlFor="emoji-name">Name <RequiredMark /></FieldLabel>
+            <FieldLabel htmlFor="emoji-name">{t('name')} <RequiredMark /></FieldLabel>
             <Input id="emoji-name" value={name} maxLength={32} placeholder="party_parrot" onChange={(event) => { setName(event.target.value.toLowerCase()); setProblem(null) }} />
-            <FieldDescription>Lower case letters, digits and underscores. In a message, type :{name || 'name'}:</FieldDescription>
+            <FieldDescription>{t('emoji.nameHint', { name: name || t('emoji.namePlaceholder') })}</FieldDescription>
           </Field>
         </FieldGrid>
         <div className="flex flex-wrap items-center gap-3">
-          <Button type="submit" disabled={!file || !name || submitting}>Add emoji</Button>
+          <Button type="submit" disabled={!file || !name || submitting}>{t('emoji.add')}</Button>
           {problem ? <p className="text-xs text-destructive" role="alert">{problem}</p> : null}
         </div>
       </form>
     </SettingsCard>
     {emoji.data?.length === 0 ? (
-      <EmptyState icon={SmileCircle} title="No custom emoji yet" description="Add an image above. Everyone in the workspace can then use it in chat." />
+      <EmptyState icon={SmileCircle} title={t('emoji.emptyTitle')} description={t('emoji.emptyDescription')} />
     ) : (
-      <SettingsCard title="Emoji" description={emoji.data ? `${emoji.data.length} of 200 in this workspace.` : undefined} flush>
+      <SettingsCard title={t('emoji.title')} description={emoji.data ? t('emoji.count', { used: emoji.data.length }) : undefined} flush>
         <div className="flex flex-col divide-y">
-          {emoji.isPending ? <SettingsRow>Loading emoji…</SettingsRow> : null}
-          {emoji.isError ? <SettingsRow role="alert">Emoji could not be loaded.</SettingsRow> : null}
+          {emoji.isPending ? <SettingsRow>{t('emoji.loading')}</SettingsRow> : null}
+          {emoji.isError ? <SettingsRow role="alert">{t('emoji.loadFailed')}</SettingsRow> : null}
           {emoji.data?.map((entry) => (
             <SettingsRow className="flex-nowrap" key={entry.id}>
               <RowIcon><img src={entry.url} alt="" draggable={false} className="size-6 object-contain" /></RowIcon>
               <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                 <span className="truncate text-[13px] font-medium text-foreground">:{entry.name}:</span>
-                <span className="truncate text-xs text-muted-foreground/70">Added by {memberNames.get(entry.created_by) ?? 'a former member'} · {shortDate(entry.created_at)}</span>
+                <span className="truncate text-xs text-muted-foreground/70">{t('addedBy', { name: memberNames.get(entry.created_by) ?? t('formerMember'), date: shortDate(entry.created_at) })}</span>
               </div>
-              <Button variant="ghost" type="button" aria-label={`Delete :${entry.name}:`} disabled={deleteEmoji.isPending} onClick={() => void remove(entry)}>Delete</Button>
+              <Button variant="ghost" type="button" aria-label={t('emoji.deleteAria', { name: entry.name })} disabled={deleteEmoji.isPending} onClick={() => void remove(entry)}>{t('delete')}</Button>
             </SettingsRow>
           ))}
-          {deleteEmoji.isError ? <SettingsRow className="text-xs text-destructive" role="alert">{serverProblem(deleteEmoji.error, 'The emoji could not be deleted.')}</SettingsRow> : null}
+          {deleteEmoji.isError ? <SettingsRow className="text-xs text-destructive" role="alert">{serverProblem(t, deleteEmoji.error, t('emoji.deleteFailed'))}</SettingsRow> : null}
         </div>
       </SettingsCard>
     )}

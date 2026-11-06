@@ -1,5 +1,6 @@
 import { toast } from 'sonner'
-import { ApiProblem } from '@orbit/api/problem'
+import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { useMemo, useState, type ComponentProps } from 'react'
 import { cva, type VariantProps } from 'class-variance-authority'
 import { confirmAction } from '@/components/common/confirmAction'
@@ -27,6 +28,7 @@ import { FieldGrid, RequiredMark } from '@/features/settings/components/Settings
 import { useSlowPending } from '@/lib/useDebouncedValue'
 import { ProfileTrigger } from '@/components/common/ProfileTrigger'
 import { loadFailed } from '@/lib/connection'
+import { problemMessage } from '@/i18n/problem'
 
 type Role = User['role']
 type Sort = 'name_asc' | 'name_desc' | 'email_asc' | 'role'
@@ -35,16 +37,20 @@ const ROLES: Role[] = ['Owner', 'Admin', 'Member']
 const PAGE_SIZES = [10, 25, 50, 100]
 // Owner is never a choice: that role only moves through an ownership transfer.
 const INVITABLE_ROLES = ['Admin', 'Member'] as const
-// `items` lets Select.Value render the option label instead of the raw value.
-const ROLE_FILTER_OPTIONS = [{ value: 'all', label: 'All roles' }, ...ROLES.map((role) => ({ value: role, label: role }))]
-const SORT_OPTIONS: { value: Sort; label: string }[] = [
-  { value: 'name_asc', label: 'Name A–Z' },
-  { value: 'name_desc', label: 'Name Z–A' },
-  { value: 'email_asc', label: 'Email A–Z' },
-  { value: 'role', label: 'Role' },
-]
+const SORT_OPTIONS = [
+  { value: 'name_asc', label: 'members.sort.nameAsc' },
+  { value: 'name_desc', label: 'members.sort.nameDesc' },
+  { value: 'email_asc', label: 'members.sort.emailAsc' },
+  { value: 'role', label: 'members.sort.role' },
+] as const satisfies ReadonlyArray<{ value: Sort; label: string }>
 const PAGE_SIZE_OPTIONS = PAGE_SIZES.map((size) => ({ value: String(size), label: String(size) }))
-const INVITE_ROLE_OPTIONS = INVITABLE_ROLES.map((role) => ({ value: role, label: role }))
+const ROLE_KEYS = { owner: 'members.roles.owner', admin: 'members.roles.admin', member: 'members.roles.member' } as const
+
+/** A role in words; a role the app does not know (from the server) shows as it is. */
+function roleLabel(t: TFunction<'settings'>, role: string) {
+  const key = role.toLowerCase()
+  return Object.hasOwn(ROLE_KEYS, key) ? t(ROLE_KEYS[key as keyof typeof ROLE_KEYS]) : role
+}
 const EMPTY_USERS: User[] = []
 
 function initial(user: User) {
@@ -52,6 +58,7 @@ function initial(user: User) {
 }
 
 export function MembersPage() {
+  const { t, i18n } = useTranslation('settings')
   const { workspace } = useWorkspace()
   const canManage = useCan('members.manage')
   const currentUser = useCurrentUser()
@@ -96,8 +103,13 @@ export function MembersPage() {
     })
   }, [users, search, roleFilter, sortBy])
 
-  if (membersQuery.isPending) return <SettingsCard title="Members"><p>Loading workspace members…</p></SettingsCard>
-  if (loadFailed(membersQuery)) return <SettingsCard title="Members"><p role="alert">Workspace members could not be loaded. No mock data was substituted.</p></SettingsCard>
+  if (membersQuery.isPending) return <SettingsCard title={t('members.title')}><p>{t('members.loading')}</p></SettingsCard>
+  if (loadFailed(membersQuery)) return <SettingsCard title={t('members.title')}><p role="alert">{t('members.loadFailed')}</p></SettingsCard>
+
+  // `items` lets Select.Value render the option label instead of the raw value.
+  const roleFilterOptions = [{ value: 'all', label: t('members.allRoles') }, ...ROLES.map((role) => ({ value: role, label: roleLabel(t, role) }))]
+  const sortOptions = SORT_OPTIONS.map((option) => ({ value: option.value, label: t(option.label) }))
+  const inviteRoleOptions = INVITABLE_ROLES.map((role) => ({ value: role, label: roleLabel(t, role) }))
 
   const lastPage = Math.max(1, Math.ceil(filtered.length / perPage))
   const currentPage = Math.min(page, lastPage)
@@ -125,7 +137,7 @@ export function MembersPage() {
       await createInvitation.mutateAsync({ email, role: inviteRole.toLowerCase() as 'admin' | 'member', delivery: 'smtp' })
       setInviteLink(null)
       setInviteEmail('')
-      toast(`Invitation sent to ${email}`)
+      toast(t('members.invite.sent', { email }))
     } catch {
       // Mutation feedback remains visible in the form.
     }
@@ -137,17 +149,17 @@ export function MembersPage() {
       await navigator.clipboard.writeText(inviteLink)
       setCopied(true)
       setCopyError(false)
-      toast('Invitation link copied')
+      toast(t('members.invite.linkCopied'))
     } catch {
       setCopied(false)
       setCopyError(true)
-      toast.error('Could not copy the invitation link.')
+      toast.error(t('members.invite.copyToast'))
     }
   }
 
   return (
     <>
-      <SettingsCard title="Members" flush>
+      <SettingsCard title={t('members.title')} flush>
         <div className="flex items-center justify-between gap-2 border-b p-3 max-[899px]:flex-col max-[899px]:items-stretch">
           <InputGroup className="max-w-96 max-[899px]:max-w-none">
             <InputGroupAddon align="inline-start">
@@ -156,8 +168,8 @@ export function MembersPage() {
             <InputGroupInput
               type="search"
               className="text-xs"
-              placeholder="Search members"
-              aria-label="Search members"
+              placeholder={t('members.search')}
+              aria-label={t('members.search')}
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value)
@@ -169,7 +181,7 @@ export function MembersPage() {
                 <InputGroupButton
                   size="icon-xs"
                   className="text-muted-foreground"
-                  aria-label="Clear search"
+                  aria-label={t('members.clearSearch')}
                   onClick={() => {
                     setSearch('')
                     setPage(1)
@@ -182,33 +194,33 @@ export function MembersPage() {
           </InputGroup>
           <div className="flex gap-2 max-[899px]:flex-col">
             <Select
-              items={ROLE_FILTER_OPTIONS}
+              items={roleFilterOptions}
               value={roleFilter}
               onValueChange={(value) => {
                 setRoleFilter(value as 'all' | Role)
                 setPage(1)
               }}
             >
-              <SelectTrigger aria-label="Filter by role" className="w-36 max-[899px]:w-full">
+              <SelectTrigger aria-label={t('members.filterByRole')} className="w-36 max-[899px]:w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {ROLE_FILTER_OPTIONS.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
+                {roleFilterOptions.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
               </SelectContent>
             </Select>
             <Select
-              items={SORT_OPTIONS}
+              items={sortOptions}
               value={sortBy}
               onValueChange={(value) => {
                 setSortBy(value as Sort)
                 setPage(1)
               }}
             >
-              <SelectTrigger aria-label="Sort members" className="w-40 max-[899px]:w-full">
+              <SelectTrigger aria-label={t('members.sortMembers')} className="w-40 max-[899px]:w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {SORT_OPTIONS.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
+                {sortOptions.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
@@ -218,10 +230,10 @@ export function MembersPage() {
           <>
             <MemberTable>
               <MemberRow kind="header">
-                <span>Name</span>
-                <span>Email</span>
-                <span>Role</span>
-                <span className="text-right">Actions</span>
+                <span>{t('members.columns.name')}</span>
+                <span>{t('members.columns.email')}</span>
+                <span>{t('members.columns.role')}</span>
+                <span className="text-right">{t('members.columns.actions')}</span>
               </MemberRow>
               {visible.map((user) => (
                 <MemberRow key={user.id} data-member-row>
@@ -237,13 +249,13 @@ export function MembersPage() {
                     </ProfileTrigger>
                     {user.id === currentUser.data?.id ? (
                       <Badge data-tone="accent">
-                        You
+                        {t('members.you')}
                       </Badge>
                     ) : null}
                   </div>
                   <div className="truncate text-xs text-muted-foreground">{user.email}</div>
                   <div>
-                    <Badge variant="secondary">{user.role}</Badge>
+                    <Badge variant="secondary">{roleLabel(t, user.role)}</Badge>
                   </div>
                   <div className="flex justify-end">
                     {/* Your own row has no menu; the abilities themselves come from the server. */}
@@ -252,7 +264,7 @@ export function MembersPage() {
                         <DropdownMenuTrigger
                           render={<Button variant="outline" size="sm" className="text-[11px]" />}
                         >
-                          Manage
+                          {t('members.manage')}
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-auto min-w-52">
                           {(user.can.changeRole ? INVITABLE_ROLES : []).filter((role) => role !== user.role).map((role) => (
@@ -260,15 +272,15 @@ export function MembersPage() {
                               key={role}
                               onClick={() => changeRole.mutate({ membershipId: user.membershipId, version: user.version, role: role.toLowerCase() as 'admin' | 'member' })}
                             >
-                              Make {role.toLowerCase()}
+                              {role === 'Admin' ? t('members.makeAdmin') : t('members.makeMember')}
                             </DropdownMenuItem>
                           ))}
                           {user.can.transferOwnership ? (
                             <DropdownMenuItem onClick={async () => {
-                              if (await confirmAction({ title: `Transfer ownership of ${workspace.name} to ${user.name}?`, confirmLabel: 'Transfer ownership', danger: true })) {
+                              if (await confirmAction({ title: t('members.transferConfirm', { workspace: workspace.name, name: user.name }), confirmLabel: t('members.transferOwnership'), danger: true })) {
                                 transferOwnership.mutate({ membershipId: user.membershipId, membershipVersion: user.version, workspaceVersion: workspace.version })
                               }
-                            }}>Transfer ownership</DropdownMenuItem>
+                            }}>{t('members.transferOwnership')}</DropdownMenuItem>
                           ) : null}
                           {user.can.remove ? (
                             <>
@@ -279,7 +291,7 @@ export function MembersPage() {
                                 data-danger="true"
                                 onClick={() => removeMember.mutate({ membershipId: user.membershipId, version: user.version })}
                               >
-                                Remove member
+                                {t('members.remove')}
                               </DropdownMenuItem>
                             </>
                           ) : null}
@@ -293,7 +305,7 @@ export function MembersPage() {
             <footer className="flex min-h-11 items-center justify-between border-t px-4 text-[11px] text-muted-foreground/70">
               <div className="inline-flex h-7 items-center gap-3 whitespace-nowrap tabular-nums">
                 <span>
-                  {firstRow}-{lastRow} of {filtered.length}
+                  {t('members.range', { first: firstRow, last: lastRow, total: filtered.length })}
                 </span>
                 <Select
                   items={PAGE_SIZE_OPTIONS}
@@ -303,7 +315,7 @@ export function MembersPage() {
                     setPage(1)
                   }}
                 >
-                  <SelectTrigger aria-label="Items per page" size="sm" className="w-16 px-2">
+                  <SelectTrigger aria-label={t('members.itemsPerPage')} size="sm" className="w-16 px-2">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -312,24 +324,24 @@ export function MembersPage() {
                 </Select>
               </div>
               <div className="flex items-center gap-1">
-                <Tip label="Previous page">
+                <Tip label={t('members.previousPage')}>
                   <Button
                     type="button"
                     variant="outline"
                     size="icon-sm"
-                    aria-label="Previous page"
+                    aria-label={t('members.previousPage')}
                     disabled={currentPage <= 1}
                     onClick={() => setPage(currentPage - 1)}
                   >
                     <ArrowRight className="size-3.5 rotate-180" />
                   </Button>
                 </Tip>
-                <Tip label="Next page">
+                <Tip label={t('members.nextPage')}>
                   <Button
                     type="button"
                     variant="outline"
                     size="icon-sm"
-                    aria-label="Next page"
+                    aria-label={t('members.nextPage')}
                     disabled={currentPage >= lastPage}
                     onClick={() => setPage(currentPage + 1)}
                   >
@@ -344,33 +356,33 @@ export function MembersPage() {
             <EmptyState
               size="sm"
               icon={Users}
-              title="No matching members"
-              description="Try a different name, email address, or role."
+              title={t('members.empty.title')}
+              description={t('members.empty.description')}
             />
           </div>
         )}
-        {changeRole.isError ? <p role="alert" className="text-destructive">Role change failed. <Button variant="ghost" onClick={() => changeRole.variables && changeRole.mutate(changeRole.variables)}>Retry</Button></p> : null}
-        {removeMember.isError ? <p role="alert" className="text-destructive">Member removal failed. <Button variant="ghost" onClick={() => removeMember.variables && removeMember.mutate(removeMember.variables)}>Retry</Button></p> : null}
-        {transferOwnership.isError ? <p role="alert" className="text-destructive">Ownership transfer failed. <Button variant="ghost" onClick={() => transferOwnership.variables && transferOwnership.mutate(transferOwnership.variables)}>Retry</Button></p> : null}
-        {memberSaving ? <p role="status">Saving member change…</p> : null}
+        {changeRole.isError ? <p role="alert" className="text-destructive">{t('members.roleChangeFailed')} <Button variant="ghost" onClick={() => changeRole.variables && changeRole.mutate(changeRole.variables)}>{t('retry')}</Button></p> : null}
+        {removeMember.isError ? <p role="alert" className="text-destructive">{t('members.removeFailed')} <Button variant="ghost" onClick={() => removeMember.variables && removeMember.mutate(removeMember.variables)}>{t('retry')}</Button></p> : null}
+        {transferOwnership.isError ? <p role="alert" className="text-destructive">{t('members.transferFailed')} <Button variant="ghost" onClick={() => transferOwnership.variables && transferOwnership.mutate(transferOwnership.variables)}>{t('retry')}</Button></p> : null}
+        {memberSaving ? <p role="status">{t('members.saving')}</p> : null}
       </SettingsCard>
 
       {canManage ? (
         <form id="invitations" onSubmit={(event) => void generateLink(event)}>
           <SettingsCard
-            title="Invite a member"
-            description="Create a reusable invitation link or deliver it by email."
+            title={t('members.invite.title')}
+            description={t('members.invite.description')}
             actions={
               <>
-                <Tip label={emailEnabled ? 'Email the invitation link' : 'Email delivery is not configured'}>
+                <Tip label={emailEnabled ? t('members.invite.emailTip') : t('members.invite.emailNotConfigured')}>
                   <Button type="button" variant="outline" disabled={!emailEnabled || createInvitation.isPending} onClick={(event) => { if (event.currentTarget.form?.reportValidity()) void emailInvitation() }}>
                     <Bell className="size-3.5" />
-                    Send email
+                    {t('members.invite.sendEmail')}
                   </Button>
                 </Tip>
                 <Button type="submit" disabled={createInvitation.isPending}>
                   <Plus className="size-3.5" />
-                  Generate link
+                  {t('members.invite.generateLink')}
                 </Button>
               </>
             }
@@ -378,12 +390,12 @@ export function MembersPage() {
             <FieldGrid>
               <Field>
                 <FieldLabel htmlFor="invite-email">
-                  Email address <RequiredMark />
+                  {t('members.invite.email')} <RequiredMark />
                 </FieldLabel>
                 <Input
                   id="invite-email"
                   type="email"
-                  placeholder="teammate@example.com"
+                  placeholder={t('members.invite.emailPlaceholder')}
                   required
                   value={inviteEmail}
                   onChange={(e) => setInviteEmail(e.target.value)}
@@ -391,14 +403,14 @@ export function MembersPage() {
               </Field>
               <Field>
                 <FieldLabel htmlFor="invite-role">
-                  Role
+                  {t('members.invite.role')}
                 </FieldLabel>
-                <Select items={INVITE_ROLE_OPTIONS} value={inviteRole} onValueChange={(value) => setInviteRole(value as (typeof INVITABLE_ROLES)[number])}>
+                <Select items={inviteRoleOptions} value={inviteRole} onValueChange={(value) => setInviteRole(value as (typeof INVITABLE_ROLES)[number])}>
                   <SelectTrigger id="invite-role">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {INVITE_ROLE_OPTIONS.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
+                    {inviteRoleOptions.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </Field>
@@ -407,35 +419,35 @@ export function MembersPage() {
               <div className="mt-4 flex items-end gap-2">
                 <Field>
                   <FieldLabel htmlFor="invite-link">
-                    Invitation link ({inviteRole})
+                    {t('members.invite.link', { role: roleLabel(t, inviteRole) })}
                   </FieldLabel>
                   <Input id="invite-link" value={inviteLink} readOnly />
                 </Field>
                 <Button type="button" variant="outline" onClick={copyLink}>
                   <Copy className="size-3.5" />
-                  {copied ? 'Copied' : 'Copy'}
+                  {copied ? t('copied') : t('copy')}
                 </Button>
               </div>
             ) : null}
-            {createInvitation.isError ? <p role="alert" className="text-destructive">{createInvitation.error instanceof ApiProblem ? createInvitation.error.detail : 'The invitation could not be created.'}</p> : null}
-            {copyError ? <p role="alert" className="text-destructive">The invitation link could not be copied. Select and copy it manually.</p> : null}
+            {createInvitation.isError ? <p role="alert" className="text-destructive">{problemMessage(createInvitation.error, t('members.invite.failed'))}</p> : null}
+            {copyError ? <p role="alert" className="text-destructive">{t('members.invite.copyFailed')}</p> : null}
           </SettingsCard>
         </form>
       ) : null}
 
-      {canManage && invitations.isPending ? <SettingsCard title="Pending invitations"><p role="status">Loading invitations…</p></SettingsCard> : null}
-      {canManage && invitations.isError ? <SettingsCard title="Pending invitations"><p role="alert">Invitations could not be loaded. <Button variant="ghost" onClick={() => void invitations.refetch()}>Retry</Button></p></SettingsCard> : null}
+      {canManage && invitations.isPending ? <SettingsCard title={t('members.pending.title')}><p role="status">{t('members.pending.loading')}</p></SettingsCard> : null}
+      {canManage && invitations.isError ? <SettingsCard title={t('members.pending.title')}><p role="alert">{t('members.pending.loadFailed')} <Button variant="ghost" onClick={() => void invitations.refetch()}>{t('retry')}</Button></p></SettingsCard> : null}
       {canManage && pendingInvitations.length > 0 ? (
-        <SettingsCard title="Pending invitations" flush>
+        <SettingsCard title={t('members.pending.title')} flush>
           <MemberTable>
             {pendingInvitations.map((invitation) => <MemberRow key={invitation.id}>
-              <span className="truncate">{invitation.email}</span><span className="text-xs text-muted-foreground">Expires {new Date(invitation.expires_at).toLocaleDateString()}</span><Badge variant="secondary">{invitation.role}</Badge>
-              <span className="text-right"><Button variant="ghost" disabled={revokeInvitation.isPending} onClick={() => revokeInvitation.mutate(invitation.id)}>Revoke</Button></span>
+              <span className="truncate">{invitation.email}</span><span className="text-xs text-muted-foreground">{t('members.pending.expires', { date: new Date(invitation.expires_at).toLocaleDateString(i18n.language) })}</span><Badge variant="secondary">{roleLabel(t, invitation.role)}</Badge>
+              <span className="text-right"><Button variant="ghost" disabled={revokeInvitation.isPending} onClick={() => revokeInvitation.mutate(invitation.id)}>{t('revoke')}</Button></span>
             </MemberRow>)}
           </MemberTable>
         </SettingsCard>
       ) : null}
-      {revokeInvitation.isError ? <p role="alert" className="text-destructive">Invitation revocation failed. <Button variant="ghost" onClick={() => revokeInvitation.variables && revokeInvitation.mutate(revokeInvitation.variables)}>Retry</Button></p> : null}
+      {revokeInvitation.isError ? <p role="alert" className="text-destructive">{t('members.pending.revokeFailed')} <Button variant="ghost" onClick={() => revokeInvitation.variables && revokeInvitation.mutate(revokeInvitation.variables)}>{t('retry')}</Button></p> : null}
     </>
   )
 }

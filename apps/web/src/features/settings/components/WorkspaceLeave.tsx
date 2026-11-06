@@ -1,3 +1,4 @@
+import { Trans, useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router'
 import { confirmAction } from '@/components/common/confirmAction'
 import { SettingsCard } from '@/components/common/SettingsCard'
@@ -9,6 +10,7 @@ import { useWorkspace } from '@/features/workspaces/workspaceContext'
 
 /** Any member may leave a workspace; its owner must transfer ownership first (`can_remove` on the caller's own row). */
 export function WorkspaceLeave() {
+  const { t } = useTranslation('settings')
   const { workspace, workspaces } = useWorkspace()
   const userId = useCurrentUser().data?.id
   const members = useMembers(workspace.id)
@@ -20,25 +22,26 @@ export function WorkspaceLeave() {
 
   // The server allows everyone but the owner to leave.
   if (membership && !membership.can.remove) return (
-    <SettingsCard title="Leave workspace">
-      {billing ? (
-        <p className="text-[13px] text-muted-foreground">
-          The owner cannot leave. Ownership transfer is not available on Orbit Cloud yet. To remove the workspace, delete it in <Link to="/settings/danger-zone" className="text-foreground underline underline-offset-4">Danger zone</Link>.
-        </p>
-      ) : (
-        <p className="text-[13px] text-muted-foreground">
-          To leave, first transfer ownership to another member in <Link to="/settings/members" className="text-foreground underline underline-offset-4">Members</Link>, or delete the workspace in <Link to="/settings/danger-zone" className="text-foreground underline underline-offset-4">Danger zone</Link>.
-        </p>
-      )}
+    <SettingsCard title={t('leave.title')}>
+      <p className="text-[13px] text-muted-foreground">
+        <Trans
+          t={t}
+          i18nKey={billing ? 'leave.ownerCloud' : 'leave.ownerTransfer'}
+          components={{
+            members: <Link to="/settings/members" className="text-foreground underline underline-offset-4" />,
+            dangerZone: <Link to="/settings/danger-zone" className="text-foreground underline underline-offset-4" />,
+          }}
+        />
+      </p>
     </SettingsCard>
   )
 
   async function leaveConfirmed() {
     if (!membership || leave.isPending) return
     const confirmed = await confirmAction({
-      title: `Leave ${workspace.name}?`,
-      description: 'You lose access to its projects, tasks, docs and chat. To come back, someone must invite you again.',
-      confirmLabel: 'Leave workspace',
+      title: t('leave.confirmTitle', { name: workspace.name }),
+      description: t('leave.confirmDescription'),
+      confirmLabel: t('leave.confirm'),
       danger: true,
     })
     if (!confirmed) return
@@ -53,12 +56,12 @@ export function WorkspaceLeave() {
   }
 
   return (
-    <SettingsCard title="Leave workspace">
+    <SettingsCard title={t('leave.title')}>
       <div className="flex flex-col items-start gap-2">
         <Button type="button" variant="destructive" disabled={!membership || leave.isPending} onClick={() => void leaveConfirmed()}>
-          {leave.isPending ? 'Leaving…' : 'Leave workspace'}
+          {leave.isPending ? t('leave.leaving') : t('leave.confirm')}
         </Button>
-        {leave.isError ? <p role="alert" className="text-[13px] text-destructive">You could not leave the workspace. Refresh the page and try again.</p> : null}
+        {leave.isError ? <p role="alert" className="text-[13px] text-destructive">{t('leave.failed')}</p> : null}
       </div>
     </SettingsCard>
   )

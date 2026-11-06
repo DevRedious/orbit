@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Danger, RotateLeft } from 'reicon-react'
 import { confirmAction } from '@/components/common/confirmAction'
 import { SettingsCard } from '@/components/common/SettingsCard'
@@ -19,6 +20,7 @@ type Notice = { id: string; kind: 'reserved' | 'invalid' } | { id: string; kind:
 
 /** Account view: every shortcut with its keys. A key is a button: press it, then press the new keys. */
 export function ShortcutsPage() {
+  const { t } = useTranslation('settings')
   const { overrides, save } = useShortcutBindings()
   const bindings = resolveBindings(overrides)
   const [query, setQuery] = useState('')
@@ -46,33 +48,33 @@ export function ShortcutsPage() {
 
   return (
     <SettingsCard
-      title="Keyboard shortcuts"
-      description="Select a shortcut, then press the new keys. Press two keys in a row for a sequence."
+      title={t('shortcuts.title')}
+      description={t('shortcuts.description')}
       actions={
         <>
-          <Input type="search" aria-label="Search shortcuts" placeholder="Search shortcuts…" value={query} onChange={(event) => setQuery(event.target.value)} className="h-8 w-52 max-sm:w-36" />
+          <Input type="search" aria-label={t('shortcuts.search')} placeholder={t('shortcuts.searchPlaceholder')} value={query} onChange={(event) => setQuery(event.target.value)} className="h-8 w-52 max-sm:w-36" />
           {changed ? (
             <Button
               type="button"
               variant="outline"
               onClick={async () => {
-                if (await confirmAction({ title: 'Reset all shortcuts?', description: 'Every shortcut goes back to its default keys.', confirmLabel: 'Reset all' })) save({})
+                if (await confirmAction({ title: t('shortcuts.resetTitle'), description: t('shortcuts.resetDescription'), confirmLabel: t('shortcuts.resetConfirm') })) save({})
               }}
             >
-              Reset all shortcuts
+              {t('shortcuts.resetAll')}
             </Button>
           ) : null}
         </>
       }
       flush
     >
-      {shown.length === 0 ? <p className="px-4 py-10 text-center text-[13px] text-muted-foreground">No shortcut matches "{query.trim()}".</p> : null}
+      {shown.length === 0 ? <p className="px-4 py-10 text-center text-[13px] text-muted-foreground">{t('shortcuts.noMatch', { query: query.trim() })}</p> : null}
       {GROUPS.map((group) => {
         const commands = shown.filter((command) => command.group === group)
         if (commands.length === 0) return null
         return (
-          <section key={group} aria-label={group} className="border-t first:border-t-0">
-            <h4 className="px-4 pt-3 pb-1 text-xs font-medium text-muted-foreground">{group}</h4>
+          <section key={group} aria-label={t(`shortcuts.groups.${group}`)} className="border-t first:border-t-0">
+            <h4 className="px-4 pt-3 pb-1 text-xs font-medium text-muted-foreground">{t(`shortcuts.groups.${group}`)}</h4>
             <ul className="divide-y">
               {commands.map((command) => {
                 const keys = bindings[command.id]
@@ -85,39 +87,39 @@ export function ShortcutsPage() {
                     <div className="flex h-8 items-center gap-2">
                       <span className="min-w-0 flex-1 truncate">{command.title}</span>
                       {command.id in overrides && !command.fixed ? (
-                        <Tip label="Reset to the default keys">
-                          <Button type="button" variant="ghost" size="icon-xs" className="animate-in text-muted-foreground/70 duration-150 ease-out fade-in-0" aria-label={`Reset ${command.title}`} onClick={() => save(applyRebind(overrides, command.id, command.keys, false))}>
+                        <Tip label={t('shortcuts.resetTip')}>
+                          <Button type="button" variant="ghost" size="icon-xs" className="animate-in text-muted-foreground/70 duration-150 ease-out fade-in-0" aria-label={t('shortcuts.resetAria', { title: command.title })} onClick={() => save(applyRebind(overrides, command.id, command.keys, false))}>
                             <RotateLeft />
                           </Button>
                         </Tip>
                       ) : null}
                       {command.fixed ? (
-                        <span title="This key cannot be changed" className="flex h-7 items-center px-2 opacity-70">{keys ? <ShortcutKeys keys={keys} /> : null}</span>
+                        <span title={t('shortcuts.fixed')} className="flex h-7 items-center px-2 opacity-70">{keys ? <ShortcutKeys keys={keys} /> : null}</span>
                       ) : recording === command.id ? (
                         <KeyRecorder onRecord={(next) => record(command, next)} onCancel={() => setRecording(null)} onClear={() => { setRecording(null); save(applyRebind(overrides, command.id, null, false)) }} />
                       ) : (
-                        <Button type="button" variant="ghost" className="h-7 min-w-28 justify-end px-2 text-xs font-normal text-muted-foreground active:scale-[0.97] motion-reduce:active:scale-100" aria-label={`Change shortcut for ${command.title}`} onClick={() => start(command.id)}>
-                          {keys ? <ShortcutKeys keys={keys} /> : 'No shortcut'}
+                        <Button type="button" variant="ghost" className="h-7 min-w-28 justify-end px-2 text-xs font-normal text-muted-foreground active:scale-[0.97] motion-reduce:active:scale-100" aria-label={t('shortcuts.changeAria', { title: command.title })} onClick={() => start(command.id)}>
+                          {keys ? <ShortcutKeys keys={keys} /> : t('shortcuts.none')}
                         </Button>
                       )}
                     </div>
-                    {rowNotice?.kind === 'reserved' ? <p role="alert" className="animate-in pb-1.5 text-xs text-destructive duration-150 ease-out fade-in-0">The browser uses this shortcut. Choose other keys.</p> : null}
-                    {rowNotice?.kind === 'invalid' ? <p role="alert" className="animate-in pb-1.5 text-xs text-destructive duration-150 ease-out fade-in-0">These keys cannot be used. Choose other keys.</p> : null}
+                    {rowNotice?.kind === 'reserved' ? <p role="alert" className="animate-in pb-1.5 text-xs text-destructive duration-150 ease-out fade-in-0">{t('shortcuts.reserved')}</p> : null}
+                    {rowNotice?.kind === 'invalid' ? <p role="alert" className="animate-in pb-1.5 text-xs text-destructive duration-150 ease-out fade-in-0">{t('shortcuts.invalid')}</p> : null}
                     {rowNotice?.kind === 'conflict' ? (
                       <div role="alert" className="flex animate-in flex-wrap items-center gap-2 pb-1.5 text-xs text-muted-foreground duration-150 ease-out fade-in-0">
                         <ShortcutKeys keys={rowNotice.keys} />
                         {/* a swap is an exchange of two shortcuts: not with a fixed one, and not with several at once */}
-                        <span>Used by "{rowNotice.other.title}"{rowNotice.more > 0 ? ` and ${rowNotice.more} more` : ''}.{rowNotice.other.fixed ? ' That shortcut cannot be changed.' : ''}</span>
+                        <span>{rowNotice.more > 0 ? t('shortcuts.usedByMore', { title: rowNotice.other.title, count: rowNotice.more }) : t('shortcuts.usedBy', { title: rowNotice.other.title })}{rowNotice.other.fixed ? ` ${t('shortcuts.otherFixed')}` : ''}</span>
                         {rowNotice.other.fixed || rowNotice.more > 0 ? null : (
-                          <Button type="button" size="xs" variant="outline" onClick={() => { save(applyRebind(overrides, command.id, rowNotice.keys, true)); setNotice(null) }}>Swap</Button>
+                          <Button type="button" size="xs" variant="outline" onClick={() => { save(applyRebind(overrides, command.id, rowNotice.keys, true)); setNotice(null) }}>{t('shortcuts.swap')}</Button>
                         )}
-                        <Button type="button" size="xs" variant="ghost" onClick={() => setNotice(null)}>Cancel</Button>
+                        <Button type="button" size="xs" variant="ghost" onClick={() => setNotice(null)}>{t('cancel')}</Button>
                       </div>
                     ) : null}
                     {clash ? (
                       <p className="flex items-center gap-1.5 pb-1.5 text-xs text-muted-foreground">
                         <Danger aria-hidden className="size-3.5 text-destructive" />
-                        Also used by "{clash.title}". Change one of them.
+                        {t('shortcuts.alsoUsed', { title: clash.title })}
                       </p>
                     ) : null}
                   </li>

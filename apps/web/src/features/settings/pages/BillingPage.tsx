@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { cn } from 'cn'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { Navigate, useSearchParams } from 'react-router'
@@ -10,29 +12,18 @@ import { useBillingCheckout, useBillingEnabled, useBillingPortal, useWorkspaceBi
 import { useAuthOptions } from '@/features/auth/api'
 import { fullDate } from '@/lib/format'
 import { loadFailed } from '@/lib/connection'
+import { i18n } from '@/i18n'
+import { problemMessage } from '@/i18n/problem'
 
-const STATUS_LABELS: Record<SubscriptionStatus, string> = {
-  active: 'Active',
-  trialing: 'Trial',
-  past_due: 'Payment failed, retrying',
-  incomplete: 'Waiting for payment',
-  incomplete_expired: 'Payment expired',
-  canceled: 'Cancelled',
-  unpaid: 'Unpaid',
-  paused: 'Paused',
-}
+type SettingsT = TFunction<'settings'>
 
-const ACCESS_LABELS: Record<WorkspaceAccess, string> = {
-  full: 'Full access',
-  trial: 'Trial',
-  read_only: 'Read-only',
-}
+const statusLabel = (t: SettingsT, status: SubscriptionStatus) => t(`billing.statuses.${status}`)
+const accessLabel = (t: SettingsT, access: WorkspaceAccess) => t(`billing.accesses.${access}`)
+const intervalLabel = (t: SettingsT, interval: PlanInterval) => t(`billing.intervals.${interval}`)
 
-const INTERVAL_LABELS: Record<PlanInterval, string> = { month: 'Monthly', year: 'Annual' }
-
-/** A price in minor units, with as many decimals as it needs (`$10`, `$8.33`). */
+/** A price in minor units, with as many decimals as it needs (`$10`, `$8.33`). The server's currency, the UI language's format. */
 function money(minor: number, currency: string) {
-  const format = new Intl.NumberFormat(undefined, { style: 'currency', currency, minimumFractionDigits: 0 })
+  const format = new Intl.NumberFormat(i18n.language, { style: 'currency', currency, minimumFractionDigits: 0 })
   return format.format(minor / 10 ** (format.resolvedOptions().maximumFractionDigits ?? 2))
 }
 
@@ -62,13 +53,14 @@ function annualSaving(products: PlanView[][]) {
   return saving > 0 ? saving : null
 }
 
-function subscribedPlan(billing: BillingView) {
+function subscribedPlan(t: SettingsT, billing: BillingView) {
   const plan = billing.plans.find((candidate) => candidate.key === billing.plan)
   if (!plan) return billing.plan
-  return plan.interval ? `${plan.name} · ${INTERVAL_LABELS[plan.interval]}` : plan.name
+  return plan.interval ? t('billing.planWithInterval', { name: plan.name, interval: intervalLabel(t, plan.interval) }) : plan.name
 }
 
 function PlanCard({ plan, onChoose, disabled }: { plan: PlanView; onChoose?: () => void; disabled: boolean }) {
+  const { t } = useTranslation('settings')
   const price = plan.amount != null && plan.currency ? { amount: plan.amount, currency: plan.currency } : null
   return (
     <div data-slot="plan-card" className="flex flex-col gap-3 rounded-lg border p-4">
@@ -77,17 +69,17 @@ function PlanCard({ plan, onChoose, disabled }: { plan: PlanView; onChoose?: () 
         <div className="flex flex-col gap-1">
           <p className="flex items-baseline gap-1.5">
             <span className="text-2xl font-semibold tracking-tight">{money(price.amount, price.currency)}</span>
-            {plan.interval ? <span className="text-xs text-muted-foreground">per workspace / {plan.interval}</span> : null}
+            {plan.interval ? <span className="text-xs text-muted-foreground">{t(`billing.perWorkspace.${plan.interval}`)}</span> : null}
           </p>
           {plan.interval === 'year' ? (
-            <p className="text-xs text-muted-foreground">{money(price.amount / 12, price.currency)} / month, billed yearly</p>
+            <p className="text-xs text-muted-foreground">{t('billing.billedYearly', { price: money(price.amount / 12, price.currency) })}</p>
           ) : null}
-          <p className="text-xs text-muted-foreground">Unlimited tasks, pages and members</p>
+          <p className="text-xs text-muted-foreground">{t('billing.unlimited')}</p>
         </div>
       ) : null}
       {onChoose ? (
         <Button className="mt-auto w-full" disabled={disabled} onClick={onChoose}>
-          Choose {plan.name}
+          {t('billing.choose', { name: plan.name })}
         </Button>
       ) : null}
     </div>
@@ -95,6 +87,7 @@ function PlanCard({ plan, onChoose, disabled }: { plan: PlanView; onChoose?: () 
 }
 
 function PlanChooser({ plans, onChoose, disabled }: { plans: PlanView[]; onChoose?: (key: string) => void; disabled: boolean }) {
+  const { t } = useTranslation('settings')
   const [period, setPeriod] = useState<PlanInterval>('month')
   const products = groupByProduct(plans)
   const switchable = products.some((group) => priced(group, 'month') && priced(group, 'year'))
@@ -103,7 +96,7 @@ function PlanChooser({ plans, onChoose, disabled }: { plans: PlanView[]; onChoos
     <div className="flex flex-col gap-4">
       {switchable ? (
         <ToggleGroup
-          aria-label="Billing interval"
+          aria-label={t('billing.intervalAria')}
           variant="outline"
           size="sm"
           spacing={0}
@@ -113,8 +106,8 @@ function PlanChooser({ plans, onChoose, disabled }: { plans: PlanView[]; onChoos
             if (next === 'month' || next === 'year') setPeriod(next)
           }}
         >
-          <ToggleGroupItem value="month">Monthly</ToggleGroupItem>
-          <ToggleGroupItem value="year">{saving ? `Annual · save ${saving}%` : 'Annual'}</ToggleGroupItem>
+          <ToggleGroupItem value="month">{t('billing.intervals.month')}</ToggleGroupItem>
+          <ToggleGroupItem value="year">{saving ? t('billing.annualSaving', { percent: saving }) : t('billing.intervals.year')}</ToggleGroupItem>
         </ToggleGroup>
       ) : null}
       <div className={cn('grid gap-3 sm:grid-cols-2', products.length > 2 && 'lg:grid-cols-3')}>
@@ -127,14 +120,15 @@ function PlanChooser({ plans, onChoose, disabled }: { plans: PlanView[]; onChoos
   )
 }
 
-function renewal(billing: BillingView) {
+function renewal(t: SettingsT, billing: BillingView) {
   if (!billing.current_period_end || billing.access !== 'full') return null
   const date = fullDate(billing.current_period_end)
-  return billing.cancel_at_period_end ? `Ends on ${date}` : `Renews on ${date}`
+  return billing.cancel_at_period_end ? t('billing.endsOn', { date }) : t('billing.renewsOn', { date })
 }
 
 /** Orbit Cloud: the workspace's plan. The owner subscribes through Stripe Checkout and manages it in the Billing Portal. */
 export function BillingPage() {
+  const { t } = useTranslation('settings')
   const options = useAuthOptions()
   const enabled = useBillingEnabled()
   const query = useWorkspaceBilling()
@@ -148,9 +142,9 @@ export function BillingPage() {
   useEffect(() => {
     if (!returned) return
     // The id keeps it to one toast when the effect runs again before the parameter is gone (StrictMode).
-    if (returned === 'success') toast.success('Thanks! Your subscription starts as soon as Stripe confirms the payment.', { id: 'billing-checkout' })
+    if (returned === 'success') toast.success(t('billing.thanks'), { id: 'billing-checkout' })
     setParams({}, { replace: true })
-  }, [returned, setParams])
+  }, [returned, setParams, t])
 
   // Stripe confirms through the webhook a moment after the redirect: look again until access arrives.
   const waiting = confirming && query.data?.access !== 'full'
@@ -166,8 +160,8 @@ export function BillingPage() {
   }, [waiting, refetch])
 
   if (options.data && !enabled) return <Navigate to="/settings" replace />
-  if (loadFailed(query)) return <SettingsCard title="Billing">Billing is not available right now.</SettingsCard>
-  if (query.data === undefined) return <SettingsCard title="Billing">Loading billing.</SettingsCard>
+  if (loadFailed(query)) return <SettingsCard title={t('billing.title')}>{t('billing.unavailable')}</SettingsCard>
+  if (query.data === undefined) return <SettingsCard title={t('billing.title')}>{t('billing.loading')}</SettingsCard>
   const billing = query.data
   const trial = billing.trial
   const error = checkout.error ?? portal.error
@@ -176,63 +170,63 @@ export function BillingPage() {
   return (
     <>
       <SettingsCard
-        title="Billing"
+        title={t('billing.title')}
         description={
           billing.exempt
-            ? 'This workspace is included with Orbit and needs no plan.'
+            ? t('billing.exempt')
             : billing.trial_days > 0
-              ? `Each workspace has its own plan. A new workspace starts with a ${billing.trial_days}-day trial. Without an active plan after it, the workspace is read-only: everything stays readable and exportable.`
-              : 'Each workspace has its own plan. Without an active plan, the workspace is read-only: everything stays readable and exportable.'
+              ? t('billing.descriptionTrial', { days: billing.trial_days })
+              : t('billing.description')
         }
         actions={
           billing.can_manage && billing.has_customer ? (
             <Button variant="outline" disabled={busy} onClick={() => portal.mutate()}>
-              Manage billing
+              {t('billing.manage')}
             </Button>
           ) : null
         }
       >
         <dl className="grid gap-3 text-sm sm:grid-cols-[160px_minmax(0,1fr)]">
-          <dt className="text-muted-foreground">Plan</dt>
-          <dd>{billing.plan ? subscribedPlan(billing) : billing.status ? 'Other plan' : billing.exempt ? 'Included' : 'No plan'}</dd>
-          <dt className="text-muted-foreground">Status</dt>
-          <dd>{billing.status ? STATUS_LABELS[billing.status] : billing.exempt ? 'No subscription needed' : 'Not subscribed'}</dd>
-          <dt className="text-muted-foreground">Access</dt>
-          <dd data-access={billing.access}>{ACCESS_LABELS[billing.access]}</dd>
+          <dt className="text-muted-foreground">{t('billing.plan')}</dt>
+          <dd>{billing.plan ? subscribedPlan(t, billing) : billing.status ? t('billing.otherPlan') : billing.exempt ? t('billing.included') : t('billing.noPlan')}</dd>
+          <dt className="text-muted-foreground">{t('billing.status')}</dt>
+          <dd>{billing.status ? statusLabel(t, billing.status) : billing.exempt ? t('billing.noSubscriptionNeeded') : t('billing.notSubscribed')}</dd>
+          <dt className="text-muted-foreground">{t('billing.access')}</dt>
+          <dd data-access={billing.access}>{accessLabel(t, billing.access)}</dd>
           {trial ? (
             <>
-              <dt className="text-muted-foreground">Trial ends</dt>
+              <dt className="text-muted-foreground">{t('billing.trialEnds')}</dt>
               <dd>{fullDate(trial.ends_at)}</dd>
-              <dt className="text-muted-foreground">Trial usage</dt>
+              <dt className="text-muted-foreground">{t('billing.trialUsage')}</dt>
               <dd>
                 <ul>
                   {(['tasks', 'pages', 'members'] as const).map((noun) => (
                     <li key={noun}>
-                      {trial[noun].used} of {trial[noun].limit} {noun}
+                      {t(`billing.usage.${noun}`, { used: trial[noun].used, limit: trial[noun].limit })}
                     </li>
                   ))}
                 </ul>
               </dd>
             </>
           ) : null}
-          {renewal(billing) ? (
+          {renewal(t, billing) ? (
             <>
-              <dt className="text-muted-foreground">{billing.cancel_at_period_end ? 'Ends' : 'Renews'}</dt>
-              <dd>{renewal(billing)}</dd>
+              <dt className="text-muted-foreground">{billing.cancel_at_period_end ? t('billing.ends') : t('billing.renews')}</dt>
+              <dd>{renewal(t, billing)}</dd>
             </>
           ) : null}
         </dl>
         {error ? (
           <p role="alert" className="mt-3 text-xs text-destructive">
-            {error.message}
+            {problemMessage(error, error.message)}
           </p>
         ) : null}
       </SettingsCard>
       {billing.access !== 'full' ? (
-        <SettingsCard title="Choose a plan" description={billing.can_manage ? 'You pay through Stripe. You can change or cancel the plan at any time.' : undefined}>
+        <SettingsCard title={t('billing.chooseTitle')} description={billing.can_manage ? t('billing.chooseDescription') : undefined}>
           <PlanChooser plans={billing.plans} disabled={busy || waiting} onChoose={billing.can_manage ? (plan) => checkout.mutate(plan) : undefined} />
-          {billing.can_manage ? null : <p className="mt-3 text-sm text-muted-foreground">Only the workspace owner can choose a plan.</p>}
-          {waiting ? <p className="mt-3 text-xs text-muted-foreground">Waiting for Stripe to confirm the payment.</p> : null}
+          {billing.can_manage ? null : <p className="mt-3 text-sm text-muted-foreground">{t('billing.ownerOnly')}</p>}
+          {waiting ? <p className="mt-3 text-xs text-muted-foreground">{t('billing.waiting')}</p> : null}
         </SettingsCard>
       ) : null}
     </>

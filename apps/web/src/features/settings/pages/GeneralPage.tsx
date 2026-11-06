@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { UnsavedBar } from '@/components/common/UnsavedBar'
 import { Button } from '@/components/ui/button'
 import { Field, FieldLabel } from '@/components/ui/field'
@@ -13,6 +14,7 @@ import { WorkspaceLeave } from '@/features/settings/components/WorkspaceLeave'
 import { useSlowPending } from '@/lib/useDebouncedValue'
 
 export function GeneralPage() {
+  const { t } = useTranslation('settings')
   const { workspace } = useWorkspace()
   const renameWorkspace = useRenameWorkspace(workspace.id)
   const renameSlow = useSlowPending(renameWorkspace.isPending)
@@ -33,18 +35,18 @@ export function GeneralPage() {
 
   return (
     <>
-      {canRename ? <SettingsCard title="Workspace">
+      {canRename ? <SettingsCard title={t('general.title')}>
         <form ref={formRef} onSubmit={(event) => { event.preventDefault(); saveWorkspace() }}>
           <FieldGrid>
-            <Field><FieldLabel htmlFor="workspace-name">Name</FieldLabel><Input id="workspace-name" required disabled={renameSlow} value={name} onChange={(event) => setNameDraft({ workspaceId: workspace.id, value: event.target.value })} /></Field>
+            <Field><FieldLabel htmlFor="workspace-name">{t('general.name')}</FieldLabel><Input id="workspace-name" required disabled={renameSlow} value={name} onChange={(event) => setNameDraft({ workspaceId: workspace.id, value: event.target.value })} /></Field>
           </FieldGrid>
         </form>
-        {renameWorkspace.isError ? <p role="alert" className="text-destructive">Workspace rename failed. <Button variant="ghost" onClick={saveWorkspace}>Retry</Button></p> : null}
-        {renameSlow ? <p role="status">Saving workspace…</p> : null}
+        {renameWorkspace.isError ? <p role="alert" className="text-destructive">{t('general.renameFailed')} <Button variant="ghost" onClick={saveWorkspace}>{t('retry')}</Button></p> : null}
+        {renameSlow ? <p role="status">{t('general.saving')}</p> : null}
       </SettingsCard> : null}
 
       <WorkspaceLeave key={workspace.id} />
-      {version ? <p className="text-center text-xs text-muted-foreground tabular-nums">Orbit v{version}</p> : null}
+      {version ? <p className="text-center text-xs text-muted-foreground tabular-nums">{t('general.version', { version })}</p> : null}
       {dirty ? (
         <UnsavedBar
           onReset={() => { if (renameWorkspace.isPending) return; setNameDraft(null); renameWorkspace.reset() }}

@@ -1,6 +1,7 @@
 import { toast } from 'sonner'
 import { confirmAction } from '@/components/common/confirmAction'
 import { switchWorkspaceHref } from '@/features/workspaces/navigation'
+import { i18n } from '@/i18n'
 import type { SavedView } from './api/views'
 
 export function viewPath(viewId: string): string {
@@ -11,17 +12,17 @@ export function viewPath(viewId: string): string {
 export async function copyViewLink(workspaceId: string, viewId: string): Promise<void> {
   try {
     await navigator.clipboard.writeText(`${window.location.origin}${switchWorkspaceHref(viewPath(viewId), '', workspaceId)}`)
-    toast('Link copied')
+    toast(i18n.t('views:actions.linkCopied'))
   } catch {
-    toast.error("Orbit couldn't copy the link.")
+    toast.error(i18n.t('views:actions.copyFailed'))
   }
 }
 
 export function confirmDeleteView(view: Pick<SavedView, 'name' | 'visibility'>): Promise<boolean> {
   return confirmAction({
-    title: 'Delete view?',
-    description: view.visibility === 'workspace' ? `“${view.name}” will be deleted for everyone in the workspace.` : `“${view.name}” will be deleted.`,
-    confirmLabel: 'Delete view',
+    title: i18n.t('views:actions.deleteTitle'),
+    description: view.visibility === 'workspace' ? i18n.t('views:actions.deleteDescriptionWorkspace', { name: view.name }) : i18n.t('views:actions.deleteDescription', { name: view.name }),
+    confirmLabel: i18n.t('views:actions.deleteView'),
     danger: true,
   })
 }

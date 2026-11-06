@@ -1,6 +1,7 @@
 import { toast } from 'sonner'
 import { isTaskVersionConflict } from '@/features/tasks/api/conflicts'
 import { BulkTaskLimitError, MAX_BULK_TASK_UPDATES } from '@/features/tasks/api/tasks'
+import { i18n } from '@/i18n'
 
 /**
  * The one error path for drag-and-drop moves (list and board): a toast, except for version conflicts,
@@ -9,6 +10,6 @@ import { BulkTaskLimitError, MAX_BULK_TASK_UPDATES } from '@/features/tasks/api/
 export function reportMoveError(error: Error) {
   if (isTaskVersionConflict(error)) return
   toast.error(error instanceof BulkTaskLimitError
-    ? `This move would update ${error.count} tasks. Move it in smaller steps so each drop affects at most ${MAX_BULK_TASK_UPDATES} tasks.`
-    : 'Could not move the task.')
+    ? i18n.t('views:grouping.moveTooLarge', { count: error.count, max: MAX_BULK_TASK_UPDATES })
+    : i18n.t('views:grouping.moveFailed'))
 }

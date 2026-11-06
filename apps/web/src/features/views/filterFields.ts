@@ -1,4 +1,4 @@
-import { format, parseISO } from 'date-fns'
+import { parseISO } from 'date-fns'
 import {
   Calendar,
   CalendarTick,
@@ -19,6 +19,7 @@ import type { LabelRecord, ProjectRecord } from '@orbit/api/generated/types.gen'
 import type { TaskPriority, TaskStatusDef } from '@/features/tasks/api/models'
 import { CATEGORY_LABEL, CATEGORY_ORDER, labelKeyOf, labelRepresentatives, PRIORITY_LABEL, projectLabels, PRIORITY_ORDER, sortStatuses, statusKeyOf } from '@/features/tasks/taskMeta'
 import type { User } from '@/features/workspaces/models'
+import { i18n } from '@/i18n'
 import type { Condition, DateValue, FilterField, FilterOperator, TaskPreset } from './viewState'
 
 export type TaskFilterRef = { identifier: string; title: string }
@@ -43,8 +44,6 @@ export type FieldKind = 'list' | 'date' | 'text' | 'task'
 export const NO_PARENT = 'none'
 
 export type FieldMeta = {
-  label: string
-  plural: string
   icon: IconComponent
   kind: FieldKind
   operators: FilterOperator[]
@@ -52,19 +51,19 @@ export type FieldMeta = {
 }
 
 export const FIELD_META: Record<FilterField, FieldMeta> = {
-  status: { label: 'Status', plural: 'statuses', icon: RecordCircle, kind: 'list', operators: ['is', 'is_not'], defaultOperator: 'is' },
-  status_category: { label: 'Status type', plural: 'status types', icon: Category, kind: 'list', operators: ['is', 'is_not'], defaultOperator: 'is' },
-  assignee: { label: 'Assignee', plural: 'assignees', icon: UserIcon, kind: 'list', operators: ['is', 'is_not', 'is_empty', 'is_not_empty'], defaultOperator: 'is' },
-  creator: { label: 'Creator', plural: 'creators', icon: UserEdit, kind: 'list', operators: ['is', 'is_not'], defaultOperator: 'is' },
-  label: { label: 'Label', plural: 'labels', icon: Tag, kind: 'list', operators: ['includes_any', 'includes_all', 'excludes', 'is_empty', 'is_not_empty'], defaultOperator: 'includes_any' },
-  priority: { label: 'Priority', plural: 'priorities', icon: Flag, kind: 'list', operators: ['is', 'is_not'], defaultOperator: 'is' },
-  project: { label: 'Project', plural: 'projects', icon: Folder, kind: 'list', operators: ['is', 'is_not'], defaultOperator: 'is' },
-  parent: { label: 'Parent', plural: 'tasks', icon: Hierarchy2, kind: 'task', operators: ['is', 'is_not'], defaultOperator: 'is' },
-  sub_issues: { label: 'Sub-issues', plural: 'options', icon: Hierarchy2, kind: 'list', operators: ['is'], defaultOperator: 'is' },
-  due_date: { label: 'Due date', plural: 'dates', icon: Calendar, kind: 'date', operators: ['before', 'after', 'between', 'is_empty', 'is_not_empty'], defaultOperator: 'before' },
-  created_at: { label: 'Created', plural: 'dates', icon: CalendarTick, kind: 'date', operators: ['before', 'after'], defaultOperator: 'after' },
-  updated_at: { label: 'Updated', plural: 'dates', icon: Clock, kind: 'date', operators: ['before', 'after'], defaultOperator: 'after' },
-  text: { label: 'Text', plural: 'text', icon: TextIcon, kind: 'text', operators: ['contains'], defaultOperator: 'contains' },
+  status: { icon: RecordCircle, kind: 'list', operators: ['is', 'is_not'], defaultOperator: 'is' },
+  status_category: { icon: Category, kind: 'list', operators: ['is', 'is_not'], defaultOperator: 'is' },
+  assignee: { icon: UserIcon, kind: 'list', operators: ['is', 'is_not', 'is_empty', 'is_not_empty'], defaultOperator: 'is' },
+  creator: { icon: UserEdit, kind: 'list', operators: ['is', 'is_not'], defaultOperator: 'is' },
+  label: { icon: Tag, kind: 'list', operators: ['includes_any', 'includes_all', 'excludes', 'is_empty', 'is_not_empty'], defaultOperator: 'includes_any' },
+  priority: { icon: Flag, kind: 'list', operators: ['is', 'is_not'], defaultOperator: 'is' },
+  project: { icon: Folder, kind: 'list', operators: ['is', 'is_not'], defaultOperator: 'is' },
+  parent: { icon: Hierarchy2, kind: 'task', operators: ['is', 'is_not'], defaultOperator: 'is' },
+  sub_issues: { icon: Hierarchy2, kind: 'list', operators: ['is'], defaultOperator: 'is' },
+  due_date: { icon: Calendar, kind: 'date', operators: ['before', 'after', 'between', 'is_empty', 'is_not_empty'], defaultOperator: 'before' },
+  created_at: { icon: CalendarTick, kind: 'date', operators: ['before', 'after'], defaultOperator: 'after' },
+  updated_at: { icon: Clock, kind: 'date', operators: ['before', 'after'], defaultOperator: 'after' },
+  text: { icon: TextIcon, kind: 'text', operators: ['contains'], defaultOperator: 'contains' },
 }
 
 export const FIELD_ORDER: FilterField[] = ['status', 'status_category', 'assignee', 'creator', 'label', 'priority', 'project', 'parent', 'sub_issues', 'due_date', 'created_at', 'updated_at', 'text']
@@ -75,13 +74,28 @@ export const MAX_FILTER_CONDITIONS = 46
 /** Values per condition, as the server allows. */
 export const MAX_FILTER_VALUES = 100
 
+/** The field's name, as a filter chip or a field picker shows it. */
+export function fieldLabel(field: FilterField): string {
+  return i18n.t(`views:filter.fields.${field}`)
+}
+
+/** The field's values inside a sentence ("Search labels"). */
+export function fieldPlural(field: FilterField): string {
+  return i18n.t(`views:filter.pluralNames.${field}`)
+}
+
 /** Chip text for the non-removable preset scope. */
-export const PRESET_LABEL: Record<TaskPreset, string> = {
-  mine: 'My tasks',
-  overdue: 'Overdue',
-  due_soon: 'Due soon',
-  current_week: 'This week',
-  my_week: 'My week',
+export function presetLabel(preset: TaskPreset): string {
+  return i18n.t(`views:filter.presets.${preset}`)
+}
+
+/** Kept for callers that index by preset: each read translates at that moment, never at import. */
+export const PRESET_LABEL: Readonly<Record<TaskPreset, string>> = {
+  get mine() { return presetLabel('mine') },
+  get overdue() { return presetLabel('overdue') },
+  get due_soon() { return presetLabel('due_soon') },
+  get current_week() { return presetLabel('current_week') },
+  get my_week() { return presetLabel('my_week') },
 }
 
 export type Glyph =
@@ -121,8 +135,9 @@ export function valueOptions(field: FilterField, options: FilterOptions): ValueO
     case 'assignee':
     case 'creator': {
       const me = options.members.find((person) => person.id === options.currentUserId)
+      const meLabel = i18n.t('views:filter.me')
       return [
-        { value: 'me', label: 'Me', glyph: { kind: 'member', member: me, name: me?.name ?? 'Me' } },
+        { value: 'me', label: meLabel, glyph: { kind: 'member', member: me, name: me?.name ?? meLabel } },
         ...options.members
           .filter((person) => person.id !== options.currentUserId)
           .map((person): ValueOption => ({ value: person.id, label: person.name, glyph: { kind: 'member', member: person, name: person.name } })),
@@ -137,8 +152,8 @@ export function valueOptions(field: FilterField, options: FilterOptions): ValueO
       return [...options.projects].sort(byName).map((project): ValueOption => ({ value: project.id, label: project.name, glyph: { kind: 'dot', color: project.color } }))
     case 'sub_issues':
       return [
-        { value: 'has', label: 'Has sub-issues', glyph: { kind: 'icon', icon: Hierarchy2 } },
-        { value: 'none', label: 'No sub-issues', glyph: { kind: 'icon', icon: TaskSquare } },
+        { value: 'has', label: i18n.t('views:filter.subIssues.has'), glyph: { kind: 'icon', icon: Hierarchy2 } },
+        { value: 'none', label: i18n.t('views:filter.subIssues.none'), glyph: { kind: 'icon', icon: TaskSquare } },
       ]
     default:
       return []
@@ -181,12 +196,11 @@ export function selectedOptions(condition: Condition, options: FilterOptions): V
  * The picker shows them as extra rows, so they can still be seen and cleared.
  */
 export function unlistedOptions(condition: Condition, options: FilterOptions): ValueOption[] {
-  const meta = FIELD_META[condition.field]
-  if (meta.kind !== 'list') return []
+  if (FIELD_META[condition.field].kind !== 'list') return []
   const listed = new Set(valueOptions(condition.field, options).map((option) => option.value))
   return chosenValues(condition, options)
     .filter((value) => !listed.has(value))
-    .map((value) => memberByIdOption(value, options) ?? { value, label: `Unknown ${meta.label.toLowerCase()}`, glyph: { kind: 'dot', color: 'var(--muted-foreground)' } })
+    .map((value) => memberByIdOption(value, options) ?? { value, label: i18n.t(`views:filter.unknown.${condition.field}`), glyph: { kind: 'dot', color: 'var(--muted-foreground)' } })
 }
 
 export function isDateValue(value: unknown): value is DateValue {
@@ -195,19 +209,19 @@ export function isDateValue(value: unknown): value is DateValue {
   return typeof candidate.absolute === 'string' || candidate.relative === 'today' || candidate.relative === 'start_of_week' || candidate.relative === 'end_of_week'
 }
 
-const RELATIVE_LABEL = { today: 'Today', start_of_week: 'Start of week', end_of_week: 'End of week' } as const
+const RELATIVE_KEY = { today: 'today', start_of_week: 'startOfWeek', end_of_week: 'endOfWeek' } as const
 
 export function dateValueLabel(value: DateValue): string {
-  if ('absolute' in value) return format(parseISO(value.absolute), 'MMM d, yyyy')
+  if ('absolute' in value) return parseISO(value.absolute).toLocaleDateString(i18n.language, { month: 'short', day: 'numeric', year: 'numeric' })
   const offset = value.offset_days ?? 0
   if (value.relative === 'today') {
-    if (offset === 0) return 'Today'
-    if (offset === 1) return 'Tomorrow'
-    if (offset === -1) return 'Yesterday'
-    return offset > 0 ? `In ${offset} days` : `${-offset} days ago`
+    if (offset === 0) return i18n.t('views:filter.dates.today')
+    if (offset === 1) return i18n.t('views:filter.dates.tomorrow')
+    if (offset === -1) return i18n.t('views:filter.dates.yesterday')
+    return offset > 0 ? i18n.t('views:filter.dates.inDays', { count: offset }) : i18n.t('views:filter.dates.daysAgo', { count: -offset })
   }
-  const base = RELATIVE_LABEL[value.relative]
-  return offset === 0 ? base : `${base} ${offset > 0 ? '+' : '-'} ${Math.abs(offset)} days`
+  const base = i18n.t(`views:filter.dates.${RELATIVE_KEY[value.relative]}`)
+  return offset === 0 ? base : i18n.t('views:filter.dates.offset', { base, sign: offset > 0 ? '+' : '-', days: Math.abs(offset) })
 }
 
 export function operatorNeedsValue(operator: FilterOperator): boolean {
@@ -215,60 +229,60 @@ export function operatorNeedsValue(operator: FilterOperator): boolean {
 }
 
 export function operatorLabel(operator: FilterOperator, count: number): string {
+  return i18n.t(`views:filter.operators.${operatorKey(operator, count)}`)
+}
+
+function operatorKey(operator: FilterOperator, count: number) {
   switch (operator) {
     case 'is':
-      return count > 1 ? 'is any of' : 'is'
+      return count > 1 ? 'isAnyOf' : 'is'
     case 'is_not':
-      return count > 1 ? 'is none of' : 'is not'
+      return count > 1 ? 'isNoneOf' : 'isNot'
     case 'is_empty':
-      return 'is empty'
+      return 'isEmpty'
     case 'is_not_empty':
-      return 'is not empty'
+      return 'isNotEmpty'
     case 'includes_any':
-      return count > 1 ? 'includes any of' : 'includes'
+      return count > 1 ? 'includesAnyOf' : 'includes'
     case 'includes_all':
-      return 'includes all of'
+      return 'includesAllOf'
     case 'excludes':
-      return 'excludes'
     case 'before':
-      return 'before'
     case 'after':
-      return 'after'
     case 'between':
-      return 'between'
     case 'contains':
-      return 'contains'
+      return operator
   }
 }
 
 /** Chip and picker text for one Parent value. A task not loaded yet reads as its short id. */
 export function taskValueLabel(value: string, options: FilterOptions): string {
-  if (value === NO_PARENT) return 'No parent'
+  if (value === NO_PARENT) return i18n.t('views:filter.noParent')
   const ref = options.taskRefs?.[value]
-  if (ref === null) return 'Deleted task'
-  return ref ? `${ref.identifier} ${ref.title || 'Untitled'}` : `TASK-${value.slice(-4).toUpperCase()}`
+  if (ref === null) return i18n.t('views:filter.deletedTask')
+  return ref ? `${ref.identifier} ${ref.title || i18n.t('views:filter.untitled')}` : `TASK-${value.slice(-4).toUpperCase()}`
 }
 
 /** Chip value text: up to two names, then a count ("3 labels"). Empty for is_empty / is_not_empty. */
 export function valueSummary(condition: Condition, options: FilterOptions): string {
   if (!operatorNeedsValue(condition.operator)) return ''
   const meta = FIELD_META[condition.field]
-  if (meta.kind === 'text') return typeof condition.value === 'string' && condition.value ? `“${condition.value}”` : ''
+  if (meta.kind === 'text') return typeof condition.value === 'string' && condition.value ? i18n.t('views:filter.quoted', { text: condition.value }) : ''
   if (meta.kind === 'date') {
     if (condition.operator === 'between') {
       const range = Array.isArray(condition.value) ? condition.value : []
-      return range.length === 2 && isDateValue(range[0]) && isDateValue(range[1]) ? `${dateValueLabel(range[0])} – ${dateValueLabel(range[1])}` : ''
+      return range.length === 2 && isDateValue(range[0]) && isDateValue(range[1]) ? i18n.t('views:filter.dates.range', { start: dateValueLabel(range[0]), end: dateValueLabel(range[1]) }) : ''
     }
     return isDateValue(condition.value) ? dateValueLabel(condition.value) : ''
   }
   if (meta.kind === 'task') {
     const values = listValue(condition)
-    return values.length > 2 ? `${values.length} tasks` : values.map((value) => taskValueLabel(value, options)).join(', ')
+    return values.length > 2 ? i18n.t('views:filter.valueCount.parent', { count: values.length }) : values.map((value) => taskValueLabel(value, options)).join(', ')
   }
   const values = chosenValues(condition, options)
-  if (values.length > 2) return `${values.length} ${meta.plural}`
+  if (values.length > 2) return i18n.t(`views:filter.valueCount.${condition.field}`, { count: values.length })
   const known = new Map(selectedOptions(condition, options).map((option) => [option.value, option.label]))
-  return values.map((value) => known.get(value) ?? `Unknown ${meta.label.toLowerCase()}`).join(', ')
+  return values.map((value) => known.get(value) ?? i18n.t(`views:filter.unknown.${condition.field}`)).join(', ')
 }
 
 export function defaultValue(field: FilterField, operator: FilterOperator): unknown {

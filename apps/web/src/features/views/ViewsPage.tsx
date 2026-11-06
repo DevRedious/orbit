@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState, type DragEvent, type KeyboardEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router'
 import { Filter, Layer, Lock, People, Add as Plus, Star, type IconComponent } from 'reicon-react'
 import { cn } from 'cn'
@@ -15,18 +16,21 @@ import { FavoriteStar } from './components/FavoriteStar'
 import { SaveViewDialog } from './components/SaveViewDialog'
 import { ViewActionsMenu } from './components/ViewActionsMenu'
 import { ViewIcon } from './components/ViewIcon'
-import { GROUP_LABEL, LAYOUTS } from './displayMeta'
-import { FIELD_META } from './filterFields'
+import { LAYOUTS, groupLabel, layoutLabel } from './displayMeta'
+import { fieldLabel } from './filterFields'
 import { rebaseViewSessionEdit } from './useViewState'
 import { viewPath } from './viewActions'
 import { defaultViewState, isGroup, normalizeViewState, type FilterField, type FilterGroup } from './viewState'
+import { i18n } from '@/i18n'
 import { loadFailed } from '@/lib/connection'
 
 type RowDialog = { mode: 'edit' | 'duplicate'; view: SavedView }
-type Section = { key: string; label: string; icon: IconComponent; views: SavedView[]; reorderable?: boolean }
+type SectionKey = 'favorites' | 'mine' | 'workspace'
+type Section = { key: SectionKey; icon: IconComponent; views: SavedView[]; reorderable?: boolean }
 
 /** `/views`: one list of the task views the user can see, favorites first, then their own, then the workspace's. */
 export function ViewsPage() {
+  const { t } = useTranslation('views')
   const { workspace } = useWorkspace()
   const navigate = useNavigate()
   const viewsQuery = useSavedViews(workspace.id)
@@ -42,12 +46,13 @@ export function ViewsPage() {
     const favorites = shown.filter((view) => view.is_favorite).sort((a, b) => (a.favorite_position ?? 0) - (b.favorite_position ?? 0))
     // a favorite lists once, under Favorites; the star on it says it is starred
     const rest = shown.filter((view) => !view.is_favorite)
-    return [
+    const all: Section[] = [
       // reordering a filtered list would send only part of the order, so a search turns it off
-      { key: 'favorites', label: 'Favorites', icon: Star, views: favorites, reorderable: !query },
-      { key: 'mine', label: 'Your views', icon: Lock, views: rest.filter((view) => view.visibility === 'personal') },
-      { key: 'workspace', label: 'Workspace views', icon: People, views: rest.filter((view) => view.visibility === 'workspace') },
-    ].filter((section) => section.views.length > 0)
+      { key: 'favorites', icon: Star, views: favorites, reorderable: !query },
+      { key: 'mine', icon: Lock, views: rest.filter((view) => view.visibility === 'personal') },
+      { key: 'workspace', icon: People, views: rest.filter((view) => view.visibility === 'workspace') },
+    ]
+    return all.filter((section) => section.views.length > 0)
   }, [views, query])
   const newView = () => navigate('/tasks?save_view=1')
   const rowActions: RowActions = {
@@ -61,46 +66,46 @@ export function ViewsPage() {
     <section className="flex min-h-0 min-w-0 flex-1 flex-col bg-background">
       <div className="flex h-12 shrink-0 items-center gap-2 border-b border-border px-3 max-[899px]:h-auto max-[899px]:min-h-11 max-[899px]:flex-wrap max-[899px]:px-2 max-[899px]:py-1.5">
         {/* views are a Tasks feature: the header says so and leads back */}
-        <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-2 pl-1 text-[13px]">
-          <Link to="/tasks" className="font-medium text-muted-foreground transition-colors hover:text-foreground">Tasks</Link>
+        <nav aria-label={t('page.breadcrumb')} className="flex min-w-0 items-center gap-2 pl-1 text-[13px]">
+          <Link to="/tasks" className="font-medium text-muted-foreground transition-colors hover:text-foreground">{t('page.tasks')}</Link>
           <span aria-hidden="true" className="text-muted-foreground/70 select-none">/</span>
-          <h1 className="text-[13px] font-semibold text-foreground">Views</h1>
+          <h1 className="text-[13px] font-semibold text-foreground">{t('page.title')}</h1>
         </nav>
         <div className="flex-1" />
         {/* with no views, the empty state in the center carries the only "New view" button */}
         {views.length > 0 ? (
           <>
-            <TaskSearchBox value={search} onChange={setSearch} label="Search views" />
-            <Button type="button" className="max-[899px]:w-8 max-[899px]:px-0" aria-label="New view" onClick={newView}>
+            <TaskSearchBox value={search} onChange={setSearch} label={t('page.search')} />
+            <Button type="button" className="max-[899px]:w-8 max-[899px]:px-0" aria-label={t('page.newView')} onClick={newView}>
               <Plus className="size-4" />
-              <span className="max-[899px]:hidden">New view</span>
+              <span className="max-[899px]:hidden">{t('page.newView')}</span>
             </Button>
           </>
         ) : null}
       </div>
       <div ref={scroller} className="min-h-0 flex-1 overflow-y-auto">
         {viewsQuery.isPending ? (
-          <p className="p-4 text-[13px] text-muted-foreground">Loading views…</p>
+          <p className="p-4 text-[13px] text-muted-foreground">{t('page.loading')}</p>
         ) : loadFailed(viewsQuery) ? (
           <div className="flex h-full flex-col p-2 *:flex-1">
-            <EmptyState icon={Layer} title="Views unavailable" description="The server could not load views." />
+            <EmptyState icon={Layer} title={t('page.unavailableTitle')} description={t('page.unavailableDescription')} />
           </div>
         ) : views.length === 0 ? (
           <div className="flex h-full flex-col p-2 *:flex-1">
             <EmptyState
               icon={Layer}
-              title="No views yet"
-              description="Filter or rearrange any task page, then save it as a view to come back to it."
+              title={t('page.emptyTitle')}
+              description={t('page.emptyDescription')}
               action={
                 <Button type="button" onClick={newView}>
                   <Plus className="size-4" />
-                  New view
+                  {t('page.newView')}
                 </Button>
               }
             />
           </div>
         ) : sections.length === 0 ? (
-          <p className="px-4 py-6 text-[13px] text-muted-foreground">No views match “{search.trim()}”.</p>
+          <p className="px-4 py-6 text-[13px] text-muted-foreground">{t('page.noMatch', { query: search.trim() })}</p>
         ) : (
           sections.map((section) => <ViewSection key={section.key} section={section} {...rowActions} />)
         )}
@@ -132,6 +137,8 @@ interface RowActions {
 
 /** A sticky header and its rows. Favorites reorder by drag, or Alt+Arrow on a focused row. */
 function ViewSection({ section, ...actions }: RowActions & { section: Section }) {
+  const { t } = useTranslation('views')
+  const label = t(`page.sections.${section.key}`)
   const reorder = useReorderFavorites(actions.workspaceId)
   const [order, setOrder] = useState<string[] | null>(null)
   const [dragId, setDragId] = useState<string | null>(null)
@@ -192,10 +199,10 @@ function ViewSection({ section, ...actions }: RowActions & { section: Section })
       {/* same sticky header as a task list group, so the page reads as part of Tasks */}
       <div className="sticky top-0 z-[5] flex h-9 items-center gap-2 border-b bg-card px-3 text-xs font-semibold text-muted-foreground max-[899px]:px-2">
         <section.icon className="size-3.5 shrink-0" aria-hidden="true" />
-        <h2 className="text-xs font-semibold">{section.label}</h2>
+        <h2 className="text-xs font-semibold">{label}</h2>
         <span className="font-normal text-muted-foreground/70 tabular-nums">{section.views.length}</span>
       </div>
-      <ul aria-label={section.label} className="flex flex-col">
+      <ul aria-label={label} className="flex flex-col">
         {rows.map((item, index) => (
           <ViewRow key={item.id} view={item} {...actions} drag={section.reorderable ? dragFor(item, index) : undefined} />
         ))}
@@ -226,9 +233,10 @@ function filterFieldsOf(group: FilterGroup, fields: FilterField[] = []): FilterF
 
 /** "Priority, Assignee +2": what the view narrows by, without loading every value's name. */
 function filterSummary(group: FilterGroup): string {
-  const labels = filterFieldsOf(group).map((field) => FIELD_META[field].label)
-  if (labels.length === 0) return 'All tasks'
-  return labels.slice(0, 2).join(', ') + (labels.length > 2 ? ` +${labels.length - 2}` : '')
+  const labels = filterFieldsOf(group).map(fieldLabel)
+  if (labels.length === 0) return i18n.t('views:page.allTasks')
+  const fields = labels.slice(0, 2).join(', ')
+  return labels.length > 2 ? i18n.t('views:page.filterSummaryMore', { fields, more: labels.length - 2 }) : fields
 }
 
 /**
@@ -236,6 +244,7 @@ function filterSummary(group: FilterGroup): string {
  * The name's stretched `after:` overlay makes the whole row the link.
  */
 function ViewRow({ view, members, workspaceId, onEdit, onDuplicate, drag }: RowActions & { view: SavedView; drag?: RowDrag }) {
+  const { t } = useTranslation('views')
   const owner = members.find((person) => person.id === view.owner.user_id)
   const { filter, display } = normalizeViewState(view.state ?? defaultViewState())
   const layout = LAYOUTS.find((item) => item.value === display.layout) ?? LAYOUTS[0]
@@ -276,13 +285,13 @@ function ViewRow({ view, members, workspaceId, onEdit, onDuplicate, drag }: RowA
         </Link>
         {view.description ? <span className="min-w-0 truncate text-[13px] text-muted-foreground max-[640px]:hidden">{view.description}</span> : null}
       </div>
-      <span className="flex w-44 shrink-0 items-center gap-1.5 text-xs text-muted-foreground max-[899px]:hidden" title="Filters">
+      <span className="flex w-44 shrink-0 items-center gap-1.5 text-xs text-muted-foreground max-[899px]:hidden" title={t('page.filtersTitle')}>
         <Filter className="size-3.5 shrink-0 opacity-70" aria-hidden="true" />
         <span className="truncate">{filterSummary(filter)}</span>
       </span>
-      <span className="flex w-36 shrink-0 items-center gap-1.5 text-xs text-muted-foreground max-[1099px]:hidden" title="Layout">
+      <span className="flex w-36 shrink-0 items-center gap-1.5 text-xs text-muted-foreground max-[1099px]:hidden" title={t('page.layoutTitle')}>
         <LayoutIcon className="size-3.5 shrink-0 opacity-70" aria-hidden="true" />
-        <span className="truncate">{layout.label}{display.group_by !== 'none' ? ` · ${GROUP_LABEL[display.group_by]}` : ''}</span>
+        <span className="truncate">{display.group_by !== 'none' ? t('page.layoutWithGroup', { layout: layoutLabel(layout.value), group: groupLabel(display.group_by) }) : layoutLabel(layout.value)}</span>
       </span>
       <span className="relative z-10 flex shrink-0 items-center" title={view.owner.display_name}>
         <UserAvatar user={owner} name={view.owner.display_name} size={20} />

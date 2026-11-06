@@ -1,6 +1,7 @@
 import { expect, test } from 'bun:test'
-import { ChatError } from '@/features/chat/api/types'
-import { canAddPeople, canManageChannel, channelNameFinal, channelNameInput, chatErrorMessage, matchPeople, messageablePeople, pickablePeople } from './channelLib'
+import { ApiProblem } from '@orbit/api/problem'
+import { CHAT_CLIENT_MESSAGES, ChatError } from '@/features/chat/api/types'
+import { canAddPeople, canManageChannel, channelNameFinal, channelNameInput, chatErrorMessage, chatErrorReason, matchPeople, messageablePeople, pickablePeople } from './channelLib'
 
 test('a channel name is lowercase and spaces become hyphens while it is typed', () => {
   expect(channelNameInput('Design Team')).toBe('design-team')
@@ -76,4 +77,15 @@ test('a chat error becomes the sentence of the action, a general one, or the fal
   expect(chatErrorMessage(new ChatError('forbidden', 'x'), fallback)).toBe('You do not have permission to do this.')
   expect(chatErrorMessage(new ChatError('not_found', 'x'), fallback)).toBe(fallback)
   expect(chatErrorMessage(new Error('network'), fallback)).toBe(fallback)
+})
+
+test('a failure reason is a client failure or the server detail', () => {
+  const unreachable = new ChatError('offline', CHAT_CLIENT_MESSAGES.unreachable, true)
+  const cancelled = new ChatError('upload_failed', CHAT_CLIENT_MESSAGES.uploadCancelled)
+  const detail = 'You do not have permission to do this.'
+  const problem = new ApiProblem({ type: 'about:blank', title: 'Forbidden', status: 403, code: 'brand_new_code', detail, instance: '/', request_id: 'test' })
+  expect(chatErrorReason(unreachable)).toBe('The server could not be reached.')
+  expect(chatErrorReason(cancelled)).toBe('The upload was cancelled.')
+  // a code the catalog does not know keeps the server text
+  expect(chatErrorReason(new ChatError('forbidden', detail, false, problem))).toBe(detail)
 })

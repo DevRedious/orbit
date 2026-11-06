@@ -1,5 +1,6 @@
-import { ChatError, type ChatErrorCode, type Conversation } from '@/features/chat/api/types'
+import { CHAT_CLIENT_MESSAGES, ChatError, type ChatErrorCode, type Conversation } from '@/features/chat/api/types'
 import { i18n } from '@/i18n'
+import { problemMessage } from '@/i18n/problem'
 
 export const CHANNEL_NAME_MAX = 80
 
@@ -80,4 +81,16 @@ const GENERAL_MESSAGES: Partial<Record<ChatErrorCode, () => string>> = {
 export function chatErrorMessage(error: unknown, fallback: string, byCode: Partial<Record<ChatErrorCode, string>> = {}): string {
   if (!(error instanceof ChatError)) return fallback
   return byCode[error.code] ?? GENERAL_MESSAGES[error.code]?.() ?? fallback
+}
+
+const CLIENT_REASONS: Record<string, () => string> = {
+  [CHAT_CLIENT_MESSAGES.unreachable]: () => i18n.t('chat:dialogs.errors.unreachable'),
+  [CHAT_CLIENT_MESSAGES.uploadCancelled]: () => i18n.t('chat:dialogs.errors.uploadCancelled'),
+  [CHAT_CLIENT_MESSAGES.uploadFailed]: () => i18n.t('chat:dialogs.errors.uploadFailed'),
+}
+
+/** The message of a failure, as a reason inside a sentence: the server's `detail` or a client failure, in the UI language. */
+export function chatErrorReason(error: ChatError): string {
+  if (error.problem) return problemMessage(error.problem, error.message)
+  return Object.hasOwn(CLIENT_REASONS, error.message) ? CLIENT_REASONS[error.message]!() : error.message
 }

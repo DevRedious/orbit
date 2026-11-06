@@ -4,6 +4,9 @@ export default {
   errors: {
     forbidden: 'You do not have permission to do this.',
     offline: 'You are offline. Try again when you are connected.',
+    unreachable: 'The server could not be reached.',
+    uploadCancelled: 'The upload was cancelled.',
+    uploadFailed: 'The upload failed.',
   },
   /** The current user in a list of people. */
   you: '{{name}} (you)',

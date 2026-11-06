@@ -1,3 +1,4 @@
+import type { ApiProblem } from '@orbit/api/problem'
 import type { PresenceEntry } from '@/features/realtime/presence'
 
 /** Ids are opaque strings; message ids sort by creation time. Times are integer milliseconds. */
@@ -220,16 +221,26 @@ export interface SearchPage {
 
 export type ChatErrorCode = 'not_found' | 'forbidden' | 'too_long' | 'conflict' | 'upload_failed' | 'storage_full' | 'offline'
 
+/** The English messages of failures that have no server answer; `chatErrorReason` shows them in the UI language. */
+export const CHAT_CLIENT_MESSAGES = {
+  unreachable: 'The server could not be reached.',
+  uploadCancelled: 'The upload was cancelled.',
+  uploadFailed: 'The upload failed.',
+} as const
+
 export class ChatError extends Error {
   readonly code: ChatErrorCode
   /** The request did not reach the server, or a proxy answered for it: the same request can go again. */
   readonly unreached: boolean
+  /** The server's answer, when there was one: its `detail` is the message. */
+  readonly problem: ApiProblem | null
 
-  constructor(code: ChatErrorCode, message: string, unreached = false) {
+  constructor(code: ChatErrorCode, message: string, unreached = false, problem: ApiProblem | null = null) {
     super(message)
     this.name = 'ChatError'
     this.code = code
     this.unreached = unreached
+    this.problem = problem
   }
 }
 

@@ -13,6 +13,7 @@ import type {
 import { ApiProblem } from '@orbit/api/problem'
 import {
   type Attachment,
+  CHAT_CLIENT_MESSAGES,
   ChatError,
   type ChatErrorCode,
   type ChatEvent,
@@ -195,8 +196,8 @@ const CODE_BY_STATUS: Partial<Record<number, ChatErrorCode>> = { 403: 'forbidden
  */
 export function toChatError(error: unknown): ChatError {
   if (error instanceof ChatError) return error
-  if (!(error instanceof ApiProblem)) return new ChatError('offline', 'The server could not be reached.', true)
+  if (!(error instanceof ApiProblem)) return new ChatError('offline', CHAT_CLIENT_MESSAGES.unreachable, true)
   const code =
     error.status === 422 ? (error.code === 'chat_message_too_long' ? 'too_long' : 'conflict') : (CODE_BY_STATUS[error.status] ?? 'offline')
-  return new ChatError(code, error.detail, [502, 503, 504].includes(error.status))
+  return new ChatError(code, error.detail, [502, 503, 504].includes(error.status), error)
 }

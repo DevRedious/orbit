@@ -45,7 +45,7 @@ import type { PresenceEntry, PresenceMap } from '@/features/realtime/presence'
 import { shrinkUpload } from '@/lib/shrinkUpload'
 import type { ChatClient } from './client'
 import { type LiveSocket, type LiveSocketOptions, openLiveSocket } from './liveSocket'
-import { ChatError, type ChatEvent, type ConversationState } from './types'
+import { CHAT_CLIENT_MESSAGES, ChatError, type ChatEvent, type ConversationState } from './types'
 import {
   toAttachment,
   toChatError,
@@ -410,7 +410,7 @@ export function createHttpChatClient(options: HttpChatClientOptions): ChatClient
      */
     async uploadAttachment(original, { onProgress, signal } = {}) {
       const failed = (message: string) => new ChatError('upload_failed', message)
-      if (signal?.aborted) throw failed('The upload was cancelled.')
+      if (signal?.aborted) throw failed(CHAT_CLIENT_MESSAGES.uploadCancelled)
       // A video is compressed first, which can take a while: that fills the first half of the progress bar.
       const video = original.type.startsWith('video/')
       const sent = video ? (progress: number) => onProgress?.(0.5 + progress / 2) : onProgress
@@ -418,11 +418,11 @@ export function createHttpChatClient(options: HttpChatClientOptions): ChatClient
       try {
         file = await shrinkUpload(original, { signal, onProgress: video ? (progress) => onProgress?.(progress / 2) : undefined })
       } catch {
-        throw failed('The upload was cancelled.')
+        throw failed(CHAT_CLIENT_MESSAGES.uploadCancelled)
       }
       const size = await imageSize(file)
       // A cancel while the file was compressed or measured: the listener below would never fire.
-      if (signal?.aborted) throw failed('The upload was cancelled.')
+      if (signal?.aborted) throw failed(CHAT_CLIENT_MESSAGES.uploadCancelled)
       return new Promise((resolve, reject) => {
         const request = new XMLHttpRequest()
         const query = size ? `?width=${size.width}&height=${size.height}` : ''
@@ -437,12 +437,12 @@ export function createHttpChatClient(options: HttpChatClientOptions): ChatClient
           if (request.status === 201) resolve(toAttachment(request.response as ChatFileRecord))
           else {
             const problem = request.response as { code?: string; detail?: string } | null
-            const detail = problem?.detail ?? 'The upload failed.'
+            const detail = problem?.detail ?? CHAT_CLIENT_MESSAGES.uploadFailed
             reject(problem?.code === 'storage_quota_exceeded' ? new ChatError('storage_full', detail) : failed(detail))
           }
         }
-        request.onerror = () => reject(failed('The server could not be reached.'))
-        request.onabort = () => reject(failed('The upload was cancelled.'))
+        request.onerror = () => reject(failed(CHAT_CLIENT_MESSAGES.unreachable))
+        request.onabort = () => reject(failed(CHAT_CLIENT_MESSAGES.uploadCancelled))
         signal?.addEventListener('abort', () => request.abort(), { once: true })
         const body = new FormData()
         body.append('file', file)

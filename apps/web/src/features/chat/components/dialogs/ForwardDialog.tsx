@@ -9,6 +9,7 @@ import { useChatContext } from '@/features/chat/api/chatContext'
 import { useForwardMessage, useSendMessage } from '@/features/chat/api/mutations'
 import { useConversations } from '@/features/chat/api/queries'
 import { ChatError, MESSAGE_MAX_LENGTH, type Conversation, type Message } from '@/features/chat/api/types'
+import { chatErrorReason } from '@/features/chat/components/dialogs/channelLib'
 import { conversationTitle, useChatPeople } from '@/features/chat/components/messages/people'
 import { MessageByline } from '@/features/chat/components/panes/MessageByline'
 import { ConversationIcon } from '@/features/chat/components/sidebar/ConversationIcon'
@@ -99,7 +100,7 @@ function ForwardForm({ message, pending, setPending, onDone }: ForwardFormProps)
     }
     // The failed destination and those after it stay selected, so Send tries them again.
     const failed = conversations.find((conversation) => conversation.id === selectedIds[result.sentIds.length])
-    const reason = (result.error instanceof ChatError && result.error.message) || t('dialogs.forward.failed')
+    const reason = (result.error instanceof ChatError && chatErrorReason(result.error)) || t('dialogs.forward.failed')
     setSelectedIds(selectedIds.filter((id) => !result.sentIds.includes(id)))
     setError(failed ? t('dialogs.forward.failedIn', { title: titleOf(failed), reason }) : reason)
   }

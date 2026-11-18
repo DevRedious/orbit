@@ -1,4 +1,5 @@
 import { useEffect, useRef, type ComponentType, type ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import type { MailLabel, MailThreadSummary } from '@orbit/api/generated/types.gen'
@@ -6,7 +7,8 @@ import { PaneHeader, PaneTitle } from '@/components/common/Pane'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Spinner } from '@/components/ui/spinner'
-import { FOLDERS, mailViewPath, type MailView } from '@/features/mail/mailLib'
+import { i18n } from '@/i18n'
+import { FOLDERS, folderLabel, mailViewPath, type MailView } from '@/features/mail/mailLib'
 import { MailEmptyState } from './MailEmptyState'
 import { ThreadRow } from './ThreadRow'
 
@@ -39,10 +41,10 @@ interface ThreadListProps {
   onStar: (thread: MailThreadSummary) => void
 }
 
-const MOBILE_VIEWS: Array<{ view: MailView; label: string }> = [
-  { view: { kind: 'folder', folder: 'inbox' }, label: 'Inbox' },
-  { view: { kind: 'starred' }, label: 'Starred' },
-  ...FOLDERS.slice(1).map(({ folder, label }) => ({ view: { kind: 'folder', folder } as MailView, label })),
+const MOBILE_VIEWS: Array<{ view: MailView; label: () => string }> = [
+  { view: { kind: 'folder', folder: 'inbox' }, label: () => folderLabel('inbox') },
+  { view: { kind: 'starred' }, label: () => i18n.t('mail:views.starred') },
+  ...FOLDERS.slice(1).map(({ folder }) => ({ view: { kind: 'folder', folder } as MailView, label: () => folderLabel(folder) })),
 ]
 
 /** The middle pane: a virtual list of threads, newest first, that loads the next page near its end. */
@@ -67,6 +69,7 @@ export function ThreadList({
   onSelect,
   onStar,
 }: ThreadListProps) {
+  const { t } = useTranslation('mail')
   const navigate = useNavigate()
   const scroller = useRef<HTMLDivElement>(null)
   const virtualizer = useVirtualizer({
@@ -97,14 +100,14 @@ export function ThreadList({
       {bulkBar ?? (
         <PaneHeader>
           <PaneTitle className="max-w-[40%] max-[899px]:hidden">{title}</PaneTitle>
-          <PaneTitle className="hidden max-[899px]:block">Mail</PaneTitle>
+          <PaneTitle className="hidden max-[899px]:block">{t('title')}</PaneTitle>
           {search}
         </PaneHeader>
       )}
       <div className="hidden min-h-10 items-center gap-1.5 overflow-x-auto border-b px-3 py-1 [scrollbar-width:none] max-[899px]:flex">
         {MOBILE_VIEWS.map((entry) => (
           <Button
-            key={entry.label}
+            key={mailViewPath(entry.view)}
             type="button"
             variant="ghost"
             size="sm"
@@ -112,13 +115,13 @@ export function ThreadList({
             data-active={mailViewPath(entry.view) === currentPath || undefined}
             onClick={() => navigate(mailViewPath(entry.view))}
           >
-            {entry.label}
+            {entry.label()}
           </Button>
         ))}
       </div>
       {notice}
       {status === 'pending' ? (
-        <div className="flex flex-col gap-3 p-3" aria-busy="true" aria-label="Loading conversations">
+        <div className="flex flex-col gap-3 p-3" aria-busy="true" aria-label={t('list.loading')}>
           {[0, 1, 2, 3, 4].map((index) => (
             <Skeleton key={index} className="h-14 w-full" />
           ))}
@@ -127,11 +130,11 @@ export function ThreadList({
         <div className="flex min-h-0 flex-1 flex-col">
           <MailEmptyState
             icon={empty.icon}
-            title="Mail could not be loaded"
-            description="Check your connection and try again."
+            title={t('list.loadFailed')}
+            description={t('list.loadFailedDescription')}
             action={
               <Button variant="outline" size="sm" onClick={onRetry}>
-                Try again
+                {t('tryAgain')}
               </Button>
             }
           />

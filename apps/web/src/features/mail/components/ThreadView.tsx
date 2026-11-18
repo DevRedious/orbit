@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Archive, ArrowLeft, DirectInbox, ShieldCross, Sms as Mail, Star, Tag, Trash, Undo } from 'reicon-react'
 import { Link } from 'react-router'
 import { cn } from 'cn'
@@ -43,16 +44,17 @@ export function LabelMenu({
   onOpenChange: (open: boolean) => void
   canManage: boolean
 }) {
+  const { t } = useTranslation('mail')
   return (
     <DropdownMenu open={open} onOpenChange={onOpenChange}>
-      <Tip label="Labels" side="bottom">
-        <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" className="text-muted-foreground/70" aria-label="Labels" />}>
+      <Tip label={t('labelMenu.title')} side="bottom">
+        <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" className="text-muted-foreground/70" aria-label={t('labelMenu.title')} />}>
           <Tag className="size-4" />
         </DropdownMenuTrigger>
       </Tip>
       <DropdownMenuContent align="end" className="w-auto min-w-44">
         <DropdownMenuGroup>
-          <DropdownMenuLabel>Labels</DropdownMenuLabel>
+          <DropdownMenuLabel>{t('labelMenu.title')}</DropdownMenuLabel>
           {labels.map((label) => {
             const current = state(label.id)
             return (
@@ -69,9 +71,9 @@ export function LabelMenu({
           })}
           {labels.length === 0 ? (
             canManage ? (
-              <DropdownMenuItem render={<Link to="/settings/mail/labels" />}>Create labels in Settings</DropdownMenuItem>
+              <DropdownMenuItem render={<Link to="/settings/mail/labels" />}>{t('labelMenu.create')}</DropdownMenuItem>
             ) : (
-              <DropdownMenuItem disabled>No labels yet</DropdownMenuItem>
+              <DropdownMenuItem disabled>{t('labelMenu.none')}</DropdownMenuItem>
             )
           ) : null}
         </DropdownMenuGroup>
@@ -115,12 +117,13 @@ function HeaderButton({ label, onClick, children, pressed }: { label: string; on
 
 /** The reading pane: the thread's actions, then its messages, oldest first; only the newest is open at first. */
 export function ThreadView({ detail, status, onRetry, labels, labelsById, canManage, onBack, actions, labelMenuOpen, onLabelMenuOpenChange }: ThreadViewProps) {
+  const { t } = useTranslation('mail')
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
   if (!detail) {
     return (
       <>
         <PaneHeader>
-          <Button variant="ghost" size="icon-sm" className="hidden text-muted-foreground/70 max-[899px]:inline-flex" aria-label="Back" onClick={onBack}>
+          <Button variant="ghost" size="icon-sm" className="hidden text-muted-foreground/70 max-[899px]:inline-flex" aria-label={t('actions.back')} onClick={onBack}>
             <ArrowLeft className="size-4" />
           </Button>
         </PaneHeader>
@@ -128,11 +131,11 @@ export function ThreadView({ detail, status, onRetry, labels, labelsById, canMan
           <div className="flex min-h-0 flex-1 flex-col">
             <MailEmptyState
               icon={Mail}
-              title="This conversation could not be loaded"
-              description="It may have been deleted, or the connection failed."
+              title={t('thread.loadFailed')}
+              description={t('thread.loadFailedDescription')}
               action={
                 <Button variant="outline" size="sm" onClick={onRetry}>
-                  Try again
+                  {t('tryAgain')}
                 </Button>
               }
             />
@@ -149,7 +152,7 @@ export function ThreadView({ detail, status, onRetry, labels, labelsById, canMan
 
   const { thread, messages } = detail
   const lastIndex = messages.length - 1
-  const subject = thread.subject || '(no subject)'
+  const subject = thread.subject || t('noSubject')
   const chips = thread.labels.flatMap((id) => labelsById.get(id) ?? [])
   const inTrash = thread.folder === 'trash'
   const inSpam = thread.folder === 'spam'
@@ -157,15 +160,15 @@ export function ThreadView({ detail, status, onRetry, labels, labelsById, canMan
   return (
     <>
       <PaneHeader>
-        <Button variant="ghost" size="icon-sm" className="hidden text-muted-foreground/70 max-[899px]:inline-flex" aria-label="Back" onClick={onBack}>
+        <Button variant="ghost" size="icon-sm" className="hidden text-muted-foreground/70 max-[899px]:inline-flex" aria-label={t('actions.back')} onClick={onBack}>
           <ArrowLeft className="size-4" />
         </Button>
         <PaneTitle className="min-w-0 shrink">{subject}</PaneTitle>
         <span className="flex-1" />
-        <HeaderButton label={thread.starred ? 'Unstar' : 'Star'} pressed={thread.starred} onClick={actions.star}>
+        <HeaderButton label={thread.starred ? t('actions.unstar') : t('actions.star')} pressed={thread.starred} onClick={actions.star}>
           <Star className={cn('size-4', thread.starred && 'fill-[#fcd452] text-[#fcd452]')} />
         </HeaderButton>
-        <HeaderButton label="Mark as unread" onClick={actions.markUnread}>
+        <HeaderButton label={t('actions.markUnread')} onClick={actions.markUnread}>
           <Mail className="size-4" />
         </HeaderButton>
         <LabelMenu
@@ -177,25 +180,25 @@ export function ThreadView({ detail, status, onRetry, labels, labelsById, canMan
           canManage={canManage}
         />
         {thread.folder === 'archive' ? (
-          <HeaderButton label="Move to inbox" onClick={actions.archive}>
+          <HeaderButton label={t('actions.moveToInbox')} onClick={actions.archive}>
             <DirectInbox className="size-4" />
           </HeaderButton>
         ) : !inTrash && !inSpam ? (
-          <HeaderButton label="Archive" onClick={actions.archive}>
+          <HeaderButton label={t('actions.archive')} onClick={actions.archive}>
             <Archive className="size-4" />
           </HeaderButton>
         ) : null}
         {!inTrash ? (
-          <HeaderButton label={inSpam ? 'Not spam' : 'Report spam'} onClick={actions.spam}>
+          <HeaderButton label={inSpam ? t('actions.notSpam') : t('actions.reportSpam')} onClick={actions.spam}>
             {inSpam ? <DirectInbox className="size-4" /> : <ShieldCross className="size-4" />}
           </HeaderButton>
         ) : null}
         {inTrash ? (
-          <HeaderButton label="Restore" onClick={actions.restore}>
+          <HeaderButton label={t('actions.restore')} onClick={actions.restore}>
             <Undo className="size-4" />
           </HeaderButton>
         ) : (
-          <HeaderButton label="Move to trash" onClick={actions.trash}>
+          <HeaderButton label={t('actions.moveToTrash')} onClick={actions.trash}>
             <Trash className="size-4" />
           </HeaderButton>
         )}
@@ -215,11 +218,11 @@ export function ThreadView({ detail, status, onRetry, labels, labelsById, canMan
           {inSpam ? (
             <Alert data-kind="spam" data-print-hide="" className="mt-2">
               <ShieldCross />
-              <AlertTitle>In Spam</AlertTitle>
-              <AlertDescription>Links and images in spam can be harmful. Move it to the inbox only if you trust the sender.</AlertDescription>
+              <AlertTitle>{t('thread.inSpam')}</AlertTitle>
+              <AlertDescription>{t('thread.inSpamDescription')}</AlertDescription>
               <AlertAction>
                 <Button variant="outline" size="sm" onClick={actions.spam}>
-                  Not spam
+                  {t('actions.notSpam')}
                 </Button>
               </AlertAction>
             </Alert>
@@ -227,11 +230,11 @@ export function ThreadView({ detail, status, onRetry, labels, labelsById, canMan
           {inTrash ? (
             <Alert data-kind="trash" data-print-hide="" className="mt-2">
               <Trash />
-              <AlertTitle>In Trash</AlertTitle>
-              <AlertDescription>Conversations in the trash are deleted for good after 30 days.</AlertDescription>
+              <AlertTitle>{t('thread.inTrash')}</AlertTitle>
+              <AlertDescription>{t('thread.inTrashDescription')}</AlertDescription>
               <AlertAction>
                 <Button variant="outline" size="sm" onClick={actions.restore}>
-                  Restore
+                  {t('actions.restore')}
                 </Button>
               </AlertAction>
             </Alert>

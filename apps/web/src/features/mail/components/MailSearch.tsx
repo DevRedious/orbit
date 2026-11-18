@@ -1,4 +1,5 @@
 import { useId, useState, type Ref } from 'react'
+import { useTranslation } from 'react-i18next'
 import { SearchNormal } from 'reicon-react'
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/input-group'
 import { searchSuggestions } from '@/features/mail/mailLib'
@@ -23,6 +24,7 @@ export function MailSearch({
   inputRef?: Ref<HTMLInputElement>
   onSearch: (query: string) => void
 }) {
+  const { t } = useTranslation('mail')
   const listId = useId()
   const [value, setValue] = useState(defaultQuery)
   const [open, setOpen] = useState(false)
@@ -45,12 +47,12 @@ export function MailSearch({
           ref={inputRef}
           type="search"
           role="combobox"
-          aria-label="Search mail"
+          aria-label={t('search.label')}
           aria-autocomplete="list"
           aria-expanded={shown}
           aria-controls={shown ? listId : undefined}
           aria-activedescendant={shown && active >= 0 ? `${listId}-${active}` : undefined}
-          placeholder="Search mail"
+          placeholder={t('search.placeholder')}
           className="text-[0.8125rem] md:text-[0.8125rem]"
           value={value}
           onChange={(event) => {
@@ -90,7 +92,7 @@ export function MailSearch({
         <div
           id={listId}
           role="listbox"
-          aria-label="Search suggestions"
+          aria-label={t('search.suggestions')}
           className="absolute inset-x-0 top-full z-50 mt-1 flex flex-col rounded-lg bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10"
         >
           {suggestions.map((suggestion, index) => (

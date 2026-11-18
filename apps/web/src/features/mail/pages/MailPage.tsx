@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router'
 import { toast } from 'sonner'
 import { Archive, DirectInbox, SearchNormal, ShieldCross, Sms as Mail, Star, Tag, Trash, Undo, Xmark } from 'reicon-react'
@@ -30,13 +31,6 @@ import { useCommand } from '@/shortcuts/useCommand'
 /** `POST threads/bulk` takes at most this many ids. */
 const BULK_LIMIT = 100
 
-const EMPTY_FOLDER: Record<MailFolder, { title: string; description: string }> = {
-  inbox: { title: 'Your inbox is empty', description: 'New mail shows up here.' },
-  archive: { title: 'Nothing archived', description: 'Archived conversations show up here. Press E to archive one.' },
-  spam: { title: 'No spam', description: 'Mail that fails authentication lands here.' },
-  trash: { title: 'Trash is empty', description: 'Conversations in the trash are deleted for good after 30 days.' },
-}
-
 /** `/mail/*`: the read-only mail client (spec §8.3). */
 export function MailPage() {
   const route = parseMailPath(useParams()['*'] ?? '')
@@ -46,6 +40,7 @@ export function MailPage() {
 }
 
 function MailApp({ view, threadId }: { view: MailView; threadId: string | null }) {
+  const { t } = useTranslation('mail')
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const query = view.kind === 'search' ? (searchParams.get('q') ?? '') : ''
@@ -101,7 +96,7 @@ function MailApp({ view, threadId }: { view: MailView; threadId: string | null }
 
   const apply = (items: MailThreadSummary[], change: ThreadChange, leaves: boolean) => {
     if (items.length === 0) return
-    const onError = (error: Error) => toast.error(problemText(error, 'The change could not be saved.'))
+    const onError = (error: Error) => toast.error(problemText(error, t('saveFailed')))
     const ids = items.map((thread) => thread.id)
     if (ids.length === 1) update.mutate({ threadId: ids[0], change }, { onError })
     else for (let start = 0; start < ids.length; start += BULK_LIMIT) bulk.mutate({ threadIds: ids.slice(start, start + BULK_LIMIT), change }, { onError })
@@ -187,28 +182,30 @@ function MailApp({ view, threadId }: { view: MailView; threadId: string | null }
   useCommand('mail.starred', () => navigate(mailViewPath({ kind: 'starred' })))
   useCommand('mail.trashFolder', () => navigate(mailViewPath({ kind: 'folder', folder: 'trash' })))
 
+  const emptyOf = (kind: MailFolder | 'label' | 'starred' | 'noResults' | 'search') => ({
+    title: t(`empty.${kind}.title`),
+    description: t(`empty.${kind}.description`),
+  })
   const mailboxName = (id: string | undefined) => mailboxes.find((mailbox) => mailbox.id === id)?.name
   const title =
     view.kind === 'folder'
       ? view.mailboxId
-        ? `${mailboxName(view.mailboxId) ?? 'Mailbox'} · ${folderLabel(view.folder)}`
+        ? t('views.mailboxFolder', { mailbox: mailboxName(view.mailboxId) ?? t('views.mailbox'), folder: folderLabel(view.folder) })
         : folderLabel(view.folder)
       : view.kind === 'label'
-        ? (labelsById.get(view.labelId)?.name ?? 'Label')
+        ? (labelsById.get(view.labelId)?.name ?? t('views.label'))
         : view.kind === 'starred'
-          ? 'Starred'
-          : 'Search'
+          ? t('views.starred')
+          : t('views.search')
   const icon = view.kind === 'folder' ? (FOLDERS.find((entry) => entry.folder === view.folder)?.icon ?? Mail) : view.kind === 'label' ? Tag : view.kind === 'starred' ? Star : SearchNormal
   const empty =
     view.kind === 'folder'
-      ? EMPTY_FOLDER[view.folder]
+      ? emptyOf(view.folder)
       : view.kind === 'label'
-        ? { title: 'No conversations with this label', description: 'Press L in a conversation to add a label.' }
+        ? emptyOf('label')
         : view.kind === 'starred'
-          ? { title: 'No starred conversations', description: 'Press S to star a conversation.' }
-          : query
-            ? { title: 'No results', description: 'Try other words, or fewer operators.' }
-            : { title: 'Search your mail', description: 'Use from:, to:, subject:, label:, in:, is:unread, has:attachment, before: and after:.' }
+          ? emptyOf('starred')
+          : emptyOf(query ? 'noResults' : 'search')
 
   // no mailbox to read: an admin sets mail up, a member asks for a mailbox
   if (me.data && mailboxes.length === 0) {
@@ -217,12 +214,12 @@ function MailApp({ view, threadId }: { view: MailView; threadId: string | null }
         {me.data.can_manage ? (
           <MailEmptyState
             icon={Mail}
-            title="Set up mail"
-            description="Add a domain and create mailboxes, and mail for your team arrives here."
-            action={<Button onClick={() => navigate('/settings/mail/domains')}>Set up mail</Button>}
+            title={t('setup.title')}
+            description={t('setup.description')}
+            action={<Button onClick={() => navigate('/settings/mail/domains')}>{t('setup.action')}</Button>}
           />
         ) : (
-          <MailEmptyState icon={Mail} title="No mailbox yet" description="Ask an admin for a mailbox." />
+          <MailEmptyState icon={Mail} title={t('setup.noMailbox')} description={t('setup.noMailboxDescription')} />
         )}
       </div>
     )
@@ -233,32 +230,32 @@ function MailApp({ view, threadId }: { view: MailView; threadId: string | null }
   const bulkBar =
     selected.size > 0 ? (
       <PaneHeader data-slot="mail-bulk-bar">
-        <Tip label="Clear the selection" side="bottom">
-          <Button variant="ghost" size="icon-sm" className="text-muted-foreground/70" aria-label="Clear the selection" onClick={() => setSelected(new Set())}>
+        <Tip label={t('bulk.clear')} side="bottom">
+          <Button variant="ghost" size="icon-sm" className="text-muted-foreground/70" aria-label={t('bulk.clear')} onClick={() => setSelected(new Set())}>
             <Xmark className="size-4" />
           </Button>
         </Tip>
-        <span className="text-[0.8125rem] font-semibold">{selected.size} selected</span>
+        <span className="text-[0.8125rem] font-semibold">{t('bulk.selected', { count: selected.size })}</span>
         <span className="flex-1" />
-        <BulkButton label={all(picked, 'archive') ? 'Move to inbox' : 'Archive'} onClick={() => archive(picked)}>
+        <BulkButton label={all(picked, 'archive') ? t('actions.moveToInbox') : t('actions.archive')} onClick={() => archive(picked)}>
           {all(picked, 'archive') ? <DirectInbox className="size-4" /> : <Archive className="size-4" />}
         </BulkButton>
-        <BulkButton label={all(picked, 'spam') ? 'Not spam' : 'Report spam'} onClick={() => spam(picked)}>
+        <BulkButton label={all(picked, 'spam') ? t('actions.notSpam') : t('actions.reportSpam')} onClick={() => spam(picked)}>
           <ShieldCross className="size-4" />
         </BulkButton>
         {all(picked, 'trash') ? (
-          <BulkButton label="Restore" onClick={() => restore(picked)}>
+          <BulkButton label={t('actions.restore')} onClick={() => restore(picked)}>
             <Undo className="size-4" />
           </BulkButton>
         ) : (
-          <BulkButton label="Move to trash" onClick={() => trash(picked)}>
+          <BulkButton label={t('actions.moveToTrash')} onClick={() => trash(picked)}>
             <Trash className="size-4" />
           </BulkButton>
         )}
-        <BulkButton label={picked.some((thread) => thread.unread) ? 'Mark as read' : 'Mark as unread'} onClick={() => toggleRead(picked)}>
+        <BulkButton label={picked.some((thread) => thread.unread) ? t('actions.markRead') : t('actions.markUnread')} onClick={() => toggleRead(picked)}>
           <Mail className="size-4" />
         </BulkButton>
-        <BulkButton label="Star" onClick={() => star(picked)}>
+        <BulkButton label={t('actions.star')} onClick={() => star(picked)}>
           <Star className="size-4" />
         </BulkButton>
         <LabelMenu
@@ -337,7 +334,7 @@ function MailApp({ view, threadId }: { view: MailView; threadId: string | null }
           />
         ) : (
           <div className="flex min-h-0 flex-1 flex-col">
-            <MailEmptyState icon={Mail} title="Select a conversation" description="Choose a conversation from the list to read it here." />
+            <MailEmptyState icon={Mail} title={t('empty.noThread.title')} description={t('empty.noThread.description')} />
           </div>
         )}
       </section>

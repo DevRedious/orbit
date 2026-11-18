@@ -2,20 +2,22 @@ import type { IconComponent } from 'reicon-react'
 import { Archive, DirectInbox, ShieldCross, Trash } from 'reicon-react'
 import type { MailAttachmentView, MailFolder, MailPerson, MailThreadSummary } from '@orbit/api/generated/types.gen'
 import { ApiProblem } from '@orbit/api/problem'
+import { i18n } from '@/i18n'
+import { problemMessage } from '@/i18n/problem'
 import type { Attachment } from '@/lib/attachmentLib'
 import type { ThreadFilter } from './api/keys'
 
-export const FOLDERS: ReadonlyArray<{ folder: MailFolder; label: string; icon: IconComponent }> = [
-  { folder: 'inbox', label: 'Inbox', icon: DirectInbox },
-  { folder: 'archive', label: 'Archive', icon: Archive },
-  { folder: 'spam', label: 'Spam', icon: ShieldCross },
-  { folder: 'trash', label: 'Trash', icon: Trash },
+export const FOLDERS: ReadonlyArray<{ folder: MailFolder; icon: IconComponent }> = [
+  { folder: 'inbox', icon: DirectInbox },
+  { folder: 'archive', icon: Archive },
+  { folder: 'spam', icon: ShieldCross },
+  { folder: 'trash', icon: Trash },
 ]
 
 const FOLDER_NAMES = new Set<string>(FOLDERS.map(({ folder }) => folder))
 const isFolder = (value: string | undefined): value is MailFolder => value !== undefined && FOLDER_NAMES.has(value)
 
-export const folderLabel = (folder: MailFolder) => FOLDERS.find((entry) => entry.folder === folder)?.label ?? folder
+export const folderLabel = (folder: MailFolder) => (FOLDER_NAMES.has(folder) ? i18n.t(`mail:folders.${folder}`) : folder)
 
 /** What the thread list shows. A folder without `mailboxId` is the folder of every mailbox the user reads. */
 export type MailView =
@@ -154,7 +156,7 @@ export function searchSuggestions(query: string, known: { labels: readonly strin
 }
 
 /** A person's display name, else their address. */
-export const personName = (person: MailPerson | null | undefined) => person?.name?.trim() || person?.address || 'Unknown sender'
+export const personName = (person: MailPerson | null | undefined) => person?.name?.trim() || person?.address || i18n.t('mail:unknownSender')
 
 /** The senders of a list row: first names when there are several. */
 export function threadSenders(thread: MailThreadSummary): string {
@@ -174,7 +176,7 @@ export function mailAttachment(workspaceId: string, attachment: MailAttachmentVi
   const image = INLINE_IMAGES.has(attachment.content_type)
   return {
     id: attachment.id,
-    fileName: attachment.filename?.trim() || 'attachment',
+    fileName: attachment.filename?.trim() || i18n.t('mail:attachmentName'),
     // a type the route will not show inline must not reach an <img>; a PDF opens in the viewer (pdf.js, no scripts)
     mimeType: image || attachment.content_type === 'application/pdf' ? attachment.content_type : 'application/octet-stream',
     fileSize: attachment.size,
@@ -186,5 +188,5 @@ export function mailAttachment(workspaceId: string, attachment: MailAttachmentVi
 export const rawMessageUrl = (workspaceId: string, messageId: string) =>
   `/api/v1/workspaces/${encodeURIComponent(workspaceId)}/mail/messages/${encodeURIComponent(messageId)}/raw`
 
-/** The server's explanation of a failed request, else `fallback`. */
-export const problemText = (error: unknown, fallback: string) => (error instanceof ApiProblem && error.detail ? error.detail : fallback)
+/** The server's explanation of a failed request (translated when the catalog knows it), else `fallback`. */
+export const problemText = (error: unknown, fallback: string) => (error instanceof ApiProblem && error.detail ? problemMessage(error, fallback) : fallback)

@@ -1,4 +1,5 @@
 import type { ComponentType, ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { DirectboxDefault, Star } from 'reicon-react'
 import type { MailCounts, MailLabel, MailMeMailbox } from '@orbit/api/generated/types.gen'
@@ -9,7 +10,7 @@ import { PaneHeader, PaneTitle } from '@/components/common/Pane'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { cn } from 'cn'
-import { FOLDERS, mailViewPath, type MailView } from '@/features/mail/mailLib'
+import { FOLDERS, folderLabel, mailViewPath, type MailView } from '@/features/mail/mailLib'
 
 interface FolderRailProps {
   view: MailView
@@ -33,6 +34,7 @@ function RailRow({
   onClick: () => void
   children?: ReactNode
 }) {
+  const { t } = useTranslation('mail')
   return (
     <Button
       type="button"
@@ -40,7 +42,7 @@ function RailRow({
       className="w-full min-w-0 justify-start gap-2.5 text-[0.8125rem] data-active:bg-sidebar-accent data-active:text-sidebar-accent-foreground"
       data-active={active || undefined}
       aria-current={active ? 'page' : undefined}
-      aria-label={unread > 0 ? `${label}, ${unread} unread` : label}
+      aria-label={unread > 0 ? t('rail.unread', { label, count: unread }) : label}
       onClick={onClick}
     >
       {Icon ? <Icon className="opacity-90" /> : children}
@@ -63,6 +65,7 @@ function RailSection({ children }: { children: string }) {
  * the folders and the labels. With a mailbox open, the folders are that mailbox's.
  */
 export function FolderRail({ view, mailboxes, labels, counts }: FolderRailProps) {
+  const { t } = useTranslation('mail')
   const navigate = useNavigate()
   const unread = (mailboxId: string | undefined, folder: 'inbox' | 'spam') =>
     (counts?.mailboxes ?? []).filter((mailbox) => !mailboxId || mailbox.mailbox_id === mailboxId).reduce((sum, mailbox) => sum + mailbox[folder], 0)
@@ -73,16 +76,16 @@ export function FolderRail({ view, mailboxes, labels, counts }: FolderRailProps)
 
   return (
     <InAppSidebar>
-    <nav aria-label="Mail folders" className={inAppSidebar ? 'flex min-h-0 flex-1 flex-col' : 'flex h-full w-[200px] shrink-0 flex-col bg-background max-[899px]:hidden'}>
+    <nav aria-label={t('rail.label')} className={inAppSidebar ? 'flex min-h-0 flex-1 flex-col' : 'flex h-full w-[200px] shrink-0 flex-col bg-background max-[899px]:hidden'}>
       {inAppSidebar ? null : (
         <PaneHeader>
-          <PaneTitle>Mail</PaneTitle>
+          <PaneTitle>{t('title')}</PaneTitle>
         </PaneHeader>
       )}
       <div className={cn('flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto', inAppSidebar ? 'px-3' : 'p-2')}>
         <RailRow
           icon={FOLDERS[0].icon}
-          label="Inbox"
+          label={folderLabel('inbox')}
           unread={unread(undefined, 'inbox')}
           active={view.kind === 'folder' && view.folder === 'inbox' && !view.mailboxId}
           onClick={() => go({ kind: 'folder', folder: 'inbox' })}
@@ -99,18 +102,18 @@ export function FolderRail({ view, mailboxes, labels, counts }: FolderRailProps)
               />
             ))
           : null}
-        <RailRow icon={Star} label="Starred" active={view.kind === 'starred'} onClick={() => go({ kind: 'starred' })} />
-        {FOLDERS.slice(1).map(({ folder, label, icon }) => (
+        <RailRow icon={Star} label={t('views.starred')} active={view.kind === 'starred'} onClick={() => go({ kind: 'starred' })} />
+        {FOLDERS.slice(1).map(({ folder, icon }) => (
           <RailRow
             key={folder}
             icon={icon}
-            label={label}
+            label={folderLabel(folder)}
             unread={folder === 'spam' ? unread(scope, 'spam') : 0}
             active={view.kind === 'folder' && view.folder === folder}
             onClick={() => go({ kind: 'folder', folder, mailboxId: scope })}
           />
         ))}
-        {labels.length > 0 ? <RailSection>Labels</RailSection> : null}
+        {labels.length > 0 ? <RailSection>{t('rail.labels')}</RailSection> : null}
         {labels.map((label) => (
           <RailRow
             key={label.id}

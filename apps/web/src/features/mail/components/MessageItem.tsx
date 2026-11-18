@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Code, DocumentDownload, Gallery, More, Printer, ShieldTick } from 'reicon-react'
 import type { MailMessageView, MailPerson } from '@orbit/api/generated/types.gen'
@@ -9,6 +10,7 @@ import { UserAvatar } from '@/components/common/UserAvatar'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Skeleton } from '@/components/ui/skeleton'
+import { i18n } from '@/i18n'
 import { fullDate, timeOfDay } from '@/lib/format'
 import { useSetSenderPref } from '@/features/mail/api/mutations'
 import { useRawMessage } from '@/features/mail/api/queries'
@@ -38,17 +40,18 @@ function download(url: string) {
 
 /** **Show original**: the message as received, headers and all. */
 function OriginalMessage({ messageId, onClose }: { messageId: string; onClose: () => void }) {
+  const { t } = useTranslation('mail')
   const raw = useRawMessage(messageId)
   return (
-    <Modal title="Original message" description="The message as Orbit received it." onClose={onClose} className="sm:max-w-4xl">
+    <Modal title={t('message.original.title')} description={t('message.original.description')} onClose={onClose} className="sm:max-w-4xl">
       {raw.data ? (
         <>
           <pre className="max-h-[60vh] overflow-auto rounded-md border bg-muted/40 p-3 font-mono text-xs whitespace-pre-wrap break-all">{raw.data.text}</pre>
-          {raw.data.truncated ? <p className="text-xs text-muted-foreground">Only the start is shown. Download the .eml file for the whole message.</p> : null}
+          {raw.data.truncated ? <p className="text-xs text-muted-foreground">{t('message.original.truncated')}</p> : null}
         </>
       ) : raw.isError ? (
         <p role="alert" className="text-sm text-muted-foreground">
-          {problemText(raw.error, 'The original message could not be loaded.')}
+          {problemText(raw.error, t('message.original.loadFailed'))}
         </p>
       ) : (
         <Skeleton className="h-40 w-full" />
@@ -59,6 +62,7 @@ function OriginalMessage({ messageId, onClose }: { messageId: string; onClose: (
 
 /** One message of a thread: a header that expands it, then the warnings, the body and the attachments. */
 export function MessageItem({ message, expanded, onToggle, onPrint }: MessageItemProps) {
+  const { t } = useTranslation('mail')
   const { workspace } = useWorkspace()
   const [imagesLoaded, setImagesLoaded] = useState(false)
   const [originalOpen, setOriginalOpen] = useState(false)
@@ -92,7 +96,7 @@ export function MessageItem({ message, expanded, onToggle, onPrint }: MessageIte
             <span className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground/70">
               <span className="truncate">{address}</span>
               {message.auth.aligned_domain ? (
-                <span className="inline-flex shrink-0 items-center gap-0.5 text-muted-foreground" title="DMARC confirmed that the message comes from this domain.">
+                <span className="inline-flex shrink-0 items-center gap-0.5 text-muted-foreground" title={t('message.dmarcConfirmed')}>
                   <ShieldTick className="size-3.5" />
                   {message.auth.aligned_domain}
                 </span>
@@ -100,14 +104,14 @@ export function MessageItem({ message, expanded, onToggle, onPrint }: MessageIte
             </span>
           </div>
           <span className="flex-1" />
-          <span className="shrink-0 text-xs text-muted-foreground/70" title={new Date(message.received_at).toLocaleString()}>
-            {fullDate(date)}, {timeOfDay(date)}
+          <span className="shrink-0 text-xs text-muted-foreground/70" title={new Date(message.received_at).toLocaleString(i18n.language)}>
+            {t('message.dateTime', { date: fullDate(date), time: timeOfDay(date) })}
           </span>
         </div>
         <DropdownMenu>
-          <Tip label="Message actions">
+          <Tip label={t('message.actions')}>
             <DropdownMenuTrigger
-              render={<Button variant="ghost" size="icon-sm" className="shrink-0 text-muted-foreground/70" aria-label="Message actions" data-print-hide="" />}
+              render={<Button variant="ghost" size="icon-sm" className="shrink-0 text-muted-foreground/70" aria-label={t('message.actions')} data-print-hide="" />}
             >
               <More className="size-4" />
             </DropdownMenuTrigger>
@@ -115,15 +119,15 @@ export function MessageItem({ message, expanded, onToggle, onPrint }: MessageIte
           <DropdownMenuContent align="end" className="w-auto min-w-40">
             <DropdownMenuItem onClick={() => setOriginalOpen(true)}>
               <Code />
-              Show original
+              {t('message.showOriginal')}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => download(rawMessageUrl(workspace.id, message.id))}>
               <DocumentDownload />
-              Download .eml
+              {t('message.downloadEml')}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={onPrint}>
               <Printer />
-              Print
+              {t('message.print')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -131,17 +135,17 @@ export function MessageItem({ message, expanded, onToggle, onPrint }: MessageIte
       {expanded ? (
         <div className="animate-relation-enter motion-reduce:animate-none">
           <div className="mt-2 flex flex-col gap-0.5 pl-[42px] text-xs text-muted-foreground">
-            {message.to.length > 0 ? <span className="truncate">To: {people(message.to)}</span> : null}
-            {message.cc.length > 0 ? <span className="truncate">Cc: {people(message.cc)}</span> : null}
-            {message.sender ? <span className="truncate">Sent by {message.sender}</span> : null}
+            {message.to.length > 0 ? <span className="truncate">{t('message.to', { people: people(message.to) })}</span> : null}
+            {message.cc.length > 0 ? <span className="truncate">{t('message.cc', { people: people(message.cc) })}</span> : null}
+            {message.sender ? <span className="truncate">{t('message.sentBy', { sender: message.sender })}</span> : null}
           </div>
           <SafetyBanner message={message} />
           {offerImages ? (
             <div data-print-hide="" className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border px-2.5 py-1.5 text-[0.8125rem] text-muted-foreground">
               <Gallery className="size-4 shrink-0" />
-              <span className="min-w-0 flex-1">Remote images are hidden.</span>
+              <span className="min-w-0 flex-1">{t('message.imagesHidden')}</span>
               <Button variant="outline" size="sm" onClick={() => setImagesLoaded(true)}>
-                Load images
+                {t('message.loadImages')}
               </Button>
               {message.auth.dmarc === 'pass' && address ? (
                 <Button
@@ -154,21 +158,21 @@ export function MessageItem({ message, expanded, onToggle, onPrint }: MessageIte
                       {
                         onSuccess: () => {
                           setImagesLoaded(true)
-                          toast(`Images from ${address} now load at once.`)
+                          toast(t('message.imagesAlways', { address }))
                         },
-                        onError: (error) => toast.error(problemText(error, 'The setting could not be saved.')),
+                        onError: (error) => toast.error(problemText(error, t('message.settingFailed'))),
                       },
                     )
                   }
                 >
-                  Always for this sender
+                  {t('message.alwaysForSender')}
                 </Button>
               ) : null}
             </div>
           ) : null}
           <div className="mt-3">
             {message.has_html ? (
-              <MailHtmlFrame messageId={message.id} loadImages={loadImages} title={message.subject || 'Message'} />
+              <MailHtmlFrame messageId={message.id} loadImages={loadImages} title={message.subject || t('message.frameTitle')} />
             ) : (
               <div className="text-sm leading-[1.6] break-words whitespace-pre-wrap text-foreground">{message.body_text}</div>
             )}

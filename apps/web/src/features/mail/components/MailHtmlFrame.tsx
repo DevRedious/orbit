@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useViewUrl } from '@/features/mail/api/queries'
@@ -10,6 +11,7 @@ import { FRAME_MIN_HEIGHT, frameHeight } from '@/features/mail/mailLib'
  * from this frame's own window sets the height (80–20,000 px).
  */
 export function MailHtmlFrame({ messageId, loadImages, title }: { messageId: string; loadImages: boolean; title: string }) {
+  const { t } = useTranslation('mail')
   const view = useViewUrl(messageId, loadImages)
   const frame = useRef<HTMLIFrameElement>(null)
   const [height, setHeight] = useState(FRAME_MIN_HEIGHT)
@@ -26,9 +28,9 @@ export function MailHtmlFrame({ messageId, loadImages, title }: { messageId: str
   if (view.isError) {
     return (
       <div role="alert" className="flex items-center gap-3 rounded-md border px-3 py-2 text-[0.8125rem] text-muted-foreground">
-        The message could not be shown.
+        {t('message.frameFailed')}
         <Button variant="outline" size="sm" onClick={() => void view.refetch()}>
-          Try again
+          {t('tryAgain')}
         </Button>
       </div>
     )

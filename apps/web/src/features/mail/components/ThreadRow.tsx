@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { Paperclip2 as Paperclip, Star } from 'reicon-react'
 import { cn } from 'cn'
 import type { MailLabel, MailThreadSummary } from '@orbit/api/generated/types.gen'
@@ -6,6 +7,7 @@ import { Tip } from '@/components/common/Tip'
 import { UserAvatar } from '@/components/common/UserAvatar'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
+import { i18n } from '@/i18n'
 import { relativeTime } from '@/lib/format'
 import { personName, threadSenders } from '@/features/mail/mailLib'
 
@@ -24,6 +26,8 @@ interface ThreadRowProps {
 
 /** A row of the thread list: sender, subject, snippet, time, label chips, star, unread dot, attachment icon. */
 export function ThreadRow({ thread, labels, active, focused, selected, selecting, onOpen, onSelect, onStar }: ThreadRowProps) {
+  const { t } = useTranslation('mail')
+  const subject = thread.subject || t('noSubject')
   const chips = thread.labels.flatMap((id) => labels.get(id) ?? [])
   return (
     <div
@@ -36,7 +40,7 @@ export function ThreadRow({ thread, labels, active, focused, selected, selecting
       data-unread={thread.unread || undefined}
       role="button"
       tabIndex={0}
-      aria-label={`${thread.unread ? 'Unread, ' : ''}${threadSenders(thread)}: ${thread.subject || '(no subject)'}`}
+      aria-label={t(thread.unread ? 'row.summaryUnread' : 'row.summary', { senders: threadSenders(thread), subject })}
       onClick={() => onOpen(thread.id)}
       onKeyDown={(event) => {
         if (event.key === 'Enter' && event.target === event.currentTarget) onOpen(thread.id)
@@ -50,7 +54,7 @@ export function ThreadRow({ thread, labels, active, focused, selected, selecting
           <UserAvatar user={null} name={personName(thread.from[0])} size={32} />
         </span>
         <span className="invisible absolute inset-0 flex items-center justify-center group-data-selecting/row:visible hover-fine:group-hover/row:visible">
-          <Checkbox aria-label="Select conversation" checked={selected} onCheckedChange={() => onSelect(thread.id)} />
+          <Checkbox aria-label={t('row.select')} checked={selected} onCheckedChange={() => onSelect(thread.id)} />
         </span>
       </span>
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
@@ -60,11 +64,11 @@ export function ThreadRow({ thread, labels, active, focused, selected, selecting
             {thread.message_count > 1 ? <span className="ml-1 text-xs font-normal text-muted-foreground/70">{thread.message_count}</span> : null}
           </span>
           <span className="flex-1" />
-          <span className="shrink-0 text-xs text-muted-foreground/70" title={new Date(thread.last_message_at).toLocaleString()}>
+          <span className="shrink-0 text-xs text-muted-foreground/70" title={new Date(thread.last_message_at).toLocaleString(i18n.language)}>
             {relativeTime(thread.last_message_at)}
           </span>
         </div>
-        <div className="truncate text-[0.8125rem] text-foreground group-data-unread/row:font-semibold">{thread.subject || '(no subject)'}</div>
+        <div className="truncate text-[0.8125rem] text-foreground group-data-unread/row:font-semibold">{subject}</div>
         <div className="truncate text-xs text-muted-foreground/70">{thread.snippet}</div>
         {chips.length > 0 ? (
           <div className="mt-1 flex min-w-0 flex-wrap gap-1">
@@ -78,20 +82,20 @@ export function ThreadRow({ thread, labels, active, focused, selected, selecting
         ) : null}
       </div>
       <div className="flex shrink-0 flex-col items-center gap-1 text-muted-foreground/70" onClick={(event) => event.stopPropagation()}>
-        <Tip label={thread.starred ? 'Unstar' : 'Star'}>
+        <Tip label={thread.starred ? t('actions.unstar') : t('actions.star')}>
           <Button
             type="button"
             variant="ghost"
             size="icon-xs"
             className="text-muted-foreground/70"
-            aria-label={thread.starred ? 'Unstar' : 'Star'}
+            aria-label={thread.starred ? t('actions.unstar') : t('actions.star')}
             aria-pressed={thread.starred}
             onClick={() => onStar(thread)}
           >
             <Star className={cn('size-4', thread.starred && 'fill-[#fcd452] text-[#fcd452]')} />
           </Button>
         </Tip>
-        {thread.has_attachments ? <Paperclip className="size-3.5" aria-label="Has attachments" /> : null}
+        {thread.has_attachments ? <Paperclip className="size-3.5" aria-label={t('row.hasAttachments')} /> : null}
       </div>
     </div>
   )

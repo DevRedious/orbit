@@ -170,7 +170,7 @@ export function LabelPicker({ workspaceId, projectId, labelIds, labels: allLabel
             ) : null}
           </CommandList>
           {labels.length === 0 && !name ? (
-            <p className="px-3 pt-2.5 pb-2 text-xs text-muted-foreground">{canManage ? t('labels.emptyProject') : 'This project has no labels yet.'}</p>
+            <p className="px-3 pt-2.5 pb-2 text-xs text-muted-foreground">{canManage ? t('labels.emptyProject') : t('labels.emptyProjectReadOnly')}</p>
           ) : null}
           {name && shown.length === 0 && !creatable ? <p className="px-3 py-2.5 text-xs text-muted-foreground">{t('labels.noMatch')}</p> : null}
           {creatable ? (

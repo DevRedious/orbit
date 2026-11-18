@@ -1,3 +1,4 @@
+import { i18n } from '@/i18n'
 import type { AsanaImportStatus, LinearImportStatus, TrelloImportStatus } from '@orbit/api/generated/types.gen'
 
 /** The states every task import (Asana, Linear, Trello) goes through. */
@@ -16,15 +17,16 @@ export function isFinalImport(status: TaskImportStatus | undefined): boolean {
   return status === 'completed' || status === 'failed' || status === 'cancelled' || status === 'expired'
 }
 
+/** Getters: each read follows the UI language. */
 export const IMPORT_STATUS_LABELS: Record<TaskImportStatus, string> = {
-  scanning: 'Scanning',
-  ready: 'Ready to import',
-  queued: 'Queued',
-  importing: 'Importing',
-  completed: 'Completed',
-  failed: 'Failed',
-  cancelled: 'Cancelled',
-  expired: 'Expired',
+  get scanning() { return i18n.t('tasks:import.common.status.scanning') },
+  get ready() { return i18n.t('tasks:import.common.status.ready') },
+  get queued() { return i18n.t('tasks:import.common.status.queued') },
+  get importing() { return i18n.t('tasks:import.common.status.importing') },
+  get completed() { return i18n.t('tasks:import.common.status.completed') },
+  get failed() { return i18n.t('tasks:import.common.status.failed') },
+  get cancelled() { return i18n.t('tasks:import.common.status.cancelled') },
+  get expired() { return i18n.t('tasks:import.common.status.expired') },
 }
 
 /** The badge variant of an import status. */

@@ -371,11 +371,12 @@ interface BoardZoneProps {
  */
 /** A column or lane header's card count, then the sum of the estimates once a card has one. */
 function GroupTotals({ tasks, className }: { tasks: Task[]; className?: string }) {
+  const { t } = useTranslation('tasks')
   const points = estimateTotal(tasks)
   return (
     <span className={cn('flex items-center gap-2 font-normal whitespace-nowrap text-muted-foreground/70 tabular-nums', className)}>
       <span>{tasks.length}</span>
-      {points === null ? null : <span title="Total estimate">{estimateShortLabel(points)}</span>}
+      {points === null ? null : <span title={t('estimate.total')}>{estimateShortLabel(points)}</span>}
     </span>
   )
 }

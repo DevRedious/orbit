@@ -37,7 +37,7 @@ export function NewProjectModal({ onClose, onCreated }: { onClose: () => void; o
           <Input id={inputId} autoFocus required value={name} disabled={createProject.isPending} onChange={(event) => setName(event.target.value)} />
         </Field>
         <FieldSet className="gap-0">
-          <FieldLegend variant="label">Access</FieldLegend>
+          <FieldLegend variant="label">{t('access.title')}</FieldLegend>
           <ProjectVisibilityChoice isPrivate={isPrivate} disabled={createProject.isPending} onChange={setIsPrivate} />
         </FieldSet>
         {createProject.isError ? <p role="alert" className="text-xs text-destructive">{t('newProjectModal.failed')}</p> : null}

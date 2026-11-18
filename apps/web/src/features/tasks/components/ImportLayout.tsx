@@ -1,11 +1,13 @@
 import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router'
+import { useTranslation } from 'react-i18next'
 import { ArrowLeft } from 'reicon-react'
 import { Button } from '@/components/ui/button'
 import { PaneTitle } from '@/components/common/Pane'
 
 /** The 48px title row of a task import pane, with a back button on narrow screens. */
 export function ImportHeader({ title, detail, actions }: { title: string; detail?: string | null; actions?: ReactNode }) {
+  const { t } = useTranslation('tasks')
   const navigate = useNavigate()
   return (
     <div className="flex h-12 shrink-0 items-center gap-2 border-b border-border px-3">
@@ -14,7 +16,7 @@ export function ImportHeader({ title, detail, actions }: { title: string; detail
         variant="ghost"
         size="icon-sm"
         className="hidden text-muted-foreground/70 max-[899px]:inline-flex"
-        aria-label="Back to tasks"
+        aria-label={t('backToTasks')}
         onClick={() => navigate('/tasks')}
       >
         <ArrowLeft className="size-4" />
@@ -36,11 +38,12 @@ export function ImportBody({ children }: { children: ReactNode }) {
 }
 
 export function ImportProgressBar({ done, total }: { done: number; total: number }) {
+  const { t } = useTranslation('tasks')
   const percent = total > 0 ? Math.min(100, Math.round((done / total) * 100)) : 0
   return (
     <div
       role="progressbar"
-      aria-label="Import progress"
+      aria-label={t('import.common.progress')}
       aria-valuemin={0}
       aria-valuemax={total}
       aria-valuenow={done}

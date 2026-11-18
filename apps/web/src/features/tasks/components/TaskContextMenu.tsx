@@ -210,11 +210,11 @@ export function TaskContextMenu({ tasks, users, labels, statuses, groupContext, 
             <ContextMenuSub>
               <ContextMenuSubTrigger>
                 <Diamonds aria-hidden />
-                <span className="flex-1">Milestone</span>
+                <span className="flex-1">{t('milestone.label')}</span>
                 <ContextMenuShortcut><Shortcut id="task.setMilestone" /></ContextMenuShortcut>
               </ContextMenuSubTrigger>
               <ContextMenuSubContent className="min-w-45">
-                <ContextMenuCheckboxItem checked={targets.every((task) => !task.milestoneId)} closeOnClick onCheckedChange={() => mutate(milestoneUpdates(targets, null))}>No milestone</ContextMenuCheckboxItem>
+                <ContextMenuCheckboxItem checked={targets.every((task) => !task.milestoneId)} closeOnClick onCheckedChange={() => mutate(milestoneUpdates(targets, null))}>{t('milestone.none')}</ContextMenuCheckboxItem>
                 {milestones.map((milestone) => (
                   <ContextMenuCheckboxItem key={milestone.id} checked={targets.every((task) => task.milestoneId === milestone.id)} closeOnClick onCheckedChange={() => mutate(milestoneUpdates(targets, milestone))}>
                     {milestone.name}
@@ -227,11 +227,11 @@ export function TaskContextMenu({ tasks, users, labels, statuses, groupContext, 
             <ContextMenuSub>
               <ContextMenuSubTrigger>
                 <RefreshCircle aria-hidden />
-                <span className="flex-1">Cycle</span>
+                <span className="flex-1">{t('cycle.label')}</span>
                 <ContextMenuShortcut><Shortcut id="task.setCycle" /></ContextMenuShortcut>
               </ContextMenuSubTrigger>
               <ContextMenuSubContent className="min-w-45">
-                <ContextMenuCheckboxItem checked={targets.every((task) => !task.cycleId)} closeOnClick onCheckedChange={() => mutate(cycleUpdates(targets, null))}>No cycle</ContextMenuCheckboxItem>
+                <ContextMenuCheckboxItem checked={targets.every((task) => !task.cycleId)} closeOnClick onCheckedChange={() => mutate(cycleUpdates(targets, null))}>{t('cycle.none')}</ContextMenuCheckboxItem>
                 {/* past cycles are rarely the answer: the open ones only */}
                 {cycleGroups.open.map((cycle) => (
                   <ContextMenuCheckboxItem key={cycle.id} checked={targets.every((task) => task.cycleId === cycle.id)} closeOnClick onCheckedChange={() => mutate(cycleUpdates(targets, cycle))}>
@@ -244,11 +244,11 @@ export function TaskContextMenu({ tasks, users, labels, statuses, groupContext, 
           <ContextMenuSub>
             <ContextMenuSubTrigger>
               <Triangle aria-hidden />
-              <span className="flex-1">Estimate</span>
+              <span className="flex-1">{t('estimate.label')}</span>
               <ContextMenuShortcut><Shortcut id="task.setEstimate" /></ContextMenuShortcut>
             </ContextMenuSubTrigger>
             <ContextMenuSubContent className="min-w-45">
-              <ContextMenuCheckboxItem checked={targets.every((task) => task.estimate == null)} closeOnClick onCheckedChange={() => mutate(estimateUpdates(targets, null))}>No estimate</ContextMenuCheckboxItem>
+              <ContextMenuCheckboxItem checked={targets.every((task) => task.estimate == null)} closeOnClick onCheckedChange={() => mutate(estimateUpdates(targets, null))}>{t('estimate.none')}</ContextMenuCheckboxItem>
               {ESTIMATE_OPTIONS.map((points) => (
                 <ContextMenuCheckboxItem key={points} checked={targets.every((task) => task.estimate === points)} closeOnClick onCheckedChange={() => mutate(estimateUpdates(targets, points))}>
                   {estimateLabel(points)}

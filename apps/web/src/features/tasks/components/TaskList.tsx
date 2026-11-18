@@ -333,7 +333,7 @@ export function TaskList({ tasks, users, labels, statuses, projects, display, gr
         <span className="truncate">{group.label}</span>
         <MilestoneLate milestone={group.field === 'milestone' && group.value ? milestoneById.get(group.value) : undefined} />
         <span className="font-normal text-muted-foreground/70 tabular-nums">{rowCount(group.tasks)}</span>
-        {points === null ? null : <span title="Total estimate" className="font-normal whitespace-nowrap text-muted-foreground/70 tabular-nums">{estimateShortLabel(points)}</span>}
+        {points === null ? null : <span title={t('estimate.total')} className="font-normal whitespace-nowrap text-muted-foreground/70 tabular-nums">{estimateShortLabel(points)}</span>}
         <div className="flex-1" />
         {canAdd ? (
           <Tip label={t('newTask')}>

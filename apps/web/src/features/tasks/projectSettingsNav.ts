@@ -1,4 +1,5 @@
 import type { ComponentType } from 'react'
+import { i18n } from '@/i18n'
 import { Calendar, Category, Danger, DocumentText, Flag, Hierarchy, Link2, Lock, Setting2 as Settings, Tag } from 'reicon-react'
 
 export type ProjectSettingsSection = 'general' | 'access' | 'statuses' | 'labels' | 'sub-issues' | 'milestones' | 'cycles' | 'docs' | 'github' | 'danger-zone'
@@ -8,40 +9,40 @@ export interface ProjectSettingsGroup {
   items: { section: ProjectSettingsSection; label: string; icon: ComponentType<{ className?: string }> }[]
 }
 
-/** The project settings pages, grouped as the sidebar shows them. */
+/** The project settings pages, grouped as the sidebar shows them. Labels are getters: they follow the UI language. */
 export const PROJECT_SETTINGS_GROUPS: ProjectSettingsGroup[] = [
   {
-    label: 'Project',
+    get label() { return i18n.t('tasks:detail.project') },
     items: [
-      { section: 'general', label: 'General', icon: Settings },
-      { section: 'access', label: 'Access', icon: Lock },
+      { section: 'general', get label() { return i18n.t('tasks:projectSettings.general') }, icon: Settings },
+      { section: 'access', get label() { return i18n.t('tasks:access.title') }, icon: Lock },
     ],
   },
   {
-    label: 'Workflow',
+    get label() { return i18n.t('tasks:settingsNav.workflow') },
     items: [
-      { section: 'statuses', label: 'Statuses', icon: Category },
-      { section: 'labels', label: 'Labels', icon: Tag },
-      { section: 'sub-issues', label: 'Sub-issues', icon: Hierarchy },
+      { section: 'statuses', get label() { return i18n.t('tasks:projectSettings.statuses') }, icon: Category },
+      { section: 'labels', get label() { return i18n.t('tasks:labels.title') }, icon: Tag },
+      { section: 'sub-issues', get label() { return i18n.t('tasks:subIssues.title') }, icon: Hierarchy },
     ],
   },
   {
-    label: 'Planning',
+    get label() { return i18n.t('tasks:settingsNav.planning') },
     items: [
-      { section: 'milestones', label: 'Milestones', icon: Flag },
-      { section: 'cycles', label: 'Cycles', icon: Calendar },
+      { section: 'milestones', get label() { return i18n.t('tasks:milestones.title') }, icon: Flag },
+      { section: 'cycles', get label() { return i18n.t('tasks:cycles.title') }, icon: Calendar },
     ],
   },
   {
-    label: 'Integrations',
+    get label() { return i18n.t('tasks:settingsNav.integrations') },
     items: [
-      { section: 'docs', label: 'Docs', icon: DocumentText },
+      { section: 'docs', get label() { return i18n.t('tasks:docs.title') }, icon: DocumentText },
       { section: 'github', label: 'GitHub', icon: Link2 },
     ],
   },
   {
-    label: 'Advanced',
-    items: [{ section: 'danger-zone', label: 'Danger zone', icon: Danger }],
+    get label() { return i18n.t('tasks:settingsNav.advanced') },
+    items: [{ section: 'danger-zone', get label() { return i18n.t('tasks:projectSettings.dangerZone') }, icon: Danger }],
   },
 ]
 

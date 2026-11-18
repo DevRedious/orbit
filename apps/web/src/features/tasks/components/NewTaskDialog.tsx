@@ -256,9 +256,9 @@ export function NewTaskDialog({ defaults = {}, initialTitle = '', initialDescrip
         >
           <div className="flex items-center gap-1.5 pr-8">
             <SearchPicker
-              label="Project"
-              placeholder="Change project…"
-              emptyText="No projects match"
+              label={t('detail.project')}
+              placeholder={t('search.changeProject')}
+              emptyText={t('search.noProjects')}
               options={projects.map(projectOption)}
               selected={project ? [project.id] : []}
               // the status follows by name into the other project's workflow
@@ -435,8 +435,8 @@ export function NewTaskDialog({ defaults = {}, initialTitle = '', initialDescrip
             <SearchPicker
               multiple
               label={t('assignee.title')}
-              placeholder="Assign to…"
-              emptyText="No people match"
+              placeholder={t('search.assignTo')}
+              emptyText={t('search.noPeople')}
               options={audience.map(personOption)}
               selected={draft.assigneeIds}
               onSelect={(id) => setDraft((current) => ({ ...current, assigneeIds: current.assigneeIds.includes(id) ? current.assigneeIds.filter((item) => item !== id) : [...current.assigneeIds, id] }))}
@@ -486,9 +486,9 @@ export function NewTaskDialog({ defaults = {}, initialTitle = '', initialDescrip
                 value={milestone?.id ?? null}
                 onChange={(milestoneId) => setDraft((current) => ({ ...current, milestoneId }))}
                 trigger={
-                  <Button type="button" variant="outline" size="sm" className="max-w-56 font-normal" aria-label={`Milestone: ${milestone?.name ?? 'none'}`}>
+                  <Button type="button" variant="outline" size="sm" className="max-w-56 font-normal" aria-label={milestone ? t('milestone.currentName', { name: milestone.name }) : t('milestone.currentNone')}>
                     <Diamonds aria-hidden="true" className="text-muted-foreground" />
-                    <span className="truncate">{milestone?.name ?? 'Milestone'}</span>
+                    <span className="truncate">{milestone?.name ?? t('milestone.label')}</span>
                   </Button>
                 }
               />
@@ -499,9 +499,9 @@ export function NewTaskDialog({ defaults = {}, initialTitle = '', initialDescrip
                 value={cycle?.id ?? null}
                 onChange={(cycleId) => setDraft((current) => ({ ...current, cycleId }))}
                 trigger={
-                  <Button type="button" variant="outline" size="sm" className="max-w-56 font-normal" aria-label={`Cycle: ${cycle ? cycleName(cycle) : 'none'}`}>
+                  <Button type="button" variant="outline" size="sm" className="max-w-56 font-normal" aria-label={cycle ? t('cycle.currentName', { name: cycleName(cycle) }) : t('cycle.currentNone')}>
                     <RefreshCircle aria-hidden="true" className="text-muted-foreground" />
-                    <span className="truncate">{cycle ? cycleName(cycle) : 'Cycle'}</span>
+                    <span className="truncate">{cycle ? cycleName(cycle) : t('cycle.label')}</span>
                   </Button>
                 }
               />
@@ -510,9 +510,9 @@ export function NewTaskDialog({ defaults = {}, initialTitle = '', initialDescrip
               value={draft.estimate}
               onChange={(estimate) => setDraft((current) => ({ ...current, estimate }))}
               trigger={
-                <Button type="button" variant="outline" size="sm" className="font-normal" aria-label={`Estimate: ${draft.estimate === null ? 'none' : estimateLabel(draft.estimate)}`}>
+                <Button type="button" variant="outline" size="sm" className="font-normal" aria-label={draft.estimate === null ? t('estimate.currentNone') : t('estimate.current', { value: estimateLabel(draft.estimate) })}>
                   <Triangle aria-hidden="true" className="text-muted-foreground" />
-                  {draft.estimate === null ? 'Estimate' : estimateLabel(draft.estimate)}
+                  {draft.estimate === null ? t('estimate.label') : estimateLabel(draft.estimate)}
                 </Button>
               }
             />

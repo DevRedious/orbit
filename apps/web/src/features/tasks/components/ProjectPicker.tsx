@@ -22,8 +22,8 @@ export function ProjectPicker({ task, projects, className }: { task: Pick<Task, 
       <SearchPicker
         label={t('project.move')}
         tip={t('project.move')}
-        placeholder="Move to project…"
-        emptyText="No projects match"
+        placeholder={t('search.moveToProject')}
+        emptyText={t('search.noProjects')}
         options={projects.map(projectOption)}
         selected={[task.projectId]}
         onSelect={(id) => {

@@ -327,8 +327,8 @@ export function TaskDetail({ task, project, state, onClose, onOpenTask, onOpenPr
                 multiple
                 closeOnSelect
                 label={t('assignee.title')}
-                placeholder="Assign to…"
-                emptyText="No people match"
+                placeholder={t('search.assignTo')}
+                emptyText={t('search.noPeople')}
                 options={audience.map(personOption)}
                 selected={task.assigneeIds}
                 onSelect={(id) => updateTask.mutate({ taskId: task.id, body: { expected_version: task.version, assignee_ids: task.assigneeIds.includes(id) ? task.assigneeIds.filter((item) => item !== id) : [...task.assigneeIds, id] } })}
@@ -353,9 +353,9 @@ export function TaskDetail({ task, project, state, onClose, onOpenTask, onOpenPr
                 value={task.milestoneId ?? null}
                 onChange={(milestoneId) => updateTask.mutate({ taskId: task.id, body: { expected_version: task.version, milestone_id: milestoneId } })}
                 trigger={
-                  <PropertyButton className={cn('max-w-full', !milestone && 'text-muted-foreground')} aria-label={`Milestone: ${milestone?.name ?? 'none'}`}>
+                  <PropertyButton className={cn('max-w-full', !milestone && 'text-muted-foreground')} aria-label={milestone ? t('milestone.currentName', { name: milestone.name }) : t('milestone.currentNone')}>
                     <Diamonds className="size-3.5" aria-hidden="true" />
-                    <span className="truncate">{milestone?.name ?? 'Set milestone'}</span>
+                    <span className="truncate">{milestone?.name ?? t('milestone.set')}</span>
                   </PropertyButton>
                 }
               />
@@ -364,9 +364,9 @@ export function TaskDetail({ task, project, state, onClose, onOpenTask, onOpenPr
                 value={task.cycleId ?? null}
                 onChange={(cycleId) => updateTask.mutate({ taskId: task.id, body: { expected_version: task.version, cycle_id: cycleId } })}
                 trigger={
-                  <PropertyButton className={cn('max-w-full', !cycle && 'text-muted-foreground')} aria-label={`Cycle: ${cycle ? cycleName(cycle) : 'none'}`}>
+                  <PropertyButton className={cn('max-w-full', !cycle && 'text-muted-foreground')} aria-label={cycle ? t('cycle.currentName', { name: cycleName(cycle) }) : t('cycle.currentNone')}>
                     <RefreshCircle className="size-3.5" aria-hidden="true" />
-                    <span className="truncate">{cycle ? cycleName(cycle) : 'Set cycle'}</span>
+                    <span className="truncate">{cycle ? cycleName(cycle) : t('cycle.set')}</span>
                   </PropertyButton>
                 }
               />
@@ -374,9 +374,9 @@ export function TaskDetail({ task, project, state, onClose, onOpenTask, onOpenPr
                 value={task.estimate ?? null}
                 onChange={(estimate) => updateTask.mutate({ taskId: task.id, body: { expected_version: task.version, estimate } })}
                 trigger={
-                  <PropertyButton className={cn(task.estimate == null && 'text-muted-foreground')} aria-label={`Estimate: ${task.estimate == null ? 'none' : estimateLabel(task.estimate)}`}>
+                  <PropertyButton className={cn(task.estimate == null && 'text-muted-foreground')} aria-label={task.estimate == null ? t('estimate.currentNone') : t('estimate.current', { value: estimateLabel(task.estimate) })}>
                     <Triangle className="size-3.5" aria-hidden="true" />
-                    {task.estimate == null ? 'Set estimate' : estimateLabel(task.estimate)}
+                    {task.estimate == null ? t('estimate.set') : estimateLabel(task.estimate)}
                   </PropertyButton>
                 }
               />
@@ -436,8 +436,8 @@ export function TaskDetail({ task, project, state, onClose, onOpenTask, onOpenPr
               ) : (
                 <SearchPicker
                   label={t('project.move')}
-                  placeholder="Move to project…"
-                  emptyText="No projects match"
+                  placeholder={t('search.moveToProject')}
+                  emptyText={t('search.noProjects')}
                   options={projects.map(projectOption)}
                   selected={[task.projectId]}
                   onSelect={(id) => {
@@ -508,11 +508,11 @@ export function TaskDetail({ task, project, state, onClose, onOpenTask, onOpenPr
               </Popover>
             </PropertyGroup>
 
-            <PropertyGroup title="Repeat">
+            <PropertyGroup title={t('recurrence.title')}>
               <Popover open={repeatOpen} onOpenChange={setRepeatOpen}>
                 <PopoverTrigger
                   render={
-                    <PropertyButton type="button" aria-label="Repeat" className={task.recurrence ? undefined : 'text-muted-foreground'}>
+                    <PropertyButton type="button" aria-label={t('recurrence.title')} className={task.recurrence ? undefined : 'text-muted-foreground'}>
                       <Repeat className="size-3.5" aria-hidden="true" />
                       <span className="truncate">{recurrenceLabel(task.recurrence)}</span>
                     </PropertyButton>

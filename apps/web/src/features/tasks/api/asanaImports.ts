@@ -5,6 +5,7 @@ import { cancelAsanaImport, createAsanaImport, getAsanaImport, listAsanaImports,
 import type { AsanaImport, AsanaImportTree } from '@orbit/api/generated/types.gen'
 import { ApiProblem } from '@orbit/api/problem'
 import { queryKeys } from '@/api/queryKeys'
+import { i18n } from '@/i18n'
 import { IMPORT_POLL_MS, isActiveImport, isFinalImport } from '@/features/tasks/api/importStatus'
 
 type ApiClient = ReturnType<typeof createApiClient>
@@ -14,21 +15,21 @@ export function asanaImportErrorMessage(error: unknown): string {
   if (error instanceof ApiProblem) {
     switch (error.code) {
       case 'asana_token_invalid':
-        return 'Asana rejected this token. Check that you copied the whole token and that it was not revoked.'
+        return i18n.t('tasks:import.asana.tokenInvalid')
       case 'app_key_missing':
-        return 'Orbit is not ready to import from Asana yet. Ask the Orbit administrator to set the app key.'
+        return i18n.t('tasks:import.common.errors.appKeyMissing', { provider: 'Asana' })
       case 'import_in_progress':
-        return 'You already have an import running. Wait for it to finish or cancel it.'
+        return i18n.t('tasks:import.common.errors.inProgress')
       case 'asana_unavailable':
-        return 'Asana could not be reached. Try again in a moment.'
+        return i18n.t('tasks:import.common.errors.unavailable', { provider: 'Asana' })
       case 'asana_import_state_conflict':
-        return 'This import changed in the meantime (it may have expired or been cancelled).'
+        return i18n.t('tasks:import.common.errors.stateConflict')
       case 'asana_import_not_found':
-        return 'This import no longer exists.'
+        return i18n.t('tasks:import.common.errors.notFound')
     }
-    if (error.status === 422) return 'The request was not valid. Check your input and try again.'
+    if (error.status === 422) return i18n.t('tasks:import.common.errors.invalid')
   }
-  return 'Something went wrong. Try again.'
+  return i18n.t('tasks:import.common.errors.generic')
 }
 
 /**

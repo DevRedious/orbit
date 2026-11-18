@@ -135,15 +135,15 @@ export function activityChangeText(
     case 'recurrence':
       return recurrenceChangeText(change.rule)
     case 'milestone': {
-      if (!change.to) return 'removed the milestone'
-      return `set milestone to ${planning.milestones.find((milestone) => milestone.id === change.to)?.name ?? 'another milestone'}`
+      if (!change.to) return i18n.t('tasks:activity.change.milestoneRemoved')
+      return i18n.t('tasks:activity.change.milestone', { name: planning.milestones.find((milestone) => milestone.id === change.to)?.name ?? i18n.t('tasks:activity.change.anotherMilestone') })
     }
     case 'cycle': {
-      if (!change.to) return 'removed the cycle'
+      if (!change.to) return i18n.t('tasks:activity.change.cycleRemoved')
       const cycle = planning.cycles.find((item) => item.id === change.to)
-      return `moved to ${cycle ? cycleName(cycle) : 'another cycle'}`
+      return i18n.t('tasks:activity.change.cycle', { name: cycle ? cycleName(cycle) : i18n.t('tasks:activity.change.anotherCycle') })
     }
     case 'estimate':
-      return change.to === null ? 'removed the estimate' : `set estimate to ${estimateLabel(change.to)}`
+      return change.to === null ? i18n.t('tasks:activity.change.estimateRemoved') : i18n.t('tasks:activity.change.estimate', { value: estimateLabel(change.to) })
   }
 }

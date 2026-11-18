@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { toast } from 'sonner'
 import type { Teamspace } from '@orbit/api/generated/types.gen'
@@ -13,6 +14,7 @@ const NONE = 'none'
 
 /** The teamspace that holds the project's docs (#64): pick one, make one, or open it. */
 export function ProjectDocsCard({ project }: { project: Project }) {
+  const { t } = useTranslation('tasks')
   const { workspace } = useWorkspace()
   const navigate = useNavigate()
   const teamspaces = useTeamspaces(workspace.id)
@@ -23,7 +25,7 @@ export function ProjectDocsCard({ project }: { project: Project }) {
   const linked = all.find((teamspace) => teamspace.project_id === project.id)
   // A teamspace of another project is not offered: a project has one, and a teamspace holds one project.
   const choices = all.filter((teamspace) => !teamspace.project_id || teamspace.project_id === project.id)
-  const items = [{ value: NONE, label: 'No docs teamspace' }, ...choices.map((teamspace) => ({ value: teamspace.id, label: teamspace.name }))]
+  const items = [{ value: NONE, label: t('docs.none') }, ...choices.map((teamspace) => ({ value: teamspace.id, label: teamspace.name }))]
   const firstPage = linked ? tree.data?.find((page) => page.teamspace_id === linked.id && !page.parent_id) : undefined
   const pending = createTeamspace.isPending || updateTeamspace.isPending
 
@@ -37,7 +39,7 @@ export function ProjectDocsCard({ project }: { project: Project }) {
       const next = choices.find((teamspace) => teamspace.id === value)
       if (next) await link(next, project.id)
     } catch {
-      toast.error('Could not change the docs teamspace.')
+      toast.error(t('docs.changeFailed'))
     }
   }
 
@@ -46,18 +48,18 @@ export function ProjectDocsCard({ project }: { project: Project }) {
       const teamspace = await createTeamspace.mutateAsync({ name: project.name.slice(0, 100) })
       await link(teamspace, project.id)
     } catch {
-      toast.error('Could not create the docs teamspace.')
+      toast.error(t('docs.createFailed'))
     }
   }
 
   return (
     <SettingsCard
-      title="Docs"
-      description="The teamspace that holds this project's docs. Teamspaces without a project hold global docs. An AI client can list the global docs and this project's docs, without the docs of other projects."
+      title={t('docs.title')}
+      description={t('docs.description')}
     >
       <div className="flex flex-wrap items-center gap-2">
         <Select items={items} value={linked?.id ?? NONE} disabled={pending || !teamspaces.data} onValueChange={(value) => value && void choose(value)}>
-          <SelectTrigger aria-label="Docs teamspace" className="w-64 max-w-full">
+          <SelectTrigger aria-label={t('docs.teamspace')} className="w-64 max-w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -68,15 +70,15 @@ export function ProjectDocsCard({ project }: { project: Project }) {
         </Select>
         {linked ? (
           <Button variant="outline" disabled={!firstPage} onClick={() => firstPage && navigate(`/docs/${firstPage.id}`)}>
-            Open docs
+            {t('docs.open')}
           </Button>
         ) : (
           <Button variant="outline" disabled={pending || !teamspaces.data} onClick={() => void create()}>
-            Create docs teamspace
+            {t('docs.create')}
           </Button>
         )}
       </div>
-      {linked && tree.data && !firstPage ? <p className="mt-2 text-xs text-muted-foreground">This teamspace has no pages yet. Add one in Docs.</p> : null}
+      {linked && tree.data && !firstPage ? <p className="mt-2 text-xs text-muted-foreground">{t('docs.empty')}</p> : null}
     </SettingsCard>
   )
 }

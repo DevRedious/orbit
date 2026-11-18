@@ -433,9 +433,9 @@ function WorkspaceTasksPage() {
                     </div>)}
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => setShowNewProject(true)}><Plus />{t('newProject')}</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate('/tasks-import')}><Import />Import from Asana</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate('/tasks-import/linear')}><Import />Import from Linear</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate('/tasks-import/trello')}><Import />Import from Trello</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/tasks-import')}><Import />{t('page.importFrom', { source: 'Asana' })}</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/tasks-import/linear')}><Import />{t('page.importFrom', { source: 'Linear' })}</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/tasks-import/trello')}><Import />{t('page.importFrom', { source: 'Trello' })}</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
                 <PaneTitle className="max-[899px]:min-w-0 max-[899px]:flex-1 max-[899px]:basis-0">{viewTitle}</PaneTitle>

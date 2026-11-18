@@ -5,6 +5,7 @@ import { cancelLinearImport, createLinearImport, getLinearImport, listLinearImpo
 import type { LinearImport, LinearImportTree } from '@orbit/api/generated/types.gen'
 import { ApiProblem } from '@orbit/api/problem'
 import { queryKeys } from '@/api/queryKeys'
+import { i18n } from '@/i18n'
 import { IMPORT_POLL_MS, isActiveImport, isFinalImport } from '@/features/tasks/api/importStatus'
 
 type ApiClient = ReturnType<typeof createApiClient>
@@ -14,21 +15,21 @@ export function linearImportErrorMessage(error: unknown): string {
   if (error instanceof ApiProblem) {
     switch (error.code) {
       case 'linear_token_invalid':
-        return 'Linear rejected this API key. Check that you copied the whole key and that it was not revoked.'
+        return i18n.t('tasks:import.linear.keyInvalid')
       case 'app_key_missing':
-        return 'Orbit is not ready to import from Linear yet. Ask the Orbit administrator to set the app key.'
+        return i18n.t('tasks:import.common.errors.appKeyMissing', { provider: 'Linear' })
       case 'import_in_progress':
-        return 'You already have an import running. Wait for it to finish or cancel it.'
+        return i18n.t('tasks:import.common.errors.inProgress')
       case 'linear_unavailable':
-        return 'Linear could not be reached. Try again in a moment.'
+        return i18n.t('tasks:import.common.errors.unavailable', { provider: 'Linear' })
       case 'linear_import_state_conflict':
-        return 'This import changed in the meantime (it may have expired or been cancelled).'
+        return i18n.t('tasks:import.common.errors.stateConflict')
       case 'linear_import_not_found':
-        return 'This import no longer exists.'
+        return i18n.t('tasks:import.common.errors.notFound')
     }
-    if (error.status === 422) return 'The request was not valid. Check your input and try again.'
+    if (error.status === 422) return i18n.t('tasks:import.common.errors.invalid')
   }
-  return 'Something went wrong. Try again.'
+  return i18n.t('tasks:import.common.errors.generic')
 }
 
 /**
@@ -173,24 +174,24 @@ export type LinearImportProgressView = {
   detail: string
 }
 
-const count = (value: number) => value.toLocaleString('en-US')
+const count = (value: number) => value.toLocaleString(i18n.language)
 
 /** What the progress page of a queued or importing Linear import shows. */
 export function linearImportProgress(item: LinearImport): LinearImportProgressView {
   const { done, total, failed, expected, read, created, stage } = item.progress
-  const imported = `${count(done)} of ${count(total)} issues imported`
-  if (item.status === 'queued') return { label: 'Waiting for the import to start…', step: null, done: 0, total: 0, detail: '' }
+  const imported = i18n.t('tasks:import.linear.detail.imported', { done: count(done), total: count(total) })
+  if (item.status === 'queued') return { label: i18n.t('tasks:import.common.waiting'), step: null, done: 0, total: 0, detail: '' }
   switch (stage) {
     case 'reading':
-      return { label: 'Reading issues from Linear…', step: 1, done: read, total: Math.max(expected, read), detail: `${count(read)} of about ${count(expected)} issues read${done > 0 ? `, ${count(done)} imported` : ''}` }
+      return { label: i18n.t('tasks:import.linear.stage.reading'), step: 1, done: read, total: Math.max(expected, read), detail: done > 0 ? i18n.t('tasks:import.linear.detail.readAndImported', { read: count(read), expected: count(expected), done: count(done) }) : i18n.t('tasks:import.linear.detail.read', { read: count(read), expected: count(expected) }) }
     case 'creating':
-      return { label: 'Creating tasks…', step: 2, done: created, total, detail: `${count(created)} of ${count(total)} tasks created` }
+      return { label: i18n.t('tasks:import.linear.stage.creating'), step: 2, done: created, total, detail: i18n.t('tasks:import.linear.detail.created', { created: count(created), total: count(total) }) }
     case 'details':
-      return { label: 'Adding files and comments…', step: 3, done: done + failed, total, detail: imported }
+      return { label: i18n.t('tasks:import.linear.stage.details'), step: 3, done: done + failed, total, detail: imported }
     case 'linking':
-      return { label: 'Linking related issues…', step: 4, done: done + failed, total, detail: imported }
+      return { label: i18n.t('tasks:import.linear.stage.linking'), step: 4, done: done + failed, total, detail: imported }
     default:
-      return { label: 'Importing issues…', step: null, done: done + failed, total, detail: imported }
+      return { label: i18n.t('tasks:import.linear.stage.importing'), step: null, done: done + failed, total, detail: imported }
   }
 }
 
@@ -199,6 +200,6 @@ export function linearRateLimitNotice(waitingUntil: string | null, now: number):
   const until = waitingUntil ? Date.parse(waitingUntil) : NaN
   if (!(until > now)) return null
   const minutes = Math.max(1, Math.ceil((until - now) / 60_000))
-  const time = new Date(until).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-  return `Linear's rate limit is reached. The import goes on at ${time} (in about ${minutes} min).`
+  const time = new Date(until).toLocaleTimeString(i18n.language, { hour: '2-digit', minute: '2-digit' })
+  return i18n.t('tasks:import.linear.rateLimit', { time, minutes })
 }

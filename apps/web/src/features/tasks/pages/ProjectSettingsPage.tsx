@@ -105,13 +105,13 @@ export function ProjectSettingsPage() {
       <Pane className="relative">
         <PaneHeader className="gap-[7px] text-muted-foreground">
           {/* a phone's section goes back to the menu; elsewhere Back leaves the settings for the project's tasks */}
-          <Tip label={phone && page ? 'Back to project settings' : t('backToTasks')} side="bottom">
+          <Tip label={phone && page ? t('projectSettings.back') : t('backToTasks')} side="bottom">
             <Button
               variant="ghost"
               size="icon-sm"
               className="text-muted-foreground/70"
               onClick={() => navigate(phone && page ? `/tasks/projects/${projectId}/settings` : project ? `/tasks?project=${project.id}` : '/tasks')}
-              aria-label={phone && page ? 'Back to project settings' : t('backToTasks')}
+              aria-label={phone && page ? t('projectSettings.back') : t('backToTasks')}
             >
               <ArrowLeft className="size-4" />
             </Button>
@@ -131,7 +131,7 @@ export function ProjectSettingsPage() {
         ) : (
           <div className="min-h-0 flex-1 overflow-y-auto">
             <div className="mx-auto flex w-full max-w-[800px] flex-col gap-6 px-10 pt-7 pb-12 max-[899px]:px-5">
-              {page && MANAGED_SECTIONS.has(page.section) && !canManage ? <p className="text-sm text-muted-foreground">You can view these settings. Changing them needs permission to manage this project.</p> : null}
+              {page && MANAGED_SECTIONS.has(page.section) && !canManage ? <p className="text-sm text-muted-foreground">{t('projectSettings.readOnly')}</p> : null}
               {section === 'general' ? <ProjectGeneralCard key={`${project.id}:${project.name}:${project.key}:${project.color}`} project={project} readOnly={!canManage} onPendingChange={setGeneralPending} /> : null}
 
               {section === 'statuses' ? (
@@ -455,6 +455,7 @@ function ProjectGeneralCard({ project, readOnly, onPendingChange }: { project: P
  * admins see it without being listed. Leaving a project you cannot see otherwise takes you back to Tasks.
  */
 function ProjectAccessCard({ project, readOnly }: { project: Project; readOnly: boolean }) {
+  const { t } = useTranslation('tasks')
   const { workspace } = useWorkspace()
   const navigate = useNavigate()
   const currentUserId = useCurrentUser().data?.id ?? null
@@ -482,7 +483,7 @@ function ProjectAccessCard({ project, readOnly }: { project: Project; readOnly: 
 
   const remove = async (userId: string) => {
     const leaving = userId === currentUserId && !seesEveryProject
-    if (leaving && !(await confirmAction({ title: 'Leave this project?', description: `You will no longer see "${project.name}" or its tasks until someone adds you again.`, confirmLabel: 'Leave project', danger: true }))) return
+    if (leaving && !(await confirmAction({ title: t('access.leaveTitle'), description: t('access.leaveDescription', { name: project.name }), confirmLabel: t('access.leaveProject'), danger: true }))) return
     removeMember.mutate(userId, { onSuccess: () => { if (leaving) navigate('/tasks') } })
   }
 
@@ -498,15 +499,15 @@ function ProjectAccessCard({ project, readOnly }: { project: Project; readOnly: 
 
   return (
     <SettingsCard
-      title="Access"
-      description="Who can see this project and its tasks."
+      title={t('access.title')}
+      description={t('access.description')}
       actions={isPrivate && project.private && !readOnly ? (
         <Popover open={adding} onOpenChange={(open) => { setAdding(open); if (!open) setSelectedIds([]) }}>
-          <PopoverTrigger render={<Button variant="outline" size="sm"><UserAdd className="size-3.5" />Add people</Button>} />
+          <PopoverTrigger render={<Button variant="outline" size="sm"><UserAdd className="size-3.5" />{t('access.addPeople')}</Button>} />
           <PopoverContent align="end" className="w-80">
-            <MemberPicker autoFocus label={`Add people to ${project.name}`} people={pickablePeople(team, null, memberIds)} selectedIds={selectedIds} onChange={setSelectedIds} />
+            <MemberPicker autoFocus label={t('access.addPeopleTo', { name: project.name })} people={pickablePeople(team, null, memberIds)} selectedIds={selectedIds} onChange={setSelectedIds} />
             <Button disabled={selectedIds.length === 0 || addMembers.isPending} onClick={add}>
-              {selectedIds.length > 1 ? `Add ${selectedIds.length} people` : 'Add people'}
+              {selectedIds.length > 1 ? t('access.addCount', { count: selectedIds.length }) : t('access.addPeople')}
             </Button>
           </PopoverContent>
         </Popover>
@@ -514,34 +515,34 @@ function ProjectAccessCard({ project, readOnly }: { project: Project; readOnly: 
     >
       <div className="flex flex-col gap-4">
         <ProjectVisibilityChoice isPrivate={isPrivate} disabled={readOnly || updateProject.isPending} onChange={choose} />
-        {updateProject.isError ? <p role="alert" className="text-xs text-destructive">Couldn’t change who can see this project. Try again.</p> : null}
+        {updateProject.isError ? <p role="alert" className="text-xs text-destructive">{t('access.visibilityFailed')}</p> : null}
         {isPrivate && project.private ? (
           <div className="flex flex-col gap-2">
-            <span className="text-xs text-muted-foreground">Workspace owners and admins always have access, also when they are not listed.</span>
+            <span className="text-xs text-muted-foreground">{t('access.adminsHint')}</span>
             {membersQuery.isPending ? (
-              <p role="status" className="text-sm text-muted-foreground">Loading members…</p>
+              <p role="status" className="text-sm text-muted-foreground">{t('access.loading')}</p>
             ) : membersQuery.isError ? (
-              <p role="alert" className="text-sm text-destructive">The members could not be loaded. <Button variant="ghost" size="xs" onClick={() => void membersQuery.refetch()}>Retry</Button></p>
+              <p role="alert" className="text-sm text-destructive">{t('access.loadFailed')} <Button variant="ghost" size="xs" onClick={() => void membersQuery.refetch()}>{t('retry')}</Button></p>
             ) : listed.length === 0 ? (
-              <p className="text-sm text-muted-foreground">{readOnly ? 'Nobody is listed yet.' : 'Nobody is listed yet. Add the people who should see this project.'}</p>
+              <p className="text-sm text-muted-foreground">{readOnly ? t('access.empty') : t('access.emptyCanAdd')}</p>
             ) : (
-              <ul aria-label="Project members" className="flex flex-col divide-y divide-border">
+              <ul aria-label={t('access.members')} className="flex flex-col divide-y divide-border">
                 {listed.map((person) => (
                   <li key={person.id} className="flex items-center gap-3 py-2">
                     <UserAvatar user={person} size={28} />
                     <span className="flex min-w-0 flex-1 flex-col">
-                      <span className="truncate text-sm font-medium text-foreground">{person.id === currentUserId ? `${person.name} (you)` : person.name}</span>
+                      <span className="truncate text-sm font-medium text-foreground">{person.id === currentUserId ? t('access.you', { name: person.name }) : person.name}</span>
                       <span className="truncate text-xs text-muted-foreground">@{person.handle}</span>
                     </span>
-                    {readOnly ? null : <Button variant="ghost" size="sm" className="text-muted-foreground" aria-label={person.id === currentUserId ? 'Leave project' : `Remove ${person.name}`} disabled={removeMember.isPending} onClick={() => void remove(person.id)}>
-                      {person.id === currentUserId ? 'Leave' : 'Remove'}
+                    {readOnly ? null : <Button variant="ghost" size="sm" className="text-muted-foreground" aria-label={person.id === currentUserId ? t('access.leaveProject') : t('access.removePerson', { name: person.name })} disabled={removeMember.isPending} onClick={() => void remove(person.id)}>
+                      {person.id === currentUserId ? t('access.leave') : t('access.remove')}
                     </Button>}
                   </li>
                 ))}
               </ul>
             )}
-            {addMembers.isError ? <p role="alert" className="text-xs text-destructive">Couldn’t add these people. Guests and suspended members cannot join a project.</p> : null}
-            {removeMember.isError ? <p role="alert" className="text-xs text-destructive">Couldn’t remove this person. Try again.</p> : null}
+            {addMembers.isError ? <p role="alert" className="text-xs text-destructive">{t('access.addFailed')}</p> : null}
+            {removeMember.isError ? <p role="alert" className="text-xs text-destructive">{t('access.removeFailed')}</p> : null}
           </div>
         ) : null}
       </div>

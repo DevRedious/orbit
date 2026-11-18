@@ -153,7 +153,7 @@ export function TaskCommands({ tasks, users, labels, statuses, groupContext, cur
         <div className="px-3 pt-2.5 pb-1">
           <span className="rounded-sm bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">{scope}</span>
         </div>
-        <CommandInput autoFocus placeholder={menu.field === 'estimate' ? 'Points…' : t('commands.placeholder', { title: t(FIELD_TITLE[menu.field]) })} value={search} onValueChange={setSearch} />
+        <CommandInput autoFocus placeholder={menu.field === 'estimate' ? t('estimate.searchPlaceholder') : t('commands.placeholder', { title: t(FIELD_TITLE[menu.field]) })} value={search} onValueChange={setSearch} />
         <CommandList className="mx-1.5 mt-1 mb-1.5 max-h-none min-h-0 flex-1 rounded-lg bg-background p-1 ring-1 ring-border">
           <CommandEmpty className="p-6 text-[0.8125rem] text-muted-foreground">{t('commands.noMatch')}</CommandEmpty>
           {menu.field === 'status' ? statusOptions.map((group) => (
@@ -182,7 +182,7 @@ export function TaskCommands({ tasks, users, labels, statuses, groupContext, cur
           )) : null}
           {menu.field === 'milestone' ? (
             <>
-              <CommandItem value="No milestone" data-checked={menuTasks.every((task) => !task.milestoneId)} onSelect={() => choose(milestoneUpdates(menuTasks, null))}>No milestone</CommandItem>
+              <CommandItem value={t('milestone.none')} data-checked={menuTasks.every((task) => !task.milestoneId)} onSelect={() => choose(milestoneUpdates(menuTasks, null))}>{t('milestone.none')}</CommandItem>
               {milestones.map((milestone) => (
                 <CommandItem key={milestone.id} value={milestone.name} data-checked={menuTasks.every((task) => task.milestoneId === milestone.id)} onSelect={() => choose(milestoneUpdates(menuTasks, milestone))}>
                   {milestone.name}
@@ -192,9 +192,9 @@ export function TaskCommands({ tasks, users, labels, statuses, groupContext, cur
           ) : null}
           {menu.field === 'cycle' ? (
             <>
-              <CommandItem value="No cycle" data-checked={menuTasks.every((task) => !task.cycleId)} onSelect={() => choose(cycleUpdates(menuTasks, null))}>No cycle</CommandItem>
+              <CommandItem value={t('cycle.none')} data-checked={menuTasks.every((task) => !task.cycleId)} onSelect={() => choose(cycleUpdates(menuTasks, null))}>{t('cycle.none')}</CommandItem>
               {cycleGroups.open.map(cycleItem)}
-              {cycleGroups.past.length > 0 ? <CommandGroup heading="Past cycles">{cycleGroups.past.map(cycleItem)}</CommandGroup> : null}
+              {cycleGroups.past.length > 0 ? <CommandGroup heading={t('cycle.past')}>{cycleGroups.past.map(cycleItem)}</CommandGroup> : null}
             </>
           ) : null}
           {menu.field === 'estimate' ? (
@@ -202,7 +202,7 @@ export function TaskCommands({ tasks, users, labels, statuses, groupContext, cur
               {typedEstimate !== null && !(ESTIMATE_OPTIONS as readonly number[]).includes(typedEstimate) ? (
                 <CommandItem value={search} onSelect={() => choose(estimateUpdates(menuTasks, typedEstimate))}>{estimateLabel(typedEstimate)}</CommandItem>
               ) : null}
-              <CommandItem value="No estimate" data-checked={menuTasks.every((task) => task.estimate == null)} onSelect={() => choose(estimateUpdates(menuTasks, null))}>No estimate</CommandItem>
+              <CommandItem value={t('estimate.none')} data-checked={menuTasks.every((task) => task.estimate == null)} onSelect={() => choose(estimateUpdates(menuTasks, null))}>{t('estimate.none')}</CommandItem>
               {ESTIMATE_OPTIONS.map((points) => (
                 <CommandItem key={points} value={`${points} ${estimateLabel(points)}`} data-checked={menuTasks.every((task) => task.estimate === points)} onSelect={() => choose(estimateUpdates(menuTasks, points))}>
                   {estimateLabel(points)}

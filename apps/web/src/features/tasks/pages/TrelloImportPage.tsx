@@ -1,6 +1,7 @@
 import { useMemo, useState, type FormEvent, type ReactNode } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { toast } from 'sonner'
+import { Trans, useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
 import { Import, Search4 as Search, TickCircle, Warning } from 'reicon-react'
 import type { TrelloImport, TrelloImportTree } from '@orbit/api/generated/types.gen'
@@ -38,19 +39,15 @@ import {
 
 const POWER_UP_ADMIN_URL = 'https://trello.com/apps/admin'
 const ROOT = '/tasks-import/trello'
-const TITLE = 'Import from Trello'
 
 /** Trello's authorization page for a read-only token that expires in a day, for the given API key. */
 function tokenUrl(key: string): string {
   return `https://trello.com/1/authorize?expiration=1day&scope=read&response_type=token&name=Orbit&key=${encodeURIComponent(key)}`
 }
 
-function plural(count: number, one: string, many: string): string {
-  return `${count} ${count === 1 ? one : many}`
-}
-
 /** Step 1: paste a Power-Up API key and a token for it. Also lists the member's recent imports. */
 function ConnectStep({ workspaceId }: { workspaceId: string }) {
+  const { t } = useTranslation('tasks')
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const imports = useTrelloImports(workspaceId)
@@ -91,34 +88,27 @@ function ConnectStep({ workspaceId }: { workspaceId: string }) {
 
   return (
     <>
-      <ImportHeader title={TITLE} />
+      <ImportHeader title={t('import.trello.title')} />
       <ImportBody>
         <section className="flex flex-col gap-4 rounded-lg border border-border p-5">
           <TitleTip
             as="h2"
-            title="Connect Trello"
-            text="Orbit needs an API key and a token. It keeps both encrypted only until the import finishes."
+            title={t('import.trello.connect')}
+            text={t('import.trello.connectHint')}
             className="text-sm font-semibold text-foreground"
           />
           <form className="flex flex-col gap-4" onSubmit={(event) => void submit(event)} autoComplete="off">
             <div className="grid gap-1.5">
-              <Label htmlFor="trello-key">API key</Label>
+              <Label htmlFor="trello-key">{t('import.trello.keyLabel')}</Label>
               <ol className="list-decimal space-y-0.5 pl-5 text-sm text-muted-foreground">
                 <li>
-                  Open the{' '}
-                  <a className="text-primary underline underline-offset-2" href={POWER_UP_ADMIN_URL} target="_blank" rel="noreferrer noopener">
-                    Trello Power-Up admin page
-                  </a>{' '}
-                  and click <span className="font-medium text-foreground">New</span>.
+                  <Trans t={t} i18nKey="import.trello.keyStep1" components={{ docLink: <a className="text-primary underline underline-offset-2" href={POWER_UP_ADMIN_URL} target="_blank" rel="noreferrer noopener" />, b: <span className="font-medium text-foreground" /> }} />
                 </li>
                 <li>
-                  Choose <span className="font-medium text-foreground">My app doesn’t use Power-up capabilities</span>, type a name (for
-                  example “Orbit import”), pick your Trello workspace, fill in your email, and click{' '}
-                  <span className="font-medium text-foreground">Create</span>.
+                  <Trans t={t} i18nKey="import.trello.keyStep2" components={{ b: <span className="font-medium text-foreground" /> }} />
                 </li>
                 <li>
-                  Under <span className="font-medium text-foreground">Authorization</span>, open{' '}
-                  <span className="font-medium text-foreground">Trello Auth</span>, generate an API key if there is none, and copy the key.
+                  <Trans t={t} i18nKey="import.trello.keyStep3" components={{ b: <span className="font-medium text-foreground" /> }} />
                 </li>
               </ol>
               <PasswordInput
@@ -138,16 +128,16 @@ function ConnectStep({ workspaceId }: { workspaceId: string }) {
               {fieldError('key')}
             </div>
             <div className="grid gap-1.5">
-              <Label htmlFor="trello-token">Token</Label>
+              <Label htmlFor="trello-token">{t('import.trello.tokenLabel')}</Label>
               <p className="text-sm text-muted-foreground">
                 {trimmedKey ? (
                   <a className="text-primary underline underline-offset-2" href={tokenUrl(trimmedKey)} target="_blank" rel="noreferrer noopener">
-                    Generate a token
+                    {t('import.trello.generateToken')}
                   </a>
                 ) : (
-                  <span>Generate a token (paste the API key first)</span>
+                  <span>{t('import.trello.generateTokenFirst')}</span>
                 )}{' '}
-                and click Allow. Trello then shows the token. It only gives read access and expires in a day.
+                {t('import.trello.tokenHelp')}
               </p>
               <PasswordInput
                 id="trello-token"
@@ -170,7 +160,7 @@ function ConnectStep({ workspaceId }: { workspaceId: string }) {
                 {trelloImportErrorMessage(error)}{' '}
                 {isTrelloImportInProgress(error) && running ? (
                   <Link className="text-primary underline underline-offset-2" to={`${ROOT}/${running.id}`}>
-                    Open the running import
+                    {t('import.common.openRunning')}
                   </Link>
                 ) : null}
               </p>
@@ -178,7 +168,7 @@ function ConnectStep({ workspaceId }: { workspaceId: string }) {
             <div>
               <Button type="submit" disabled={!trimmedKey || !token.trim() || pending}>
                 {pending ? <Spinner className="size-4" /> : null}
-                Find boards
+                {t('import.trello.findBoards')}
               </Button>
             </div>
           </form>
@@ -190,10 +180,11 @@ function ConnectStep({ workspaceId }: { workspaceId: string }) {
 }
 
 function RecentImports({ imports }: { imports: TrelloImport[] | undefined }) {
+  const { t } = useTranslation('tasks')
   if (!imports?.length) return null
   return (
-    <section className="flex flex-col gap-2" aria-label="Recent imports">
-      <h2 className="text-xs font-medium text-muted-foreground">Recent imports</h2>
+    <section className="flex flex-col gap-2" aria-label={t('import.common.recent')}>
+      <h2 className="text-xs font-medium text-muted-foreground">{t('import.common.recent')}</h2>
       <div className="flex flex-col border-t border-border">
         {imports.map((item) => (
           <Link
@@ -204,7 +195,7 @@ function RecentImports({ imports }: { imports: TrelloImport[] | undefined }) {
             <span className="min-w-0 flex-1 truncate text-foreground">{item.trello_user_name || 'Trello'}</span>
             {item.progress.total > 0 ? (
               <span className="shrink-0 text-xs text-muted-foreground">
-                {item.progress.done} of {item.progress.total} cards
+                {t('import.trello.recentProgress', { done: item.progress.done, total: item.progress.total })}
               </span>
             ) : null}
             <Badge variant={importStatusVariant(item.status)}>{IMPORT_STATUS_LABELS[item.status]}</Badge>
@@ -219,15 +210,16 @@ function RecentImports({ imports }: { imports: TrelloImport[] | undefined }) {
 }
 
 function useCancel(workspaceId: string, item: TrelloImport) {
+  const { t } = useTranslation('tasks')
   const cancel = useCancelTrelloImport(workspaceId)
   const request = async (started: boolean) => {
     const confirmed = await confirmAction({
-      title: started ? 'Cancel the import?' : 'Cancel this import?',
+      title: started ? t('import.common.cancelStartedTitle') : t('import.common.cancelTitle'),
       description: started
-        ? 'Projects and cards already imported stay. The import stops before the next card.'
-        : 'Orbit deletes the Trello key and token. You can start a new import at any time.',
-      confirmLabel: 'Cancel import',
-      cancelLabel: 'Keep going',
+        ? t('import.trello.cancelStartedDescription')
+        : t('import.trello.cancelDescription'),
+      confirmLabel: t('import.common.cancelImport'),
+      cancelLabel: t('import.common.keepGoing'),
       danger: true,
     })
     if (!confirmed) return
@@ -238,17 +230,18 @@ function useCancel(workspaceId: string, item: TrelloImport) {
 
 /** Step 2: the scan job lists the boards the token can see. */
 function ScanningStep({ workspaceId, item }: { workspaceId: string; item: TrelloImport }) {
+  const { t } = useTranslation('tasks')
   const cancel = useCancel(workspaceId, item)
   return (
     <>
-      <ImportHeader title={TITLE} detail={item.trello_user_name} />
+      <ImportHeader title={t('import.trello.title')} detail={item.trello_user_name} />
       <ImportBody>
         <div className="flex flex-col items-center gap-3 py-16 text-center" role="status">
           <Spinner className="size-6 text-muted-foreground" />
-          <p className="text-sm font-medium text-foreground">Finding your Trello boards…</p>
-          <p className="max-w-sm text-sm text-muted-foreground">Listing every board the token can see.</p>
+          <p className="text-sm font-medium text-foreground">{t('import.trello.scanning')}</p>
+          <p className="max-w-sm text-sm text-muted-foreground">{t('import.trello.scanningDescription')}</p>
           <Button type="button" variant="outline" size="sm" disabled={cancel.pending} onClick={() => void cancel.request(false)}>
-            Cancel
+            {t('cancel')}
           </Button>
         </div>
       </ImportBody>
@@ -258,6 +251,7 @@ function ScanningStep({ workspaceId, item }: { workspaceId: string; item: Trello
 
 /** Step 3: pick boards, grouped by Trello Workspace. Open boards start selected, archived ones do not. */
 function BoardChooser({ workspaceId, item, tree }: { workspaceId: string; item: TrelloImport; tree: TrelloImportTree }) {
+  const { t } = useTranslation('tasks')
   const boards = useMemo(() => tree.workspaces.flatMap((group) => group.boards), [tree.workspaces])
   const [selected, setSelected] = useState<ReadonlySet<string>>(() => new Set(boards.filter((board) => !board.archived).map((board) => board.id)))
   const [query, setQuery] = useState('')
@@ -291,7 +285,7 @@ function BoardChooser({ workspaceId, item, tree }: { workspaceId: string; item: 
       {tree.truncated ? (
         <p role="status" className="flex items-start gap-2 border-b border-border bg-amber-500/5 px-4 py-2 text-xs text-foreground">
           <Warning className="mt-px size-3.5 shrink-0 text-amber-600" />
-          This token can see more than 1,000 boards. Only the first 1,000 are listed.
+          {t('import.trello.truncated')}
         </p>
       ) : null}
       <div className="flex flex-wrap items-center gap-3 border-b border-border px-3 py-2">
@@ -302,31 +296,31 @@ function BoardChooser({ workspaceId, item, tree }: { workspaceId: string; item: 
           <InputGroupInput
             type="search"
             className="text-xs"
-            placeholder="Filter boards"
-            aria-label="Filter boards"
+            placeholder={t('import.trello.filter')}
+            aria-label={t('import.trello.filter')}
             value={query}
             onChange={(event) => setQuery(event.target.value)}
           />
         </InputGroup>
         <div className="flex items-center gap-2 text-[0.8125rem] text-foreground">
           <Checkbox
-            aria-label="Select all boards"
+            aria-label={t('import.trello.selectAll')}
             checked={allChecked}
             indeterminate={someChecked}
             disabled={visible.length === 0}
             onCheckedChange={() => toggle(visible, !allChecked)}
           />
           <button type="button" tabIndex={-1} disabled={visible.length === 0} onClick={() => toggle(visible, !allChecked)}>
-            Select all
+            {t('import.common.selectAll')}
           </button>
         </div>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto p-2">
         {groups.length === 0 ? (
-          <p className="p-4 text-sm text-muted-foreground">{needle ? 'No board matches the filter.' : 'This token cannot see any board.'}</p>
+          <p className="p-4 text-sm text-muted-foreground">{needle ? t('import.trello.noMatch') : t('import.trello.empty')}</p>
         ) : (
           groups.map((group) => {
-            const heading = group.id === null ? 'Other boards' : group.name
+            const heading = group.id === null ? t('import.trello.otherBoards') : group.name
             return (
               <section key={group.id ?? 'other'} className="flex flex-col gap-1" aria-label={heading}>
                 <h2 className="px-2 pt-2 pb-1 text-xs font-semibold text-foreground">{heading}</h2>
@@ -335,14 +329,14 @@ function BoardChooser({ workspaceId, item, tree }: { workspaceId: string; item: 
                     key={board.id}
                     className="flex h-8 items-center gap-2 rounded-md px-2 text-[0.8125rem] text-foreground transition-colors duration-150 ease-out hover:bg-sidebar-accent/50"
                   >
-                    <Checkbox aria-label={`Select ${board.name}`} checked={selected.has(board.id)} onCheckedChange={(checked) => toggle([board.id], checked)} />
+                    <Checkbox aria-label={t('import.common.select', { name: board.name })} checked={selected.has(board.id)} onCheckedChange={(checked) => toggle([board.id], checked)} />
                     {/* Clicking the name toggles the row, like the checkbox (the checkbox is the keyboard control). */}
                     <button type="button" tabIndex={-1} className="min-w-0 flex-1 truncate text-left" onClick={() => toggle([board.id], !selected.has(board.id))}>
                       {board.name}
                     </button>
-                    {board.archived ? <Badge variant="outline">Archived</Badge> : null}
+                    {board.archived ? <Badge variant="outline">{t('import.common.archived')}</Badge> : null}
                     {board.card_count === null ? null : (
-                      <span className="shrink-0 text-xs text-muted-foreground tabular-nums">{plural(board.card_count, 'card', 'cards')}</span>
+                      <span className="shrink-0 text-xs text-muted-foreground tabular-nums">{t('import.trello.cardCount', { count: board.card_count })}</span>
                     )}
                   </div>
                 ))}
@@ -353,8 +347,7 @@ function BoardChooser({ workspaceId, item, tree }: { workspaceId: string; item: 
       </div>
       <div className="flex flex-wrap items-center gap-3 border-t border-border px-3 py-3">
         <p className="min-w-0 flex-1 text-xs text-muted-foreground">
-          Each board becomes a new Orbit project. Its open lists become statuses, and its open cards become tasks with their labels,
-          checklists, comments and files. Nobody is notified.
+          {t('import.trello.summary')}
         </p>
         <div className="flex flex-col items-end gap-1.5">
           {start.isError ? (
@@ -366,10 +359,10 @@ function BoardChooser({ workspaceId, item, tree }: { workspaceId: string; item: 
             type="button"
             className="tabular-nums"
             disabled={count === 0 || start.isPending}
-            title={count > 0 ? `About ${cards} cards` : undefined}
+            title={count > 0 ? t('import.trello.about', { count: cards }) : undefined}
             onClick={() => start.mutate({ importId: item.id, boardIds: [...selected] })}
           >
-            Import {plural(count, 'board', 'boards')}
+            {t('import.trello.start', { count })}
           </Button>
         </div>
       </div>
@@ -378,16 +371,17 @@ function BoardChooser({ workspaceId, item, tree }: { workspaceId: string; item: 
 }
 
 function ChooseStep({ workspaceId, item }: { workspaceId: string; item: TrelloImport }) {
+  const { t } = useTranslation('tasks')
   const cancel = useCancel(workspaceId, item)
   const scan = useTrelloImportTree(workspaceId, item.id)
   return (
     <>
       <ImportHeader
-        title="Choose boards"
+        title={t('import.trello.chooseTitle')}
         detail={item.trello_user_name}
         actions={
           <Button type="button" variant="ghost" size="sm" disabled={cancel.pending} onClick={() => void cancel.request(false)}>
-            Cancel
+            {t('cancel')}
           </Button>
         }
       />
@@ -395,9 +389,9 @@ function ChooseStep({ workspaceId, item }: { workspaceId: string; item: TrelloIm
         <BoardChooser workspaceId={workspaceId} item={item} tree={scan.data} />
       ) : scan.isError || (scan.isSuccess && !scan.data) ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center" role="alert">
-          <p className="text-sm text-muted-foreground">{scan.isError ? trelloImportErrorMessage(scan.error) : 'The board list is not available.'}</p>
+          <p className="text-sm text-muted-foreground">{scan.isError ? trelloImportErrorMessage(scan.error) : t('import.trello.listUnavailable')}</p>
           <Button type="button" variant="outline" size="sm" onClick={() => void scan.refetch()}>
-            Retry
+            {t('retry')}
           </Button>
         </div>
       ) : (
@@ -411,33 +405,33 @@ function ChooseStep({ workspaceId, item }: { workspaceId: string; item: TrelloIm
 
 /** Step 4: the import job runs. */
 function ImportingStep({ workspaceId, item }: { workspaceId: string; item: TrelloImport }) {
+  const { t } = useTranslation('tasks')
   const cancel = useCancel(workspaceId, item)
   const { done, total, failed } = item.progress
   return (
     <>
-      <ImportHeader title={TITLE} detail={item.trello_user_name} />
+      <ImportHeader title={t('import.trello.title')} detail={item.trello_user_name} />
       <ImportBody>
         <section className="flex flex-col gap-4 py-10" role="status" aria-live="polite">
           <div className="flex items-center gap-2">
             <Spinner className="size-4 text-muted-foreground" />
             <p className="text-sm font-medium text-foreground">
-              {item.status === 'queued' ? 'Waiting for the import to start…' : total === 0 ? 'Reading boards…' : 'Importing cards…'}
+              {item.status === 'queued' ? t('import.common.waiting') : total === 0 ? t('import.trello.reading') : t('import.trello.importing')}
             </p>
           </div>
           <ImportProgressBar done={done + failed} total={total} />
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <span>
-              {done} of {total} cards imported
+              {t('import.trello.progress', { done, total })}
             </span>
-            {failed > 0 ? <span className="text-destructive">{failed} failed</span> : null}
+            {failed > 0 ? <span className="text-destructive">{t('import.common.failedCount', { count: failed })}</span> : null}
             <span className="flex-1" />
             <Button type="button" variant="outline" size="sm" disabled={cancel.pending} onClick={() => void cancel.request(true)}>
-              Cancel import
+              {t('import.common.cancelImport')}
             </Button>
           </div>
           <p className="text-sm text-muted-foreground">
-            You can leave this page; the import continues on the server. Trello limits how fast Orbit can read, so large boards take a
-            while.
+            {t('import.trello.leave')}
           </p>
         </section>
       </ImportBody>
@@ -447,39 +441,36 @@ function ImportingStep({ workspaceId, item }: { workspaceId: string; item: Trell
 
 /** Step 5: completed, failed, cancelled or expired. */
 function ResultStep({ workspaceId, item }: { workspaceId: string; item: TrelloImport }) {
+  const { t } = useTranslation('tasks')
   const projects = useProjects(workspaceId)
   const names = new Map((projects.data ?? []).map((project) => [project.id, project]))
   const report = item.report
   const headline =
     item.status === 'completed'
-      ? 'Import complete'
+      ? t('import.common.headline.completed')
       : item.status === 'failed'
-        ? 'Import failed'
+        ? t('import.common.headline.failed')
         : item.status === 'cancelled'
-          ? 'Import cancelled'
-          : 'Import expired'
+          ? t('import.common.headline.cancelled')
+          : t('import.common.headline.expired')
   const notes: string[] = []
   if (report) {
-    if (report.checklists_added > 0) notes.push(`${plural(report.checklists_added, 'checklist was', 'checklists were')} written into card descriptions.`)
-    if (report.links_added > 0) notes.push(`${plural(report.links_added, 'link attachment was', 'link attachments were')} added to card descriptions.`)
+    if (report.checklists_added > 0) notes.push(t('import.trello.notes.checklists', { count: report.checklists_added }))
+    if (report.links_added > 0) notes.push(t('import.trello.notes.links', { count: report.links_added }))
     if (report.unmatched_members > 0)
-      notes.push(
-        `${plural(report.unmatched_members, 'card member has', 'card members have')} no Orbit member of the same full name; the card description names them. Assign them to a member in Settings → Import.`,
-      )
+      notes.push(t('import.trello.notes.unmatchedMembers', { count: report.unmatched_members }))
     if (report.archived_lists_skipped > 0)
-      notes.push(
-        `${plural(report.archived_lists_skipped, 'archived list and its', 'archived lists and their')} cards were left out.`,
-      )
+      notes.push(t('import.trello.notes.archivedLists', { count: report.archived_lists_skipped }))
     if (report.archived_cards_skipped > 0)
-      notes.push(`${plural(report.archived_cards_skipped, 'archived card was', 'archived cards were')} left out.`)
+      notes.push(t('import.trello.notes.archivedCards', { count: report.archived_cards_skipped }))
     if (report.refused_files > 0)
-      notes.push(`Trello refused ${plural(report.refused_files, 'file download', 'file downloads')}; some Enterprise workspaces block them.`)
+      notes.push(t('import.trello.notes.refusedFiles', { count: report.refused_files }))
     if (report.missing_files > 0)
-      notes.push(`${plural(report.missing_files, 'Trello file', 'Trello files')} could not be downloaded or attached (too large, or gone).`)
+      notes.push(t('import.trello.notes.missingFiles', { count: report.missing_files }))
   }
   return (
     <>
-      <ImportHeader title={TITLE} detail={item.trello_user_name} />
+      <ImportHeader title={t('import.trello.title')} detail={item.trello_user_name} />
       <ImportBody>
         <section className="flex flex-col gap-3">
           <div className="flex items-center gap-2">
@@ -494,15 +485,15 @@ function ResultStep({ workspaceId, item }: { workspaceId: string; item: TrelloIm
         </section>
         {report ? (
           <div className="grid grid-cols-4 gap-2 max-[599px]:grid-cols-2">
-            <ImportStat label="Cards imported" value={item.progress.done} />
-            <ImportStat label="Comments" value={report.comments_imported} />
-            <ImportStat label="Files" value={report.files_imported} />
-            <ImportStat label="Failed" value={item.progress.failed} />
+            <ImportStat label={t('import.trello.cardsImported')} value={item.progress.done} />
+            <ImportStat label={t('import.common.comments')} value={report.comments_imported} />
+            <ImportStat label={t('import.common.files')} value={report.files_imported} />
+            <ImportStat label={t('import.common.failed')} value={item.progress.failed} />
           </div>
         ) : null}
         {item.project_ids.length > 0 ? (
-          <section className="flex flex-col gap-2" aria-label="Imported projects">
-            <h3 className="text-xs font-medium text-muted-foreground">Imported projects</h3>
+          <section className="flex flex-col gap-2" aria-label={t('import.common.importedProjects')}>
+            <h3 className="text-xs font-medium text-muted-foreground">{t('import.common.importedProjects')}</h3>
             <ul className="flex flex-col border-t border-border">
               {item.project_ids.map((id) => {
                 const project = names.get(id)
@@ -513,7 +504,7 @@ function ResultStep({ workspaceId, item }: { workspaceId: string; item: TrelloIm
                       className="flex h-9 items-center gap-2 px-1 text-[0.8125rem] text-foreground transition-colors duration-150 ease-out hover:bg-sidebar-accent/50"
                     >
                       <span className="mx-[3px] size-2 shrink-0 rounded-[2px]" style={{ background: project?.color }} />
-                      <span className="truncate">{project?.name ?? 'Imported project'}</span>
+                      <span className="truncate">{project?.name ?? t('import.common.importedProject')}</span>
                     </Link>
                   </li>
                 )
@@ -522,8 +513,8 @@ function ResultStep({ workspaceId, item }: { workspaceId: string; item: TrelloIm
           </section>
         ) : null}
         {notes.length > 0 ? (
-          <section className="flex flex-col gap-2" aria-label="Import notes">
-            <h3 className="text-xs font-medium text-muted-foreground">Notes</h3>
+          <section className="flex flex-col gap-2" aria-label={t('import.common.notesLabel')}>
+            <h3 className="text-xs font-medium text-muted-foreground">{t('import.common.notes')}</h3>
             {notes.map((note) => (
               <p key={note} className="text-sm text-foreground">
                 {note}
@@ -532,14 +523,14 @@ function ResultStep({ workspaceId, item }: { workspaceId: string; item: TrelloIm
           </section>
         ) : null}
         {report && report.failures.length > 0 ? (
-          <section className="flex flex-col gap-2" aria-label="Failed items">
-            <h3 className="text-xs font-medium text-muted-foreground">Not imported</h3>
+          <section className="flex flex-col gap-2" aria-label={t('import.common.failedItems')}>
+            <h3 className="text-xs font-medium text-muted-foreground">{t('import.common.notImported')}</h3>
             <ul className="flex flex-col border-t border-border">
               {report.failures.map((failure) => (
                 <li key={`${failure.kind}-${failure.trello_id}`} className="flex flex-col gap-0.5 border-b border-border px-1 py-2">
                   <span className="text-[0.8125rem] text-foreground">
-                    {failure.title.trim() ? failure.title : 'Untitled'}
-                    {failure.kind === 'card' ? null : <span className="text-muted-foreground"> ({failure.kind})</span>}
+                    {failure.title.trim() ? failure.title : t('untitled')}
+                    {failure.kind === 'card' ? null : <span className="text-muted-foreground">{t('import.common.failureKind', { kind: failure.kind })}</span>}
                   </span>
                   <span className="text-xs text-muted-foreground">{failure.error}</span>
                 </li>
@@ -550,7 +541,7 @@ function ResultStep({ workspaceId, item }: { workspaceId: string; item: TrelloIm
         <div>
           <Link className={buttonVariants({ variant: 'outline' })} to={ROOT}>
             <Import className="size-4" />
-            Import more
+            {t('import.common.importMore')}
           </Link>
         </div>
       </ImportBody>
@@ -563,6 +554,7 @@ function ResultStep({ workspaceId, item }: { workspaceId: string; item: TrelloIm
  * states), a pane in the Tasks area like the Asana import. The URL survives reloads during a long import.
  */
 export function TrelloImportPage() {
+  const { t } = useTranslation('tasks')
   const { workspace } = useWorkspace()
   const { importId } = useParams()
   const query = useTrelloImport(workspace.id, importId)
@@ -579,21 +571,21 @@ export function TrelloImportPage() {
     const missing = query.error instanceof ApiProblem && query.error.status === 404
     content = (
       <>
-        <ImportHeader title={TITLE} />
+        <ImportHeader title={t('import.trello.title')} />
         <div className="flex flex-1 flex-col p-6">
           <EmptyState
             icon={Import}
-            title={missing ? 'Import not found' : 'Import unavailable'}
-            description={missing ? 'This import does not exist or belongs to someone else.' : 'The server could not load this import.'}
+            title={missing ? t('import.common.notFound') : t('import.common.unavailable')}
+            description={missing ? t('import.common.notFoundDescription') : t('import.common.unavailableDescription')}
             action={
               <div className="flex gap-2">
                 {missing ? null : (
                   <Button type="button" variant="outline" onClick={() => void query.refetch()}>
-                    Retry
+                    {t('retry')}
                   </Button>
                 )}
                 <Link className={buttonVariants({ variant: 'outline' })} to={ROOT}>
-                  New import
+                  {t('import.common.newImport')}
                 </Link>
               </div>
             }
@@ -604,7 +596,7 @@ export function TrelloImportPage() {
   } else {
     content = (
       <>
-        <ImportHeader title={TITLE} />
+        <ImportHeader title={t('import.trello.title')} />
         <div className="flex flex-1 items-center justify-center">
           <Spinner className="text-muted-foreground" />
         </div>

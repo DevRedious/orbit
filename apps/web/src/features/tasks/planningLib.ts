@@ -1,6 +1,7 @@
 import { addDays } from 'date-fns'
 import type { Cycle, Milestone } from '@/features/tasks/api/models'
 import { shortDate } from '@/lib/format'
+import { i18n } from '@/i18n'
 
 /** The quick picks of the estimate picker (Fibonacci-like points); any whole number up to `MAX_ESTIMATE` can be typed. */
 export const ESTIMATE_OPTIONS = [0, 1, 2, 3, 5, 8, 13] as const
@@ -8,12 +9,12 @@ export const MAX_ESTIMATE = 1000
 
 /** "1 point", "3 points". */
 export function estimateLabel(points: number): string {
-  return `${points} ${points === 1 ? 'point' : 'points'}`
+  return i18n.t('tasks:estimate.points', { count: points })
 }
 
 /** "1 pt", "3 pts": the list and board chip. */
 export function estimateShortLabel(points: number): string {
-  return `${points} ${points === 1 ? 'pt' : 'pts'}`
+  return i18n.t('tasks:estimate.pointsShort', { count: points })
 }
 
 /** A typed estimate: a whole number from 0 to `MAX_ESTIMATE`, else null. */
@@ -26,7 +27,7 @@ export function parseEstimate(text: string): number | null {
 
 /** The cycle's name, or "Cycle 3" when it has none. */
 export function cycleName(cycle: Pick<Cycle, 'name' | 'number'>): string {
-  return cycle.name?.trim() || `Cycle ${cycle.number}`
+  return cycle.name?.trim() || i18n.t('tasks:cycles.numbered', { number: cycle.number })
 }
 
 export type CycleTiming = 'current' | 'upcoming' | 'past'
@@ -40,7 +41,7 @@ export function cycleTiming(cycle: Pick<Cycle, 'starts_at' | 'ends_at'>, now: Da
 
 /** "Nov 3 – Nov 16": the first and the last day (`ends_at` is exclusive). */
 export function cycleDates(cycle: Pick<Cycle, 'starts_at' | 'ends_at'>): string {
-  return `${shortDate(cycle.starts_at)} – ${shortDate(new Date(Date.parse(cycle.ends_at) - 1).toISOString())}`
+  return i18n.t('tasks:dateRange', { start: shortDate(cycle.starts_at), end: shortDate(new Date(Date.parse(cycle.ends_at) - 1).toISOString()) })
 }
 
 /** The picker's order: the current cycle and the upcoming ones by date, then the past ones, newest first. */
@@ -118,7 +119,7 @@ export function targetDay(targetAt: string): Date {
 
 /** "Nov 20": a milestone's target day. */
 export function targetLabel(targetAt: string): string {
-  return targetDay(targetAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+  return targetDay(targetAt).toLocaleDateString(i18n.language, { month: 'short', day: 'numeric' })
 }
 
 /** Past its target day (before today) with tasks still unfinished. */
@@ -131,8 +132,8 @@ type PlanningCounts = { task_count: number; completed_count: number; estimate_to
 
 /** "3/8 tasks", plus "· 5/13 pts" once a task in it is estimated, plus "· 2 carried over" for a cycle whose unfinished tasks moved on. Cancelled and duplicate tasks are not counted. */
 export function planningProgress(counts: PlanningCounts): string {
-  const tasks = `${counts.completed_count}/${counts.task_count} ${counts.task_count === 1 ? 'task' : 'tasks'}`
-  const points = counts.estimate_total > 0 ? ` · ${counts.estimate_completed}/${counts.estimate_total} pts` : ''
-  const carried = counts.carried_over_count ? ` · ${counts.carried_over_count} carried over` : ''
-  return `${tasks}${points}${carried}`
+  const parts: string[] = [i18n.t('tasks:planning.tasks', { count: counts.task_count, completed: counts.completed_count })]
+  if (counts.estimate_total > 0) parts.push(i18n.t('tasks:planning.points', { completed: counts.estimate_completed, total: counts.estimate_total }))
+  if (counts.carried_over_count) parts.push(i18n.t('tasks:planning.carriedOver', { count: counts.carried_over_count }))
+  return parts.join(' · ')
 }

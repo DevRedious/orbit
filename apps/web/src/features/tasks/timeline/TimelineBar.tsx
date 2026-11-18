@@ -73,7 +73,7 @@ export function TimelineBar({ task, span, range, pxPerDay, color, status, assign
     'data-dragging': dragging || undefined,
     role: 'button',
     tabIndex: 0,
-    'aria-label': `${t('timeline.bar', { identifier: task.identifier, title: task.title || t('untitled'), span: spanLabel(span) })}${lateDays > 0 ? `, ${lateDays} ${lateDays === 1 ? 'day' : 'days'} after its milestone` : ''}`,
+    'aria-label': `${t('timeline.bar', { identifier: task.identifier, title: task.title || t('untitled'), span: spanLabel(span) })}${lateDays > 0 ? t('timeline.lateAfterMilestone', { count: lateDays }) : ''}`,
     onClick,
     onKeyDown,
   }

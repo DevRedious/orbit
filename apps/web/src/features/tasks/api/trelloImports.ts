@@ -5,6 +5,7 @@ import { cancelTrelloImport, createTrelloImport, getTrelloImport, listTrelloImpo
 import type { CreateTrelloImportBody, TrelloImport, TrelloImportTree } from '@orbit/api/generated/types.gen'
 import { ApiProblem } from '@orbit/api/problem'
 import { queryKeys } from '@/api/queryKeys'
+import { i18n } from '@/i18n'
 import { IMPORT_POLL_MS, isActiveImport, isFinalImport } from '@/features/tasks/api/importStatus'
 
 type ApiClient = ReturnType<typeof createApiClient>
@@ -25,23 +26,23 @@ export function trelloImportErrorMessage(error: unknown): string {
     switch (error.code) {
       // The detail carries Trello's own reason (invalid key, expired token…).
       case 'trello_key_invalid':
-        return error.detail || 'Trello rejected this API key. Copy the key again from the Trello Auth tab of your Power-Up.'
+        return error.detail || i18n.t('tasks:import.trello.keyInvalid')
       case 'trello_token_invalid':
-        return error.detail || 'Trello rejected this token. Generate a new token for this API key and paste it.'
+        return error.detail || i18n.t('tasks:import.trello.tokenInvalid')
       case 'app_key_missing':
-        return 'Orbit is not ready to import from Trello yet. Ask the Orbit administrator to set the app key.'
+        return i18n.t('tasks:import.common.errors.appKeyMissing', { provider: 'Trello' })
       case 'import_in_progress':
-        return 'You already have an import running. Wait for it to finish or cancel it.'
+        return i18n.t('tasks:import.common.errors.inProgress')
       case 'trello_unavailable':
-        return 'Trello could not be reached. Try again in a moment.'
+        return i18n.t('tasks:import.common.errors.unavailable', { provider: 'Trello' })
       case 'trello_import_state_conflict':
-        return 'This import changed in the meantime (it may have expired or been cancelled).'
+        return i18n.t('tasks:import.common.errors.stateConflict')
       case 'trello_import_not_found':
-        return 'This import no longer exists.'
+        return i18n.t('tasks:import.common.errors.notFound')
     }
-    if (error.status === 422) return 'The request was not valid. Check your input and try again.'
+    if (error.status === 422) return i18n.t('tasks:import.common.errors.invalid')
   }
-  return 'Something went wrong. Try again.'
+  return i18n.t('tasks:import.common.errors.generic')
 }
 
 /**

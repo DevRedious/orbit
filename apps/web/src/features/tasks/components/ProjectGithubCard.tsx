@@ -92,8 +92,8 @@ function GithubCardContent({ settings, workspaceId, save, remove, onPendingChang
               <Label htmlFor="github-repository">{t('github.repository')}</Label>
               <SearchPicker
                 label={t('github.repository')}
-                placeholder="Search repositories…"
-                emptyText="No repositories match"
+                placeholder={t('github.searchRepositories')}
+                emptyText={t('github.noRepositoriesMatch')}
                 options={repositoryOptions}
                 selected={[selection]}
                 onSelect={setSelection}

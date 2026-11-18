@@ -1,13 +1,11 @@
+import { useTranslation } from 'react-i18next'
 import type { MailProviderSetup } from '@orbit/api/generated/types.gen'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Danger } from 'reicon-react'
 import { CopyButton } from './MailDomainRecords'
 
-const SECRET_LABELS: Record<string, string> = {
-  signing_secret: 'Signing secret',
-  basic_user: 'User name',
-  basic_password: 'Password',
-}
+const SECRET_NAMES = ['signing_secret', 'basic_user', 'basic_password'] as const
+const isKnownSecret = (name: string): name is typeof SECRET_NAMES[number] => (SECRET_NAMES as readonly string[]).includes(name)
 
 /** One value to paste at the provider, with a copy button. */
 function CopyRow({ label, value }: { label: string; value: string }) {
@@ -27,26 +25,27 @@ function CopyRow({ label, value }: { label: string; value: string }) {
  * secrets Orbit made, which only the create response has.
  */
 export function ProviderSetup({ setup, generated }: { setup: MailProviderSetup; generated?: Record<string, string> | null }) {
+  const { t } = useTranslation('settings')
   const secrets = Object.entries(generated ?? {})
   return (
     <div className="flex flex-col gap-4">
       {secrets.length > 0 ? (
         <Alert>
           <Danger />
-          <AlertTitle>Copy these now. Orbit does not show them again.</AlertTitle>
-          <AlertDescription>If you lose them, remove the provider and add it again.</AlertDescription>
+          <AlertTitle>{t('mail.setup.copyNow')}</AlertTitle>
+          <AlertDescription>{t('mail.setup.copyNowHint')}</AlertDescription>
         </Alert>
       ) : null}
-      <CopyRow label="Webhook URL" value={setup.webhook_url} />
-      {secrets.map(([name, value]) => <CopyRow key={name} label={SECRET_LABELS[name] ?? name} value={value} />)}
+      <CopyRow label={t('mail.setup.webhookUrl')} value={setup.webhook_url} />
+      {secrets.map(([name, value]) => <CopyRow key={name} label={isKnownSecret(name) ? t(`mail.setup.secrets.${name}`) : name} value={value} />)}
       <ol className="m-0 flex list-decimal flex-col gap-1.5 pl-5 text-[0.8125rem]">
         {setup.steps.map((step) => <li key={step}>{step}</li>)}
       </ol>
       {setup.worker_script ? (
         <div className="flex flex-col gap-1">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-xs font-medium text-muted-foreground">Email Worker script</span>
-            <CopyButton text={setup.worker_script} label="Script" />
+            <span className="text-xs font-medium text-muted-foreground">{t('mail.setup.workerScript')}</span>
+            <CopyButton text={setup.worker_script} label={t('mail.setup.script')} />
           </div>
           <pre className="m-0 max-h-72 overflow-auto rounded-md border bg-muted/40 p-2 font-mono text-xs">{setup.worker_script}</pre>
         </div>

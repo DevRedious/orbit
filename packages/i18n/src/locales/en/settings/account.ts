@@ -19,6 +19,19 @@ export default {
     revoking_one: 'Revoking {{count}} session…',
     revoking_other: 'Revoking {{count}} sessions…',
   },
+  blocked: {
+    title: 'Blocked people',
+    description: 'Chat hides messages from these people. They cannot send you direct messages.',
+    loading: 'Loading blocked people…',
+    loadFailed: 'Blocked people could not be loaded.',
+    empty: {
+      title: 'No blocked people',
+      description: 'To block a person, open the menu of one of their chat messages, or open their profile.',
+    },
+    since: 'Blocked {{date}}',
+    unblock: 'Unblock',
+    unblockNamed: 'Unblock {{name}}',
+  },
   security: {
     justNow: 'just now',
     ago: '{{time}} ago',

@@ -1,4 +1,5 @@
 import { useContext } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link, Navigate, Outlet, useLocation } from 'react-router'
 import { ArrowLeft, ChevronRight } from 'reicon-react'
 import { Pane, PaneHeader, PaneTitle } from '@/components/common/Pane'
@@ -28,6 +29,7 @@ export function AdminLayout() {
  * links (`SidebarNav`). On a phone the area's root is a menu of its pages, and each page has Back to that menu.
  */
 function SettingsShell({ area }: { area: SettingsAreaName }) {
+  const { t } = useTranslation('settings')
   // someone with no workspace who is not an operator may open only their profile
   const workspace = useContext(WorkspaceContext)
   const operator = useIsInstallationAdmin()
@@ -50,7 +52,7 @@ function SettingsShell({ area }: { area: SettingsAreaName }) {
         {/* same left inset as the content column, so the title lines up with the cards */}
         <PaneHeader className={`gap-[7px] bg-background text-muted-foreground min-[900px]:pl-8 xl:pl-10 ${hasMenu && !showMenu ? 'pl-2' : 'pl-5'}`}>
           {hasMenu && !showMenu && root ? (
-            <Link to={root} aria-label={`Back to ${title}`} className="-mr-0.5 flex size-8 shrink-0 items-center justify-center rounded-md hover:bg-muted hover:text-foreground">
+            <Link to={root} aria-label={t('nav.backTo', { title })} className="-mr-0.5 flex size-8 shrink-0 items-center justify-center rounded-md hover:bg-muted hover:text-foreground">
               <ArrowLeft className="size-[18px]" />
             </Link>
           ) : null}

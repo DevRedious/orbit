@@ -1,5 +1,6 @@
 import { useId, useState, type FormEvent } from 'react'
 import { toast } from 'sonner'
+import { useTranslation } from 'react-i18next'
 import type { MailboxKind, MailDomain } from '@orbit/api/generated/types.gen'
 import { Button } from '@/components/ui/button'
 import { DialogClose, DialogFooter } from '@/components/ui/dialog'
@@ -11,10 +12,6 @@ import { useCreateMailbox } from '@/features/mail/api/mutations'
 import type { User } from '@/features/workspaces/models'
 import { mailProblem } from './mailSettingsLib'
 
-const KIND_OPTIONS: { value: MailboxKind; label: string }[] = [
-  { value: 'shared', label: 'Shared: the members you choose read it' },
-  { value: 'personal', label: 'Personal: only its owner reads it' },
-]
 
 /** The address field: the local part, `@` and the domain. */
 export function AddressFields({ id, localPart, domainId, domains, onLocalPart, onDomain }: {
@@ -25,13 +22,14 @@ export function AddressFields({ id, localPart, domainId, domains, onLocalPart, o
   onLocalPart: (value: string) => void
   onDomain: (value: string) => void
 }) {
+  const { t } = useTranslation('settings')
   const options = domains.map((domain) => ({ value: domain.id, label: domain.name }))
   return (
     <div className="flex min-w-0 flex-wrap items-center gap-1.5">
       <Input id={id} className="w-44" autoComplete="off" placeholder="team" value={localPart} onChange={(event) => onLocalPart(event.target.value.trim().toLowerCase())} />
       <span aria-hidden className="text-muted-foreground">@</span>
       <Select items={options} value={domainId} onValueChange={(value) => onDomain(value as string)}>
-        <SelectTrigger aria-label="Domain" className="w-48"><SelectValue /></SelectTrigger>
+        <SelectTrigger aria-label={t('mail.mailboxForm.domain')} className="w-48"><SelectValue /></SelectTrigger>
         <SelectContent>
           {options.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
         </SelectContent>
@@ -45,8 +43,13 @@ export function AddressFields({ id, localPart, domainId, domains, onLocalPart, o
  * `owners` are the members without a personal mailbox.
  */
 export function MailboxForm({ domains, members, owners, onDone }: { domains: MailDomain[]; members: User[]; owners: User[]; onDone: () => void }) {
+  const { t } = useTranslation('settings')
   const create = useCreateMailbox()
   const ids = useId()
+  const kindOptions: { value: MailboxKind; label: string }[] = [
+    { value: 'shared', label: t('mail.mailboxForm.kindShared') },
+    { value: 'personal', label: t('mail.mailboxForm.kindPersonal') },
+  ]
   const [kind, setKind] = useState<MailboxKind>('shared')
   const [name, setName] = useState('')
   const [localPart, setLocalPart] = useState('')
@@ -69,24 +72,24 @@ export function MailboxForm({ domains, members, owners, onDone }: { domains: Mai
       owner_membership_id: kind === 'personal' ? ownerId : null,
       member_ids: kind === 'shared' ? memberIds : [],
     }, {
-      onSuccess: (mailbox) => { toast(`${mailbox.addresses[0]?.address ?? mailbox.name} created`); onDone() },
+      onSuccess: (mailbox) => { toast(t('mail.mailboxForm.created', { address: mailbox.addresses[0]?.address ?? mailbox.name })); onDone() },
     })
   }
 
   return (
     <form className="grid gap-4" onSubmit={submit}>
       <Field>
-        <FieldLabel htmlFor={`${ids}-kind`}>Kind</FieldLabel>
-        <Select items={KIND_OPTIONS} value={kind} onValueChange={(value) => setKind(value as MailboxKind)}>
+        <FieldLabel htmlFor={`${ids}-kind`}>{t('mail.mailboxForm.kind')}</FieldLabel>
+        <Select items={kindOptions} value={kind} onValueChange={(value) => setKind(value as MailboxKind)}>
           <SelectTrigger id={`${ids}-kind`}><SelectValue /></SelectTrigger>
           <SelectContent>
-            {KIND_OPTIONS.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
+            {kindOptions.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
           </SelectContent>
         </Select>
       </Field>
       {kind === 'personal' ? (
         <Field>
-          <FieldLabel htmlFor={`${ids}-owner`}>Owner</FieldLabel>
+          <FieldLabel htmlFor={`${ids}-owner`}>{t('mail.mailboxForm.owner')}</FieldLabel>
           <Select
             items={ownerOptions}
             value={ownerId || null}
@@ -96,34 +99,34 @@ export function MailboxForm({ domains, members, owners, onDone }: { domains: Mai
               if (owner && !name.trim()) setName(owner.name)
             }}
           >
-            <SelectTrigger id={`${ids}-owner`}><SelectValue placeholder={owners.length ? 'Choose a member' : 'Every member has a personal mailbox'} /></SelectTrigger>
+            <SelectTrigger id={`${ids}-owner`}><SelectValue placeholder={owners.length ? t('mail.mailboxForm.chooseMember') : t('mail.mailboxForm.everyoneHasOne')} /></SelectTrigger>
             <SelectContent>
               {ownerOptions.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
             </SelectContent>
           </Select>
-          <FieldDescription>A member has one personal mailbox. Add more addresses to it as aliases.</FieldDescription>
+          <FieldDescription>{t('mail.mailboxForm.ownerHint')}</FieldDescription>
         </Field>
       ) : null}
       <Field>
-        <FieldLabel htmlFor={`${ids}-name`}>Name</FieldLabel>
-        <Input id={`${ids}-name`} maxLength={80} placeholder={kind === 'shared' ? 'Support' : 'Ann Lee'} value={name} onChange={(event) => setName(event.target.value)} />
+        <FieldLabel htmlFor={`${ids}-name`}>{t('mail.mailboxForm.name')}</FieldLabel>
+        <Input id={`${ids}-name`} maxLength={80} placeholder={kind === 'shared' ? t('mail.mailboxForm.namePlaceholderShared') : t('mail.mailboxForm.namePlaceholderPersonal')} value={name} onChange={(event) => setName(event.target.value)} />
       </Field>
       <Field>
-        <FieldLabel htmlFor={`${ids}-local`}>Address</FieldLabel>
+        <FieldLabel htmlFor={`${ids}-local`}>{t('mail.mailboxForm.address')}</FieldLabel>
         <AddressFields id={`${ids}-local`} localPart={localPart} domainId={domainId} domains={domains} onLocalPart={setLocalPart} onDomain={setDomainId} />
-        <FieldDescription>Mail to {localPart || 'name'}+anything@ arrives here too.</FieldDescription>
+        <FieldDescription>{t('mail.mailboxForm.plusHint', { local: localPart || t('mail.mailboxForm.plusHintName') })}</FieldDescription>
       </Field>
       {kind === 'shared' ? (
         <Field>
-          <FieldLabel>Members</FieldLabel>
-          <MemberPicker label="Members" people={members} selectedIds={readerIds} onChange={setReaderIds} />
-          <FieldDescription>They read its mail. Owners and admins manage the mailbox; they read it only as members.</FieldDescription>
+          <FieldLabel>{t('mail.mailboxForm.members')}</FieldLabel>
+          <MemberPicker label={t('mail.mailboxForm.members')} people={members} selectedIds={readerIds} onChange={setReaderIds} />
+          <FieldDescription>{t('mail.mailboxForm.membersHint')}</FieldDescription>
         </Field>
       ) : null}
-      {create.isError ? <p role="alert" className="text-sm text-destructive">{mailProblem(create.error, 'The mailbox was not created.')}</p> : null}
+      {create.isError ? <p role="alert" className="text-sm text-destructive">{mailProblem(create.error, t('mail.mailboxForm.createFailed'))}</p> : null}
       <DialogFooter>
-        <DialogClose render={<Button type="button" variant="outline" />}>Cancel</DialogClose>
-        <Button type="submit" disabled={!ready || create.isPending}>{create.isPending ? 'Creating…' : 'Create mailbox'}</Button>
+        <DialogClose render={<Button type="button" variant="outline" />}>{t('cancel')}</DialogClose>
+        <Button type="submit" disabled={!ready || create.isPending}>{create.isPending ? t('mail.creating') : t('mail.mailboxForm.create')}</Button>
       </DialogFooter>
     </form>
   )

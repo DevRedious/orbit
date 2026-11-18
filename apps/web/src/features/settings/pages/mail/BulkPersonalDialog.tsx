@@ -1,5 +1,6 @@
 import { useId, useState } from 'react'
 import { toast } from 'sonner'
+import { useTranslation } from 'react-i18next'
 import type { MailDomain, MailNamePattern } from '@orbit/api/generated/types.gen'
 import { Modal } from '@/components/common/Modal'
 import { Badge } from '@/components/ui/badge'
@@ -11,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useBulkPersonal } from '@/features/mail/api/mutations'
 import { useBulkPersonalPreview } from '@/features/mail/api/queries'
-import { count, mailProblem } from './mailSettingsLib'
+import { mailProblem } from './mailSettingsLib'
 
 const PATTERN_OPTIONS: { value: MailNamePattern; label: string }[] = [
   { value: 'first', label: 'first@ (ann@)' },
@@ -28,6 +29,7 @@ const LOCAL_PART = /^[a-z0-9-]+(\.[a-z0-9-]+)*$/
  * Members whose address still conflicts get no mailbox.
  */
 export function BulkPersonalDialog({ domains, onClose }: { domains: MailDomain[]; onClose: () => void }) {
+  const { t } = useTranslation('settings')
   const ids = useId()
   const usable = [...domains].sort((a, b) => Number(b.status === 'verified') - Number(a.status === 'verified'))
   const [domainId, setDomainId] = useState(usable[0]?.id ?? '')
@@ -52,13 +54,13 @@ export function BulkPersonalDialog({ domains, onClose }: { domains: MailDomain[]
     const repeated = seen.has(row.localPart)
     seen.add(row.localPart)
     const problem = !LOCAL_PART.test(row.localPart)
-      ? 'Not a valid address'
+      ? t('mail.bulkPersonal.invalid')
       : repeated
-        ? 'Used above'
+        ? t('mail.bulkPersonal.usedAbove')
         : refused[row.membership_id] === row.localPart
-          ? 'Taken'
+          ? t('mail.bulkPersonal.taken')
           : !row.edited && row.conflict
-            ? 'Taken'
+            ? t('mail.bulkPersonal.taken')
             : null
     return { ...row, problem }
   })
@@ -76,7 +78,7 @@ export function BulkPersonalDialog({ domains, onClose }: { domains: MailDomain[]
     const overrides = marked.filter((row) => row.edited).map((row) => ({ membership_id: row.membership_id, local_part: row.localPart }))
     create.mutate({ domain_id: domainId, pattern, overrides }, {
       onSuccess: (result) => {
-        toast(`${count(result.created.length, 'mailbox', 'mailboxes')} created`)
+        toast(t('mail.bulkPersonal.created', { count: result.created.length }))
         if (result.conflicts.length === 0) {
           onClose()
           return
@@ -89,8 +91,8 @@ export function BulkPersonalDialog({ domains, onClose }: { domains: MailDomain[]
 
   return (
     <Modal
-      title="Create a mailbox for each member"
-      description="Each member without a personal mailbox gets one, named after them. Edit any address before you confirm; members marked with a conflict are skipped."
+      title={t('mail.bulkPersonal.title')}
+      description={t('mail.bulkPersonal.description')}
       onClose={onClose}
       className="sm:max-w-3xl"
       dismissible={!create.isPending}
@@ -98,7 +100,7 @@ export function BulkPersonalDialog({ domains, onClose }: { domains: MailDomain[]
       <div className="grid gap-4">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field>
-            <FieldLabel htmlFor={`${ids}-domain`}>Domain</FieldLabel>
+            <FieldLabel htmlFor={`${ids}-domain`}>{t('mail.bulkPersonal.domain')}</FieldLabel>
             <Select items={domainOptions} value={domainId} onValueChange={(value) => reset(() => setDomainId(value as string))}>
               <SelectTrigger id={`${ids}-domain`}><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -107,7 +109,7 @@ export function BulkPersonalDialog({ domains, onClose }: { domains: MailDomain[]
             </Select>
           </Field>
           <Field>
-            <FieldLabel htmlFor={`${ids}-pattern`}>Pattern</FieldLabel>
+            <FieldLabel htmlFor={`${ids}-pattern`}>{t('mail.bulkPersonal.pattern')}</FieldLabel>
             <Select items={PATTERN_OPTIONS} value={pattern} onValueChange={(value) => reset(() => setPattern(value as MailNamePattern))}>
               <SelectTrigger id={`${ids}-pattern`}><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -118,16 +120,16 @@ export function BulkPersonalDialog({ domains, onClose }: { domains: MailDomain[]
         </div>
 
         <div className="max-h-[50vh] overflow-y-auto rounded-lg border">
-          {preview.isPending ? <p role="status" className="m-0 p-4 text-sm text-muted-foreground">Making addresses…</p> : null}
-          {preview.isError ? <p role="alert" className="m-0 p-4 text-sm text-destructive">{mailProblem(preview.error, 'The addresses could not be made.')}</p> : null}
-          {preview.isSuccess && marked.length === 0 ? <p className="m-0 p-4 text-sm text-muted-foreground">Every member has a personal mailbox.</p> : null}
+          {preview.isPending ? <p role="status" className="m-0 p-4 text-sm text-muted-foreground">{t('mail.bulkPersonal.making')}</p> : null}
+          {preview.isError ? <p role="alert" className="m-0 p-4 text-sm text-destructive">{mailProblem(preview.error, t('mail.bulkPersonal.makeFailed'))}</p> : null}
+          {preview.isSuccess && marked.length === 0 ? <p className="m-0 p-4 text-sm text-muted-foreground">{t('mail.bulkPersonal.everyoneHasOne')}</p> : null}
           {marked.length > 0 ? (
-            <Table aria-label="Proposed addresses">
+            <Table aria-label={t('mail.bulkPersonal.tableAria')}>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Member</TableHead>
-                  <TableHead>Address</TableHead>
-                  <TableHead><span className="sr-only">Conflict</span></TableHead>
+                  <TableHead>{t('mail.bulkPersonal.member')}</TableHead>
+                  <TableHead>{t('mail.bulkPersonal.address')}</TableHead>
+                  <TableHead><span className="sr-only">{t('mail.bulkPersonal.conflict')}</span></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -137,7 +139,7 @@ export function BulkPersonalDialog({ domains, onClose }: { domains: MailDomain[]
                     <TableCell>
                       <div className="flex items-center gap-1.5">
                         <Input
-                          aria-label={`Address of ${row.name}`}
+                          aria-label={t('mail.bulkPersonal.addressOf', { name: row.name })}
                           aria-invalid={row.problem !== null || undefined}
                           className="h-7 w-48"
                           autoComplete="off"
@@ -155,13 +157,13 @@ export function BulkPersonalDialog({ domains, onClose }: { domains: MailDomain[]
           ) : null}
         </div>
 
-        {create.isError ? <p role="alert" className="text-sm text-destructive">{mailProblem(create.error, 'The mailboxes were not created.')}</p> : null}
+        {create.isError ? <p role="alert" className="text-sm text-destructive">{mailProblem(create.error, t('mail.bulkPersonal.createFailed'))}</p> : null}
         <DialogFooter>
           <span className="mr-auto self-center text-xs text-muted-foreground">
-            {marked.length > 0 ? `${count(ready, 'mailbox', 'mailboxes')} to create${conflicts > 0 ? `, ${count(conflicts, 'conflict', 'conflicts')} skipped` : ''}` : null}
+            {marked.length > 0 ? `${t('mail.bulkPersonal.toCreate', { count: ready })}${conflicts > 0 ? t('mail.bulkPersonal.skipped', { count: conflicts }) : ''}` : null}
           </span>
-          <DialogClose render={<Button type="button" variant="outline" />}>Cancel</DialogClose>
-          <Button type="button" disabled={ready === 0 || create.isPending} onClick={confirm}>{create.isPending ? 'Creating…' : `Create ${count(ready, 'mailbox', 'mailboxes')}`}</Button>
+          <DialogClose render={<Button type="button" variant="outline" />}>{t('cancel')}</DialogClose>
+          <Button type="button" disabled={ready === 0 || create.isPending} onClick={confirm}>{create.isPending ? t('mail.creating') : t('mail.bulkPersonal.create', { count: ready })}</Button>
         </DialogFooter>
       </div>
     </Modal>

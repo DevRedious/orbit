@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { DirectInbox } from 'reicon-react'
 import type { MailDomain, MailMailbox } from '@orbit/api/generated/types.gen'
@@ -17,15 +18,17 @@ import { BulkPersonalDialog } from './BulkPersonalDialog'
 import { MailboxDetails } from './MailboxDetails'
 import { MailboxForm } from './MailboxForm'
 import { MailManagersOnly } from './MailDomainsPage'
-import { count, mailProblem } from './mailSettingsLib'
+import { mailProblem } from './mailSettingsLib'
 
 /** The workspace's mailboxes: personal and shared, their addresses and members; one for each member at once. */
 export function MailMailboxesPage() {
-  if (!useCan('mail.manage')) return <MailManagersOnly title="Mailboxes" />
+  const { t } = useTranslation('settings')
+  if (!useCan('mail.manage')) return <MailManagersOnly title={t('mail.mailboxes.title')} />
   return <MailMailboxes />
 }
 
 function MailMailboxes() {
+  const { t } = useTranslation('settings')
   const { workspace } = useWorkspace()
   const mailboxes = useMailboxes()
   const domains = useMailDomains()
@@ -33,13 +36,13 @@ function MailMailboxes() {
   const [dialog, setDialog] = useState<'create' | 'bulk' | null>(null)
   const [openId, setOpenId] = useState<string | null>(null)
 
-  if (mailboxes.isPending || domains.isPending) return <SettingsCard title="Mailboxes"><p role="status">Loading mailboxes…</p></SettingsCard>
+  if (mailboxes.isPending || domains.isPending) return <SettingsCard title={t('mail.mailboxes.title')}><p role="status">{t('mail.mailboxes.loading')}</p></SettingsCard>
   if (mailboxes.isError || domains.isError) {
     return (
-      <SettingsCard title="Mailboxes">
+      <SettingsCard title={t('mail.mailboxes.title')}>
         <p role="alert">
-          {mailProblem(mailboxes.error ?? domains.error, 'Mailboxes could not be loaded.')}{' '}
-          <Button variant="ghost" onClick={() => { void mailboxes.refetch(); void domains.refetch() }}>Retry</Button>
+          {mailProblem(mailboxes.error ?? domains.error, t('mail.mailboxes.loadFailed'))}{' '}
+          <Button variant="ghost" onClick={() => { void mailboxes.refetch(); void domains.refetch() }}>{t('retry')}</Button>
         </p>
       </SettingsCard>
     )
@@ -48,9 +51,9 @@ function MailMailboxes() {
     return (
       <EmptyState
         icon={DirectInbox}
-        title="Add a domain first"
-        description="A mailbox has an address on one of the workspace's mail domains."
-        action={<Link className={buttonVariants()} to="/settings/mail/domains">Go to domains</Link>}
+        title={t('mail.mailboxes.noDomainTitle')}
+        description={t('mail.mailboxes.noDomainDescription')}
+        action={<Link className={buttonVariants()} to="/settings/mail/domains">{t('mail.mailboxes.goToDomains')}</Link>}
       />
     )
   }
@@ -64,18 +67,18 @@ function MailMailboxes() {
   return (
     <>
       <SettingsCard
-        title="Mailboxes"
-        description="A personal mailbox belongs to one member. The members of a shared mailbox read it together."
+        title={t('mail.mailboxes.title')}
+        description={t('mail.mailboxes.description')}
         actions={(
           <>
-            <Button type="button" variant="outline" disabled={owners.length === 0} onClick={() => setDialog('bulk')}>Create a mailbox for each member</Button>
-            <Button type="button" onClick={() => setDialog('create')}>New mailbox</Button>
+            <Button type="button" variant="outline" disabled={owners.length === 0} onClick={() => setDialog('bulk')}>{t('mail.mailboxes.bulk')}</Button>
+            <Button type="button" onClick={() => setDialog('create')}>{t('mail.mailboxes.new')}</Button>
           </>
         )}
         flush
       >
         <div className="flex flex-col divide-y">
-          {sorted.length === 0 ? <SettingsRow className="text-muted-foreground">No mailboxes yet.</SettingsRow> : null}
+          {sorted.length === 0 ? <SettingsRow className="text-muted-foreground">{t('mail.mailboxes.empty')}</SettingsRow> : null}
           {sorted.map((mailbox) => (
             <MailboxRow
               key={mailbox.id}
@@ -89,7 +92,7 @@ function MailMailboxes() {
         </div>
       </SettingsCard>
       {dialog === 'create' ? (
-        <Modal title="New mailbox" onClose={() => setDialog(null)} className="sm:max-w-lg">
+        <Modal title={t('mail.mailboxes.new')} onClose={() => setDialog(null)} className="sm:max-w-lg">
           <MailboxForm domains={domains.data} members={people} owners={owners} onDone={() => setDialog(null)} />
         </Modal>
       ) : null}
@@ -99,13 +102,14 @@ function MailMailboxes() {
 }
 
 function MailboxRow({ mailbox, domains, members, open, onToggle }: { mailbox: MailMailbox; domains: MailDomain[]; members: User[]; open: boolean; onToggle: () => void }) {
+  const { t } = useTranslation('settings')
   const primary = mailbox.addresses.find((address) => address.kind === 'primary') ?? mailbox.addresses[0]
   const aliases = mailbox.addresses.length - 1
   const ownerLeft = mailbox.kind === 'personal' && !mailbox.owner_membership_id
   const owner = members.find((member) => member.membershipId === mailbox.owner_membership_id)
   const who = mailbox.kind === 'personal'
-    ? (ownerLeft ? 'Owner left' : owner?.name ?? 'Personal')
-    : count(mailbox.member_ids.length, 'member', 'members')
+    ? (ownerLeft ? t('mail.mailboxes.ownerLeft') : owner?.name ?? t('mail.mailboxes.personal'))
+    : t('mail.mailboxes.members', { count: mailbox.member_ids.length })
   return (
     <div>
       <SettingsRow className="flex-nowrap">
@@ -113,25 +117,25 @@ function MailboxRow({ mailbox, domains, members, open, onToggle }: { mailbox: Ma
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
           <span className="flex min-w-0 items-center gap-2">
             <span className="truncate text-[0.8125rem] font-medium text-foreground">{mailbox.name}</span>
-            <Badge variant="outline">{mailbox.kind === 'personal' ? 'Personal' : 'Shared'}</Badge>
-            {mailbox.status === 'suspended' ? <Badge variant="destructive">Suspended</Badge> : null}
+            <Badge variant="outline">{mailbox.kind === 'personal' ? t('mail.mailboxes.personal') : t('mail.mailboxes.shared')}</Badge>
+            {mailbox.status === 'suspended' ? <Badge variant="destructive">{t('mail.mailboxes.suspended')}</Badge> : null}
             {domains.filter((domain) => domain.catch_all_mailbox_id === mailbox.id).map((domain) => (
               <Badge
                 key={domain.id}
                 variant="secondary"
-                title={`Gets mail for addresses of ${domain.name} that no mailbox has. Change it in Domains.`}
+                title={t('mail.mailboxes.catchAllHint', { domain: domain.name })}
                 render={<Link to="/settings/mail/domains" />}
               >
-                Catch-all · {domain.name}
+                {t('mail.mailboxes.catchAll', { domain: domain.name })}
               </Badge>
             ))}
           </span>
           <span className="truncate text-xs text-muted-foreground">
-            {primary?.address ?? 'No address'} · {who}{aliases > 0 ? ` · ${count(aliases, 'alias', 'aliases')}` : ''}
+            {primary?.address ?? t('mail.mailboxes.noAddress')} · {who}{aliases > 0 ? ` · ${t('mail.mailboxes.aliases', { count: aliases })}` : ''}
           </span>
         </div>
-        <Button type="button" variant="ghost" aria-expanded={open} aria-label={`Manage ${mailbox.name}`} onClick={onToggle}>
-          {open ? 'Close' : 'Manage'}
+        <Button type="button" variant="ghost" aria-expanded={open} aria-label={t('mail.mailboxes.manageAria', { name: mailbox.name })} onClick={onToggle}>
+          {open ? t('mail.close') : t('mail.manage')}
         </Button>
       </SettingsRow>
       {open ? <MailboxDetails mailbox={mailbox} domains={domains} members={members} /> : null}

@@ -150,6 +150,12 @@ export default {
       offset: '{{base}} {{sign}} {{days}} days',
       range: '{{start}} – {{end}}',
     },
+    /** Cycle values resolved per project when the view runs. */
+    relativeCycles: {
+      current: 'Current cycle',
+      next: 'Next cycle',
+      previous: 'Previous cycle',
+    },
     subIssues: {
       has: 'Has sub-issues',
       none: 'No sub-issues',
@@ -305,11 +311,14 @@ export default {
       updated: 'Updated',
       sub_issue_progress: 'Sub-issue progress',
     },
+    milestoneTimeline: 'Milestone timeline',
     resetToDefault: 'Reset to default',
   },
   grouping: {
     noAssignee: 'No assignee',
     noLabel: 'No label',
+    noMilestone: 'No milestone',
+    noCycle: 'No cycle',
     allTasks: 'All tasks',
     noMatchingStatus: 'No matching status in {{project}}',
     noMatchingLabel: 'No matching label in {{project}}',

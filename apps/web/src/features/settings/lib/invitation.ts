@@ -1,4 +1,5 @@
 import type { InvitationBody } from '@orbit/api/generated/types.gen'
+import { i18n } from '@/i18n'
 
 /** The roles an invitation gives. Owner is never one: that role only moves through an ownership transfer. */
 export const INVITABLE_ROLES = ['Admin', 'Member', 'Guest'] as const
@@ -14,7 +15,7 @@ export function invitationRequest(
   channelIds: readonly string[],
   delivery: InvitationBody['delivery'],
 ): { body: InvitationBody } | { problem: string } {
-  if (role === 'Guest' && channelIds.length === 0) return { problem: 'Choose one or more channels for the guest.' }
+  if (role === 'Guest' && channelIds.length === 0) return { problem: i18n.t('settings:members.guestChannels.required') }
   const body: InvitationBody = { email, role: role === 'Admin' ? 'admin' : role === 'Guest' ? 'guest' : 'member', delivery }
   return { body: role === 'Guest' ? { ...body, conversation_ids: [...channelIds] } : body }
 }

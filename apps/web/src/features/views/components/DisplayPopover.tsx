@@ -144,7 +144,7 @@ export function DisplayPopover({ display, defaultDisplay, onChange, projectPage 
               onClick={() => onChange({ layout: 'timeline', group_by: 'milestone', ...(display.sub_group_by === 'milestone' && { sub_group_by: 'none' }) })}
             >
               <Diamonds className="size-3.5" aria-hidden="true" />
-              Milestone timeline
+              {t('display.milestoneTimeline')}
             </Button>
           ) : null}
         </div>

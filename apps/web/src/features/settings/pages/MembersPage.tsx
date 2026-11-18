@@ -1,5 +1,4 @@
 import { toast } from 'sonner'
-import { ApiProblem } from '@orbit/api/problem'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
 import { useMemo, useState, type ComponentProps } from 'react'
@@ -282,7 +281,7 @@ export function MembersPage() {
                           {/* a guest becomes a member (and joins the public channels); nobody becomes a guest */}
                           {user.can.changeRole && user.role === 'Guest' ? (
                             <DropdownMenuItem onClick={() => changeRole.mutate({ membershipId: user.membershipId, version: user.version, role: 'member' })}>
-                              Convert to member
+                              {t('members.convertToMember')}
                             </DropdownMenuItem>
                           ) : null}
                           {(user.can.changeRole && user.role !== 'Guest' ? (['Admin', 'Member'] as const) : []).filter((role) => role !== user.role).map((role) => (
@@ -297,15 +296,15 @@ export function MembersPage() {
                             <>
                               <DropdownMenuSeparator />
                               <DropdownMenuGroup>
-                                <DropdownMenuLabel>Custom role</DropdownMenuLabel>
+                                <DropdownMenuLabel>{t('members.customRole.label')}</DropdownMenuLabel>
                                 {customRoles.filter((role) => role.id !== user.customRole?.id).map((role) => (
                                   <DropdownMenuItem key={role.id} onClick={() => setCustomRole.mutate({ membershipId: user.membershipId, version: user.version, roleId: role.id })}>
-                                    Give {role.name}
+                                    {t('members.customRole.give', { name: role.name })}
                                   </DropdownMenuItem>
                                 ))}
                                 {user.customRole ? (
                                   <DropdownMenuItem onClick={() => setCustomRole.mutate({ membershipId: user.membershipId, version: user.version, roleId: null })}>
-                                    Remove custom role
+                                    {t('members.customRole.remove')}
                                   </DropdownMenuItem>
                                 ) : null}
                               </DropdownMenuGroup>
@@ -353,7 +352,7 @@ export function MembersPage() {
         {changeRole.isError ? <p role="alert" className="text-destructive">{t('members.roleChangeFailed')} <Button variant="ghost" onClick={() => changeRole.variables && changeRole.mutate(changeRole.variables)}>{t('retry')}</Button></p> : null}
         {removeMember.isError ? <p role="alert" className="text-destructive">{t('members.removeFailed')} <Button variant="ghost" onClick={() => removeMember.variables && removeMember.mutate(removeMember.variables)}>{t('retry')}</Button></p> : null}
         {transferOwnership.isError ? <p role="alert" className="text-destructive">{t('members.transferFailed')} <Button variant="ghost" onClick={() => transferOwnership.variables && transferOwnership.mutate(transferOwnership.variables)}>{t('retry')}</Button></p> : null}
-        {setCustomRole.isError ? <p role="alert" className="text-destructive">{setCustomRole.error instanceof ApiProblem ? setCustomRole.error.detail : 'The custom role could not be changed.'}</p> : null}
+        {setCustomRole.isError ? <p role="alert" className="text-destructive">{problemMessage(setCustomRole.error, t('members.customRole.failed'))}</p> : null}
         {memberSaving ? <p role="status">{t('members.saving')}</p> : null}
       </SettingsCard>
 

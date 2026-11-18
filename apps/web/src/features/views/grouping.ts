@@ -47,9 +47,9 @@ function bucketsFor(groupBy: GroupBy, ctx: GroupContext): Bucket[] {
     case 'project':
       return [...ctx.projects].sort(byName).map((project): Bucket => ({ value: project.id, label: project.name }))
     case 'milestone':
-      return [...[...ctx.milestones].sort((a, b) => a.position - b.position).map((milestone): Bucket => ({ value: milestone.id, label: milestone.name })), { value: null, label: 'No milestone' }]
+      return [...[...ctx.milestones].sort((a, b) => a.position - b.position).map((milestone): Bucket => ({ value: milestone.id, label: milestone.name })), { value: null, label: i18n.t('views:grouping.noMilestone') }]
     case 'cycle':
-      return [...[...ctx.cycles].sort((a, b) => a.starts_at.localeCompare(b.starts_at)).map((cycle): Bucket => ({ value: cycle.id, label: cycleName(cycle) })), { value: null, label: 'No cycle' }]
+      return [...[...ctx.cycles].sort((a, b) => a.starts_at.localeCompare(b.starts_at)).map((cycle): Bucket => ({ value: cycle.id, label: cycleName(cycle) })), { value: null, label: i18n.t('views:grouping.noCycle') }]
     case 'none':
       return [{ value: null, label: i18n.t('views:grouping.allTasks') }]
   }

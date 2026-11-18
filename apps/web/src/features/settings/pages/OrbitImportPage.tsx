@@ -1,4 +1,5 @@
 import { useRef, useState, type FormEvent, type ReactNode } from 'react'
+import { Trans, useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router'
 import { toast } from 'sonner'
 import { useQueryClient } from '@tanstack/react-query'
@@ -18,6 +19,7 @@ import { Label } from '@/components/ui/label'
 import { PasswordInput } from '@/components/ui/password-input'
 import { Spinner } from '@/components/ui/spinner'
 import { relativeTime } from '@/lib/format'
+import { i18n } from '@/i18n'
 import { useWorkspace } from '@/features/workspaces/workspaceContext'
 import { IMPORT_STATUS_LABELS, importStatusVariant, isActiveImport, isFinalImport } from '@/features/tasks/api/importStatus'
 import { ImportProgressBar, ImportStat } from '@/features/tasks/components/ImportLayout'
@@ -35,21 +37,21 @@ import {
 } from '@/features/settings/api/orbitImports'
 
 const ROOT = '/settings/import/orbit'
-const TITLE = 'Import from Orbit'
-
 const linkClass = 'text-primary underline underline-offset-2'
 
 function RunningLink({ error, running }: { error: unknown; running: OrbitImport | undefined }) {
+  const { t } = useTranslation('settings')
   if (!isOrbitImportInProgress(error) || !running) return null
   return (
     <Link className={linkClass} to={`${ROOT}/${running.id}`}>
-      Open the running import
+      {t('orbitImport.openRunning')}
     </Link>
   )
 }
 
 /** Step 1: the other instance's address and a token, or an export ZIP. Also lists the member's recent imports. */
 function ConnectStep({ workspaceId }: { workspaceId: string }) {
+  const { t } = useTranslation('settings')
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const imports = useOrbitImports(workspaceId)
@@ -108,17 +110,14 @@ function ConnectStep({ workspaceId }: { workspaceId: string }) {
 
   return (
     <>
-      <SettingsCard title={TITLE} description="Copy projects, pages and chats from another Orbit instance into this workspace. Nobody is notified.">
+      <SettingsCard title={t('orbitImport.title')} description={t('orbitImport.connect.description')}>
         <div className="flex flex-col gap-4 text-sm">
           <p className="text-muted-foreground">
-            On the other instance, open <span className="font-medium text-foreground">Settings → API tokens</span> and create a token
-            with <span className="font-medium text-foreground">Workspace export</span> (owners and administrators: the whole
-            workspace) or <span className="font-medium text-foreground">Personal export</span> (any member: your private pages,
-            channels and direct messages). Orbit keeps the token encrypted only until the export is downloaded.
+            <Trans t={t} i18nKey="orbitImport.connect.intro" components={{ b: <span className="font-medium text-foreground" /> }} />
           </p>
           <form className="flex flex-col gap-3" onSubmit={(event) => void submit(event)} autoComplete="off">
             <div className="grid gap-1.5">
-              <Label htmlFor="orbit-url">Instance address</Label>
+              <Label htmlFor="orbit-url">{t('orbitImport.connect.url')}</Label>
               <Input
                 id="orbit-url"
                 type="url"
@@ -131,7 +130,7 @@ function ConnectStep({ workspaceId }: { workspaceId: string }) {
               />
             </div>
             <div className="grid gap-1.5">
-              <Label htmlFor="orbit-token">API token</Label>
+              <Label htmlFor="orbit-token">{t('orbitImport.connect.token')}</Label>
               <PasswordInput
                 id="orbit-token"
                 name="orbit-token"
@@ -151,25 +150,25 @@ function ConnectStep({ workspaceId }: { workspaceId: string }) {
             <div>
               <Button type="submit" disabled={!url.trim() || !token.trim() || pending}>
                 {pending ? <Spinner className="size-4" /> : null}
-                Connect
+                {t('orbitImport.connect.submit')}
               </Button>
             </div>
           </form>
         </div>
       </SettingsCard>
-      <SettingsCard title="Or upload an export" description="Download an export ZIP on the other instance in Settings → Export and upload it here.">
+      <SettingsCard title={t('orbitImport.upload.title')} description={t('orbitImport.upload.description')}>
         <div className="flex flex-col gap-3 text-sm">
           {upload ? (
             <div className="flex flex-col gap-2" role="status" aria-live="polite">
               <div className="flex items-center gap-2">
                 <Spinner className="size-4 text-muted-foreground" />
-                <span className="min-w-0 flex-1 truncate text-foreground">Uploading {upload.name}…</span>
+                <span className="min-w-0 flex-1 truncate text-foreground">{t('orbitImport.upload.uploading', { name: upload.name })}</span>
                 <span className="shrink-0 text-muted-foreground tabular-nums">{Math.round(upload.fraction * 100)}%</span>
               </div>
               <ImportProgressBar done={Math.round(upload.fraction * 100)} total={100} />
               <div>
                 <Button type="button" variant="outline" size="sm" onClick={() => upload.controller.abort()}>
-                  Cancel upload
+                  {t('orbitImport.upload.cancel')}
                 </Button>
               </div>
             </div>
@@ -180,12 +179,12 @@ function ConnectStep({ workspaceId }: { workspaceId: string }) {
                 type="file"
                 accept=".zip,application/zip"
                 className="hidden"
-                aria-label="Export .zip file"
+                aria-label={t('orbitImport.upload.fileAria')}
                 onChange={(event) => void send(event.target.files?.[0])}
               />
               <Button type="button" variant="outline" onClick={() => input.current?.click()}>
                 <DocumentUpload className="size-4" />
-                Choose file
+                {t('orbitImport.upload.choose')}
               </Button>
             </div>
           )}
@@ -202,9 +201,10 @@ function ConnectStep({ workspaceId }: { workspaceId: string }) {
 }
 
 function RecentImports({ imports }: { imports: OrbitImport[] | undefined }) {
+  const { t } = useTranslation('settings')
   if (!imports?.length) return null
   return (
-    <SettingsCard title="Recent imports" flush>
+    <SettingsCard title={t('orbitImport.recent.title')} flush>
       <div className="flex flex-col divide-y">
         {imports.map((item) => (
           <Link
@@ -213,7 +213,7 @@ function RecentImports({ imports }: { imports: OrbitImport[] | undefined }) {
             className="flex min-h-10 min-w-0 items-center gap-3 px-4 py-1.5 text-[0.8125rem] transition-colors duration-150 ease-out hover:bg-sidebar-accent/50"
           >
             <span className="min-w-0 flex-1 truncate text-foreground">{orbitImportName(item)}</span>
-            {item.mode ? <span className="shrink-0 text-xs text-muted-foreground">{item.mode === 'full' ? 'Workspace' : 'Private data'}</span> : null}
+            {item.mode ? <span className="shrink-0 text-xs text-muted-foreground">{item.mode === 'full' ? t('orbitImport.recent.modeFull') : t('orbitImport.recent.modePersonal')}</span> : null}
             <Badge variant={importStatusVariant(item.status)}>{IMPORT_STATUS_LABELS[item.status]}</Badge>
             <span className="w-12 shrink-0 text-right text-xs text-muted-foreground" title={new Date(item.created_at).toLocaleString()}>
               {relativeTime(item.created_at)}
@@ -226,15 +226,14 @@ function RecentImports({ imports }: { imports: OrbitImport[] | undefined }) {
 }
 
 function useCancel(workspaceId: string, item: OrbitImport) {
+  const { t } = useTranslation('settings')
   const cancel = useCancelOrbitImport(workspaceId)
   const request = async (started: boolean) => {
     const confirmed = await confirmAction({
-      title: started ? 'Cancel the import?' : 'Cancel this import?',
-      description: started
-        ? 'What was already imported stays. The import stops before the next item.'
-        : 'Orbit deletes the token and the export. You can start a new import at any time.',
-      confirmLabel: 'Cancel import',
-      cancelLabel: 'Keep going',
+      title: started ? t('orbitImport.cancelConfirm.titleStarted') : t('orbitImport.cancelConfirm.title'),
+      description: started ? t('orbitImport.cancelConfirm.descriptionStarted') : t('orbitImport.cancelConfirm.description'),
+      confirmLabel: t('orbitImport.cancelConfirm.confirm'),
+      cancelLabel: t('orbitImport.cancelConfirm.keepGoing'),
       danger: true,
     })
     if (!confirmed) return
@@ -245,16 +244,17 @@ function useCancel(workspaceId: string, item: OrbitImport) {
 
 /** Step 2: the other instance exports, Orbit downloads the ZIP and reads it. */
 function WaitingStep({ workspaceId, item }: { workspaceId: string; item: OrbitImport }) {
+  const { t } = useTranslation('settings')
   const cancel = useCancel(workspaceId, item)
   const { headline, text } = orbitImportPhaseText(item)
   return (
-    <SettingsCard title={TITLE}>
+    <SettingsCard title={t('orbitImport.title')}>
       <div className="flex flex-col items-center gap-3 py-12 text-center" role="status" aria-live="polite">
         <Spinner className="size-6 text-muted-foreground" />
         <p className="text-sm font-medium text-foreground">{headline}</p>
         <p className="max-w-sm text-sm text-muted-foreground">{text}</p>
         <Button type="button" variant="outline" size="sm" disabled={cancel.pending} onClick={() => void cancel.request(false)}>
-          Cancel
+          {t('cancel')}
         </Button>
       </div>
     </SettingsCard>
@@ -263,12 +263,13 @@ function WaitingStep({ workspaceId, item }: { workspaceId: string; item: OrbitIm
 
 type Choice = { id: string; name: string; label?: ReactNode; count: string }
 
-function plural(count: number, one: string, many: string) {
-  return `${count} ${count === 1 ? one : many}`
+function plural(count: number, unit: 'tasks' | 'pages' | 'messages') {
+  return i18n.t(`settings:orbitImport.counts.${unit}`, { count })
 }
 
 /** One group of checkboxes with a "select all" checkbox in its header. */
 function ChoiceGroup({ title, choices, selected, onChange }: { title: string; choices: Choice[]; selected: ReadonlySet<string>; onChange: (next: ReadonlySet<string>) => void }) {
+  const { t } = useTranslation('settings')
   if (choices.length === 0) return null
   const chosen = choices.filter((choice) => selected.has(choice.id)).length
   const all = chosen === choices.length
@@ -284,7 +285,7 @@ function ChoiceGroup({ title, choices, selected, onChange }: { title: string; ch
     <section className="flex flex-col gap-1" aria-label={title}>
       <div className="flex h-8 items-center gap-2 px-2">
         <Checkbox
-          aria-label={`Select all ${title.toLowerCase()}`}
+          aria-label={t('orbitImport.choose.selectAll', { group: title.toLowerCase() })}
           checked={all}
           indeterminate={chosen > 0 && !all}
           onCheckedChange={() => toggle(choices.map((choice) => choice.id), !all)}
@@ -296,7 +297,7 @@ function ChoiceGroup({ title, choices, selected, onChange }: { title: string; ch
           key={choice.id}
           className="flex h-8 items-center gap-2 rounded-md px-2 pl-8 text-[0.8125rem] text-foreground transition-colors duration-150 ease-out hover:bg-sidebar-accent/50"
         >
-          <Checkbox aria-label={`Select ${choice.name}`} checked={selected.has(choice.id)} onCheckedChange={(checked) => toggle([choice.id], checked)} />
+          <Checkbox aria-label={t('orbitImport.choose.select', { name: choice.name })} checked={selected.has(choice.id)} onCheckedChange={(checked) => toggle([choice.id], checked)} />
           {/* Clicking the name toggles the row, like the checkbox (the checkbox is the keyboard control). */}
           <button type="button" tabIndex={-1} className="min-w-0 flex-1 truncate text-left" onClick={() => toggle([choice.id], !selected.has(choice.id))}>
             {choice.label ?? choice.name}
@@ -310,6 +311,7 @@ function ChoiceGroup({ title, choices, selected, onChange }: { title: string; ch
 
 /** Step 3: everything starts selected. A personal import has only private pages and channels. */
 function Chooser({ workspaceId, item, tree }: { workspaceId: string; item: OrbitImport; tree: OrbitImportTree }) {
+  const { t } = useTranslation('settings')
   const full = item.mode === 'full'
   const initial = fullSelection(item.mode, tree)
   const [projects, setProjects] = useState<ReadonlySet<string>>(() => new Set(initial.project_ids))
@@ -329,11 +331,11 @@ function Chooser({ workspaceId, item, tree }: { workspaceId: string; item: Orbit
   return (
     <div className="flex flex-col">
       <div className="flex flex-col gap-3 p-2">
-        {nothing ? <p className="p-2 text-sm text-muted-foreground">This export has nothing to import.</p> : null}
+        {nothing ? <p className="p-2 text-sm text-muted-foreground">{t('orbitImport.choose.nothing')}</p> : null}
         {full ? (
           <>
             <ChoiceGroup
-              title="Projects"
+              title={t('orbitImport.choose.projects')}
               selected={projects}
               onChange={setProjects}
               choices={tree.projects.map((project) => ({
@@ -345,30 +347,30 @@ function Chooser({ workspaceId, item, tree }: { workspaceId: string; item: Orbit
                     {project.key ? <span className="text-muted-foreground"> · {project.key}</span> : null}
                   </>
                 ),
-                count: plural(project.task_count, 'task', 'tasks'),
+                count: plural(project.task_count, 'tasks'),
               }))}
             />
             <ChoiceGroup
-              title="Teamspaces"
+              title={t('orbitImport.choose.teamspaces')}
               selected={teamspaces}
               onChange={setTeamspaces}
-              choices={tree.teamspaces.map((teamspace) => ({ id: teamspace.id, name: teamspace.name, count: plural(teamspace.page_count, 'page', 'pages') }))}
+              choices={tree.teamspaces.map((teamspace) => ({ id: teamspace.id, name: teamspace.name, count: plural(teamspace.page_count, 'pages') }))}
             />
           </>
         ) : null}
         {tree.private_page_count > 0 ? (
           <div className="flex h-8 items-center gap-2 rounded-md px-2 text-[0.8125rem] text-foreground transition-colors duration-150 ease-out hover:bg-sidebar-accent/50">
-            <Checkbox aria-label="Import my private pages" checked={privatePages} onCheckedChange={setPrivatePages} />
+            <Checkbox aria-label={t('orbitImport.choose.privatePagesAria')} checked={privatePages} onCheckedChange={setPrivatePages} />
             <button type="button" tabIndex={-1} className="min-w-0 flex-1 truncate text-left text-xs font-semibold" onClick={() => setPrivatePages(!privatePages)}>
-              My private pages
+              {t('orbitImport.choose.privatePages')}
             </button>
-            <span className="shrink-0 text-xs text-muted-foreground tabular-nums">{plural(tree.private_page_count, 'page', 'pages')}</span>
+            <span className="shrink-0 text-xs text-muted-foreground tabular-nums">{plural(tree.private_page_count, 'pages')}</span>
           </div>
         ) : null}
         {CHANNEL_GROUPS.map((group) => (
           <ChoiceGroup
             key={group.kind}
-            title={group.label}
+            title={t(`orbitImport.choose.channelGroups.${group.kind}`)}
             selected={channels}
             onChange={setChannels}
             choices={tree.channels
@@ -376,7 +378,7 @@ function Chooser({ workspaceId, item, tree }: { workspaceId: string; item: Orbit
               .map((channel) => ({
                 id: channel.id,
                 name: group.kind === 'dm' ? channel.name : `#${channel.name}`,
-                count: plural(channel.message_count, 'message', 'messages'),
+                count: plural(channel.message_count, 'messages'),
               }))}
           />
         ))}
@@ -384,8 +386,8 @@ function Chooser({ workspaceId, item, tree }: { workspaceId: string; item: Orbit
       <div className="flex flex-wrap items-center gap-3 border-t border-border px-4 py-3">
         <p className="min-w-0 flex-1 text-xs text-muted-foreground">
           {full
-            ? 'Projects keep their tasks, comments and files; teamspaces keep their pages. Items imported before are skipped. Nobody is notified.'
-            : 'Your private pages stay private, and channels keep their messages and files. Items imported before are skipped. Nobody is notified.'}
+            ? t('orbitImport.choose.hintFull')
+            : t('orbitImport.choose.hintPersonal')}
         </p>
         <div className="flex flex-col items-end gap-1.5">
           {start.isError ? (
@@ -394,7 +396,7 @@ function Chooser({ workspaceId, item, tree }: { workspaceId: string; item: Orbit
             </p>
           ) : null}
           <Button type="button" disabled={empty || start.isPending} onClick={() => start.mutate({ importId: item.id, selection })}>
-            Import
+            {t('orbitImport.choose.submit')}
           </Button>
         </div>
       </div>
@@ -403,15 +405,16 @@ function Chooser({ workspaceId, item, tree }: { workspaceId: string; item: Orbit
 }
 
 function ChooseStep({ workspaceId, item }: { workspaceId: string; item: OrbitImport }) {
+  const { t } = useTranslation('settings')
   const cancel = useCancel(workspaceId, item)
   const scan = useOrbitImportTree(workspaceId, item.id)
   return (
     <SettingsCard
-      title={`Choose what to import from ${orbitImportName(item)}`}
+      title={t('orbitImport.choose.title', { name: orbitImportName(item) })}
       flush
       actions={
         <Button type="button" variant="ghost" size="sm" disabled={cancel.pending} onClick={() => void cancel.request(false)}>
-          Cancel
+          {t('cancel')}
         </Button>
       }
     >
@@ -419,9 +422,9 @@ function ChooseStep({ workspaceId, item }: { workspaceId: string; item: OrbitImp
         <Chooser workspaceId={workspaceId} item={item} tree={scan.data} />
       ) : scan.isError || scan.isSuccess ? (
         <div className="flex flex-col items-center gap-3 p-6 text-center" role="alert">
-          <p className="text-sm text-muted-foreground">{scan.isError ? orbitImportErrorMessage(scan.error) : 'The export contents are not available.'}</p>
+          <p className="text-sm text-muted-foreground">{scan.isError ? orbitImportErrorMessage(scan.error) : t('orbitImport.choose.unavailable')}</p>
           <Button type="button" variant="outline" size="sm" onClick={() => void scan.refetch()}>
-            Retry
+            {t('retry')}
           </Button>
         </div>
       ) : (
@@ -435,27 +438,26 @@ function ChooseStep({ workspaceId, item }: { workspaceId: string; item: OrbitImp
 
 /** Step 4: the import job runs. */
 function ImportingStep({ workspaceId, item }: { workspaceId: string; item: OrbitImport }) {
+  const { t } = useTranslation('settings')
   const cancel = useCancel(workspaceId, item)
   const { done, total, failed } = item.progress
   return (
-    <SettingsCard title={TITLE}>
+    <SettingsCard title={t('orbitImport.title')}>
       <section className="flex flex-col gap-4" role="status" aria-live="polite">
         <div className="flex items-center gap-2">
           <Spinner className="size-4 text-muted-foreground" />
-          <p className="text-sm font-medium text-foreground">{item.status === 'queued' ? 'Waiting for the import to start…' : 'Importing…'}</p>
+          <p className="text-sm font-medium text-foreground">{item.status === 'queued' ? t('orbitImport.importing.waiting') : t('orbitImport.importing.running')}</p>
         </div>
         <ImportProgressBar done={done + failed} total={total} />
         <div className="flex items-center gap-4 text-sm text-muted-foreground">
-          <span>
-            {done} of {total} items imported
-          </span>
-          {failed > 0 ? <span className="text-destructive">{failed} failed</span> : null}
+          <span>{t('orbitImport.importing.progress', { done, total })}</span>
+          {failed > 0 ? <span className="text-destructive">{t('orbitImport.importing.failed', { count: failed })}</span> : null}
           <span className="flex-1" />
           <Button type="button" variant="outline" size="sm" disabled={cancel.pending} onClick={() => void cancel.request(true)}>
-            Cancel import
+            {t('orbitImport.cancelConfirm.confirm')}
           </Button>
         </div>
-        <p className="text-sm text-muted-foreground">You can leave this page; the import continues on the server.</p>
+        <p className="text-sm text-muted-foreground">{t('orbitImport.importing.leave')}</p>
       </section>
     </SettingsCard>
   )
@@ -463,18 +465,25 @@ function ImportingStep({ workspaceId, item }: { workspaceId: string; item: Orbit
 
 function copyImportLink() {
   void navigator.clipboard.writeText(`${window.location.origin}${ROOT}`).then(
-    () => toast('Link copied'),
-    () => toast.error('Could not copy the link.'),
+    () => toast(i18n.t('settings:orbitImport.result.linkCopied')),
+    () => toast.error(i18n.t('settings:orbitImport.result.linkCopyFailed')),
   )
 }
 
 /** Step 5: completed, failed, cancelled or expired. */
 function ResultStep({ item }: { item: OrbitImport }) {
+  const { t } = useTranslation('settings')
   const report = item.report
   const headline =
-    item.status === 'completed' ? 'Import complete' : item.status === 'failed' ? 'Import failed' : item.status === 'cancelled' ? 'Import cancelled' : 'Import expired'
+    item.status === 'completed'
+      ? t('orbitImport.result.completed')
+      : item.status === 'failed'
+        ? t('orbitImport.result.failed')
+        : item.status === 'cancelled'
+          ? t('orbitImport.result.cancelled')
+          : t('orbitImport.result.expired')
   return (
-    <SettingsCard title={TITLE}>
+    <SettingsCard title={t('orbitImport.title')}>
       <div className="flex flex-col gap-6">
         <section className="flex flex-col gap-3">
           <div className="flex items-center gap-2">
@@ -489,24 +498,22 @@ function ResultStep({ item }: { item: OrbitImport }) {
         </section>
         {report ? (
           <div className="grid grid-cols-3 gap-2 max-[599px]:grid-cols-2">
-            <ImportStat label="Projects" value={report.created.projects ?? 0} />
-            <ImportStat label="Tasks" value={report.created.tasks ?? 0} />
-            <ImportStat label="Pages" value={report.created.pages ?? 0} />
-            <ImportStat label="Channels" value={report.created.channels ?? 0} />
-            <ImportStat label="Messages" value={report.created.messages ?? 0} />
-            <ImportStat label="Files" value={report.created.files ?? 0} />
+            <ImportStat label={t('orbitImport.result.projects')} value={report.created.projects ?? 0} />
+            <ImportStat label={t('orbitImport.result.tasks')} value={report.created.tasks ?? 0} />
+            <ImportStat label={t('orbitImport.result.pages')} value={report.created.pages ?? 0} />
+            <ImportStat label={t('orbitImport.result.channels')} value={report.created.channels ?? 0} />
+            <ImportStat label={t('orbitImport.result.messages')} value={report.created.messages ?? 0} />
+            <ImportStat label={t('orbitImport.result.files')} value={report.created.files ?? 0} />
           </div>
         ) : null}
         {report && report.skipped_existing > 0 ? (
-          <p className="text-sm text-foreground">
-            {plural(report.skipped_existing, 'item was', 'items were')} imported before and skipped.
-          </p>
+          <p className="text-sm text-foreground">{t('orbitImport.result.skipped', { count: report.skipped_existing })}</p>
         ) : null}
         {report && report.unmatched_users.length > 0 ? (
-          <section className="flex flex-col gap-2" aria-label="Unmatched people">
+          <section className="flex flex-col gap-2" aria-label={t('orbitImport.result.unmatchedAria')}>
             <TitleTip
-              title="People with no member here"
-              text="No member here has their email, so their tasks are unassigned."
+              title={t('orbitImport.result.unmatchedTitle')}
+              text={t('orbitImport.result.unmatchedHint')}
               className="text-xs font-medium text-muted-foreground"
             />
             <ul className="flex flex-col border-t border-border">
@@ -520,13 +527,13 @@ function ResultStep({ item }: { item: OrbitImport }) {
           </section>
         ) : null}
         {report && report.failures.length > 0 ? (
-          <section className="flex flex-col gap-2" aria-label="Failed items">
-            <h3 className="text-xs font-medium text-muted-foreground">Not imported</h3>
+          <section className="flex flex-col gap-2" aria-label={t('orbitImport.result.failuresAria')}>
+            <h3 className="text-xs font-medium text-muted-foreground">{t('orbitImport.result.failuresTitle')}</h3>
             <ul className="flex flex-col border-t border-border">
               {report.failures.map((failure, index) => (
                 <li key={`${failure.kind}-${index}`} className="flex flex-col gap-0.5 border-b border-border px-1 py-2">
                   <span className="text-[0.8125rem] text-foreground">
-                    {failure.title.trim() ? failure.title : 'Untitled'}
+                    {failure.title.trim() ? failure.title : t('orbitImport.result.untitled')}
                     <span className="text-muted-foreground"> ({failure.kind})</span>
                   </span>
                   <span className="text-xs text-muted-foreground">{failure.error}</span>
@@ -536,14 +543,12 @@ function ResultStep({ item }: { item: OrbitImport }) {
           </section>
         ) : null}
         {report?.members_must_import_private && item.status === 'completed' ? (
-          <section className="flex flex-col gap-2 rounded-lg border border-border p-3" aria-label="Private data">
-            <p className="text-sm text-foreground">
-              Other members’ private pages and chats are not included. Each member must import them with their own token.
-            </p>
+          <section className="flex flex-col gap-2 rounded-lg border border-border p-3" aria-label={t('orbitImport.result.privateAria')}>
+            <p className="text-sm text-foreground">{t('orbitImport.result.privateNote')}</p>
             <div>
               <Button type="button" variant="outline" size="sm" onClick={copyImportLink}>
                 <Copy className="size-4" />
-                Copy link for members
+                {t('orbitImport.result.copyLink')}
               </Button>
             </div>
           </section>
@@ -551,7 +556,7 @@ function ResultStep({ item }: { item: OrbitImport }) {
         <div>
           <Link className={buttonVariants({ variant: 'outline' })} to={ROOT}>
             <Import className="size-4" />
-            Import more
+            {t('orbitImport.result.importMore')}
           </Link>
         </div>
       </div>
@@ -564,6 +569,7 @@ function ResultStep({ item }: { item: OrbitImport }) {
  * states). The URL survives reloads during a long import.
  */
 export function OrbitImportPage() {
+  const { t } = useTranslation('settings')
   const { workspace } = useWorkspace()
   const { importId } = useParams()
   const query = useOrbitImport(workspace.id, importId)
@@ -578,17 +584,17 @@ export function OrbitImportPage() {
   if (query.isError) {
     const missing = query.error instanceof ApiProblem && query.error.status === 404
     return (
-      <SettingsCard title={missing ? 'Import not found' : 'Import unavailable'}>
+      <SettingsCard title={missing ? t('orbitImport.notFound.title') : t('orbitImport.unavailable.title')}>
         <div className="flex flex-col gap-3 text-sm">
-          <p className="text-muted-foreground">{missing ? 'This import does not exist or belongs to someone else.' : 'The server could not load this import.'}</p>
+          <p className="text-muted-foreground">{missing ? t('orbitImport.notFound.text') : t('orbitImport.unavailable.text')}</p>
           <div className="flex gap-2">
             {missing ? null : (
               <Button type="button" variant="outline" onClick={() => void query.refetch()}>
-                Retry
+                {t('retry')}
               </Button>
             )}
             <Link className={buttonVariants({ variant: 'outline' })} to={ROOT}>
-              New import
+              {t('orbitImport.newImport')}
             </Link>
           </div>
         </div>

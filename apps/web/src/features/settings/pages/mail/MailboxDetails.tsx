@@ -1,5 +1,6 @@
 import { useId, useState, type FormEvent } from 'react'
 import { toast } from 'sonner'
+import { useTranslation } from 'react-i18next'
 import type { MailDomain, MailMailbox } from '@orbit/api/generated/types.gen'
 import { confirmAction } from '@/components/common/confirmAction'
 import { Badge } from '@/components/ui/badge'
@@ -24,6 +25,7 @@ const failed = (fallback: string) => (error: unknown) => toast.error(mailProblem
 
 /** One mailbox opened from the list: name, addresses, members, suspend and delete. */
 export function MailboxDetails({ mailbox, domains, members }: { mailbox: MailMailbox; domains: MailDomain[]; members: User[] }) {
+  const { t } = useTranslation('settings')
   const ids = useId()
   const rename = useUpdateMailbox()
   const addAlias = useAddMailboxAlias()
@@ -43,7 +45,7 @@ export function MailboxDetails({ mailbox, domains, members }: { mailbox: MailMai
     event.preventDefault()
     const trimmed = name.trim()
     if (!trimmed || trimmed === mailbox.name) return
-    rename.mutate({ mailboxId: mailbox.id, name: trimmed }, { onSuccess: () => toast('Mailbox renamed'), onError: failed('The mailbox could not be renamed.') })
+    rename.mutate({ mailboxId: mailbox.id, name: trimmed }, { onSuccess: () => toast(t('mail.mailboxDetails.renamed')), onError: failed(t('mail.mailboxDetails.renameFailed')) })
   }
 
   function submitAlias(event: FormEvent) {
@@ -51,7 +53,7 @@ export function MailboxDetails({ mailbox, domains, members }: { mailbox: MailMai
     if (!aliasLocal || !aliasDomain) return
     addAlias.mutate({ mailboxId: mailbox.id, local_part: aliasLocal, domain_id: aliasDomain }, {
       onSuccess: () => setAliasLocal(''),
-      onError: failed('The alias could not be added.'),
+      onError: failed(t('mail.mailboxDetails.aliasAddFailed')),
     })
   }
 
@@ -62,47 +64,47 @@ export function MailboxDetails({ mailbox, domains, members }: { mailbox: MailMai
     const membershipOf = (userId: string) => members.find((member) => member.id === userId)?.membershipId
     const addedMembership = added ? membershipOf(added) : undefined
     const removedMembership = removed ? membershipOf(removed) : undefined
-    if (addedMembership) addMember.mutate({ mailboxId: mailbox.id, membershipId: addedMembership }, { onError: failed('The member could not be added.') })
-    if (removedMembership) removeMember.mutate({ mailboxId: mailbox.id, membershipId: removedMembership }, { onError: failed('The member could not be removed.') })
+    if (addedMembership) addMember.mutate({ mailboxId: mailbox.id, membershipId: addedMembership }, { onError: failed(t('mail.mailboxDetails.memberAddFailed')) })
+    if (removedMembership) removeMember.mutate({ mailboxId: mailbox.id, membershipId: removedMembership }, { onError: failed(t('mail.mailboxDetails.memberRemoveFailed')) })
   }
 
   async function deleteMailbox() {
     const confirmed = await confirmAction({
-      title: `Delete ${mailbox.name}?`,
-      description: 'Its addresses stop receiving mail and its threads are deleted for every member. You cannot undo this.',
-      confirmLabel: 'Delete',
+      title: t('mail.mailboxDetails.deleteTitle', { name: mailbox.name }),
+      description: t('mail.mailboxDetails.deleteDescription'),
+      confirmLabel: t('delete'),
       danger: true,
     })
-    if (confirmed) remove.mutate(mailbox.id, { onSuccess: () => toast(`${mailbox.name} deleted`), onError: failed('The mailbox could not be deleted.') })
+    if (confirmed) remove.mutate(mailbox.id, { onSuccess: () => toast(t('mail.mailboxDetails.deleted', { name: mailbox.name })), onError: failed(t('mail.mailboxDetails.deleteFailed')) })
   }
 
   return (
     <div className="flex flex-col gap-5 border-t bg-muted/30 px-4 py-4">
       <form className="flex flex-wrap items-end gap-2" onSubmit={saveName}>
         <Field className="w-64">
-          <FieldLabel htmlFor={`${ids}-name`}>Name</FieldLabel>
+          <FieldLabel htmlFor={`${ids}-name`}>{t('mail.mailboxDetails.name')}</FieldLabel>
           <Input id={`${ids}-name`} maxLength={80} value={name} onChange={(event) => setName(event.target.value)} />
         </Field>
-        <Button type="submit" variant="outline" disabled={!name.trim() || name.trim() === mailbox.name || rename.isPending}>Rename</Button>
+        <Button type="submit" variant="outline" disabled={!name.trim() || name.trim() === mailbox.name || rename.isPending}>{t('mail.mailboxDetails.rename')}</Button>
       </form>
 
-      <section aria-label="Addresses" className="flex flex-col gap-2">
-        <h4 className="text-xs font-medium text-muted-foreground">Addresses</h4>
+      <section aria-label={t('mail.mailboxDetails.addresses')} className="flex flex-col gap-2">
+        <h4 className="text-xs font-medium text-muted-foreground">{t('mail.mailboxDetails.addresses')}</h4>
         <ul className="flex flex-col gap-1">
           {mailbox.addresses.map((address) => (
             <li key={address.id} className="flex items-center gap-2 text-[0.8125rem]">
               <span className="min-w-0 truncate font-mono text-xs">{address.address}</span>
-              <Badge variant={address.kind === 'primary' ? 'secondary' : 'outline'}>{address.kind === 'primary' ? 'Primary' : 'Alias'}</Badge>
+              <Badge variant={address.kind === 'primary' ? 'secondary' : 'outline'}>{address.kind === 'primary' ? t('mail.mailboxDetails.primary') : t('mail.mailboxDetails.alias')}</Badge>
               {address.kind === 'alias' ? (
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
-                  aria-label={`Remove ${address.address}`}
+                  aria-label={t('mail.mailboxDetails.removeAria', { address: address.address })}
                   disabled={removeAddress.isPending}
-                  onClick={() => removeAddress.mutate({ mailboxId: mailbox.id, addressId: address.id }, { onError: failed('The alias could not be removed.') })}
+                  onClick={() => removeAddress.mutate({ mailboxId: mailbox.id, addressId: address.id }, { onError: failed(t('mail.mailboxDetails.aliasRemoveFailed')) })}
                 >
-                  Remove
+                  {t('remove')}
                 </Button>
               ) : null}
             </li>
@@ -110,19 +112,19 @@ export function MailboxDetails({ mailbox, domains, members }: { mailbox: MailMai
         </ul>
         <form className="flex flex-wrap items-center gap-2" onSubmit={submitAlias}>
           <AddressFields id={`${ids}-alias`} localPart={aliasLocal} domainId={aliasDomain} domains={domains} onLocalPart={setAliasLocal} onDomain={setAliasDomain} />
-          <Button type="submit" variant="outline" disabled={!aliasLocal || !aliasDomain || addAlias.isPending}>Add alias</Button>
+          <Button type="submit" variant="outline" disabled={!aliasLocal || !aliasDomain || addAlias.isPending}>{t('mail.mailboxDetails.addAlias')}</Button>
         </form>
       </section>
 
-      <section aria-label="Members" className="flex flex-col gap-2">
-        <h4 className="text-xs font-medium text-muted-foreground">{mailbox.kind === 'personal' ? 'Owner' : 'Members'}</h4>
+      <section aria-label={t('mail.mailboxDetails.members')} className="flex flex-col gap-2">
+        <h4 className="text-xs font-medium text-muted-foreground">{mailbox.kind === 'personal' ? t('mail.mailboxDetails.owner') : t('mail.mailboxDetails.members')}</h4>
         {mailbox.kind === 'shared' ? (
           <div className="max-w-md">
-            <MemberPicker label={`Members of ${mailbox.name}`} people={members} selectedIds={readerIds} onChange={changeReaders} />
+            <MemberPicker label={t('mail.mailboxDetails.membersOf', { name: mailbox.name })} people={members} selectedIds={readerIds} onChange={changeReaders} />
           </div>
         ) : (
           <p className="m-0 text-[0.8125rem]">
-            {ownerLeft ? 'The owner left the workspace. The mailbox refuses mail and nobody reads it; delete it when it is no longer needed.' : (owner ? `${owner.name} (${owner.email}). Only the owner reads a personal mailbox.` : 'A former member.')}
+            {ownerLeft ? t('mail.mailboxDetails.ownerLeft') : (owner ? t('mail.mailboxDetails.ownerOnly', { name: owner.name, email: owner.email }) : t('mail.mailboxDetails.formerMember'))}
           </p>
         )}
       </section>
@@ -134,17 +136,17 @@ export function MailboxDetails({ mailbox, domains, members }: { mailbox: MailMai
             variant="outline"
             disabled={setStatus.isPending}
             onClick={() => setStatus.mutate({ mailboxId: mailbox.id, status: mailbox.status === 'active' ? 'suspended' : 'active' }, {
-              onSuccess: (updated) => toast(updated.status === 'active' ? 'Mailbox resumed' : 'Mailbox suspended'),
-              onError: failed('The mailbox could not be changed.'),
+              onSuccess: (updated) => toast(updated.status === 'active' ? t('mail.mailboxDetails.resumed') : t('mail.mailboxDetails.suspended')),
+              onError: failed(t('mail.mailboxDetails.changeFailed')),
             })}
           >
-            {mailbox.status === 'active' ? 'Suspend' : 'Resume'}
+            {mailbox.status === 'active' ? t('mail.mailboxDetails.suspend') : t('mail.mailboxDetails.resume')}
           </Button>
         )}
         <span className="flex-1 text-xs text-muted-foreground">
-          {mailbox.status === 'active' ? 'A suspended mailbox refuses new mail; its threads stay readable.' : 'Suspended: new mail is refused.'}
+          {mailbox.status === 'active' ? t('mail.mailboxDetails.suspendHint') : t('mail.mailboxDetails.suspendedHint')}
         </span>
-        <Button type="button" variant="ghost" className="text-destructive" disabled={remove.isPending} onClick={() => void deleteMailbox()}>Delete mailbox</Button>
+        <Button type="button" variant="ghost" className="text-destructive" disabled={remove.isPending} onClick={() => void deleteMailbox()}>{t('mail.mailboxDetails.delete')}</Button>
       </div>
     </div>
   )

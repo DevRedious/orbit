@@ -45,6 +45,21 @@ export default {
     removeFailed: 'Member removal failed.',
     transferFailed: 'Ownership transfer failed.',
     saving: 'Saving member change…',
+    convertToMember: 'Convert to member',
+    customRole: {
+      label: 'Custom role',
+      give: 'Give {{name}}',
+      remove: 'Remove custom role',
+      failed: 'The custom role could not be changed.',
+    },
+    guestChannels: {
+      label: 'Channels',
+      hint: 'A guest sees only these private channels and the people in them.',
+      loading: 'Loading channels…',
+      loadFailed: 'Channels could not be loaded.',
+      none: 'You are in no private channel. Make one in Chat first.',
+      required: 'Choose one or more channels for the guest.',
+    },
     invite: {
       title: 'Invite a member',
       description: 'Create a reusable invitation link or deliver it by email.',
@@ -78,6 +93,12 @@ export default {
       description: 'Create a personal token, or select a non-login service account for an integration. The secret is shown only once.',
       name: 'Name',
       namePlaceholder: 'Discord bot',
+      exportNamePlaceholder: 'Orbit import',
+      /** `kind`: the description of the chosen token type. */
+      exportDescription: "{{kind}} Paste it with this workspace's URL in the other instance. The secret is shown only once.",
+      kind: 'Token type',
+      importMode: 'Import mode',
+      importModeHint: 'Keeps original dates, numbers and authors. Sends no notifications.',
       expiration: 'Expiration',
       serviceAccount: 'Use a service account',
       serviceAccountHint: 'For bots, such as a Discord bot. Changes show as made by this account, not by you. Tokens with the same name share one account.',
@@ -88,6 +109,20 @@ export default {
       copyNow: 'Copy this token now. You cannot see it again.',
       tokenCopied: 'Token copied',
       copyFailed: 'Could not copy the token.',
+    },
+    kinds: {
+      access: {
+        label: 'Tasks, docs and chat',
+        description: 'For scripts, bots and AI clients.',
+      },
+      workspaceExport: {
+        label: 'Workspace export',
+        description: 'Lets another Orbit instance import this workspace as you see it: tasks, docs, chat and files.',
+      },
+      personalExport: {
+        label: 'Personal export',
+        description: 'Lets another Orbit instance import only your private docs, your private channels and your DMs.',
+      },
     },
     expirationOptions: {
       never: 'Never expires',

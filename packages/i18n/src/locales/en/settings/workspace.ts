@@ -3,6 +3,8 @@ export default {
   retry: 'Retry',
   cancel: 'Cancel',
   nav: {
+    /** Phone: the link from a settings page back to its area's menu. */
+    backTo: 'Back to {{title}}',
     areas: {
       settings: 'Settings',
       profile: 'Account settings',
@@ -93,6 +95,29 @@ export default {
   import: {
     title: 'Import',
     from: 'Import from {{name}}',
+    sources: {
+      notion: 'Import pages and databases into Docs.',
+      obsidian: 'Import a vault (.zip) into Docs.',
+      csv: 'Create a Docs database from a .csv file.',
+      asana: 'Import projects and their tasks into Tasks.',
+      linear: 'Import teams and their issues into Tasks.',
+      trello: 'Import boards and their cards into Tasks.',
+      orbit: 'Import projects, pages and chats from another Orbit instance.',
+    },
+    people: {
+      title: 'People from imports',
+      description: 'Assignees of imported tasks that no member had the email of. Pick a member to assign all of their tasks; the email does not need to match.',
+      notAssigned: 'Not assigned',
+      formerMember: 'Former member',
+      assignFailed: "{{name}}'s tasks could not be assigned.",
+      assigning_one: 'Assigning {{count}} task…',
+      assigning_other: 'Assigning {{count}} tasks…',
+      unassigning_one: 'Unassigning {{count}} task…',
+      unassigning_other: 'Unassigning {{count}} tasks…',
+      tasks_one: '{{count}} task',
+      tasks_other: '{{count}} tasks',
+      memberFor: 'Member for {{name}}',
+    },
   },
   agentic: {
     serverTitle: 'MCP server',

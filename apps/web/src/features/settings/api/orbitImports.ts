@@ -5,6 +5,7 @@ import type { OrbitImport, OrbitImportSelection, OrbitImportTree } from '@orbit/
 import { orbitImportProblemMessage } from '@orbit/api/orbitImports'
 import { ApiProblem } from '@orbit/api/problem'
 import { apiClient } from '@/api/client'
+import { i18n } from '@/i18n'
 import { queryKeys } from '@/api/queryKeys'
 import { chatKeys } from '@/features/chat/api/keys'
 import { UploadUnreachable, uploadImportArchive } from '@/features/docs/api/obsidianImports'
@@ -15,12 +16,12 @@ export function orbitImportErrorMessage(error: unknown): string {
   if (error instanceof ApiProblem) {
     const message = orbitImportProblemMessage(error.code)
     if (message) return message
-    if (error.status === 404) return 'This import no longer exists.'
-    if (error.status === 413) return 'The file is larger than the server’s upload limit.'
-    if (error.status === 422) return 'The request was not valid. Check your input and try again.'
+    if (error.status === 404) return i18n.t('settings:orbitImport.errors.notFound')
+    if (error.status === 413) return i18n.t('settings:orbitImport.errors.tooLarge')
+    if (error.status === 422) return i18n.t('settings:orbitImport.errors.invalid')
   }
-  if (error instanceof UploadUnreachable) return 'The server could not be reached. Check your connection and try again.'
-  return 'Something went wrong. Try again.'
+  if (error instanceof UploadUnreachable) return i18n.t('settings:orbitImport.errors.unreachable')
+  return i18n.t('settings:orbitImport.errors.generic')
 }
 
 export const isOrbitImportInProgress = (error: unknown) => error instanceof ApiProblem && error.code === 'import_in_progress'

@@ -27,6 +27,8 @@ export default {
     saveFailed: 'The bucket could not be saved.',
     removing: "Removing: files move back to Orbit's storage. Save the bucket again to keep using it.",
     moveError: 'Moving files stopped: {{error}} Orbit tries again every ten minutes.',
+    moved: 'Done. All files are in your bucket.',
+    movedBack: "Done. All files are back in Orbit's storage.",
     deleteTitle: 'Delete {{name}}?',
     deleteDescription: 'It frees its storage at once. Tasks, pages and messages that use it show “Deleted file” instead. You cannot undo this.',
     deleteFailed: 'The file could not be deleted.',
@@ -55,6 +57,7 @@ export default {
     untitled: 'Untitled',
   },
   s3: {
+    pathStyleHint: 'For MinIO and some other S3-compatible services.',
     endpoint: 'Endpoint',
     region: 'Region',
     bucket: 'Bucket',
@@ -66,6 +69,27 @@ export default {
     remove: 'Remove',
     testing: 'Testing bucket…',
     save: 'Save bucket',
+  },
+  reports: {
+    title: 'Reports',
+    managersOnly: 'Only workspace owners and admins can see the reports.',
+    description: 'Chat messages that members reported. Deleting a message removes it for everyone, also in direct messages.',
+    deleteConfirm: {
+      title: 'Delete message?',
+      description: 'This deletes the message of {{name}} for everyone. You cannot undo this.',
+    },
+    deleted: 'Message deleted',
+    deleteFailed: 'Could not delete the message. Try again.',
+    loading: 'Loading reports…',
+    loadFailed: 'Reports could not be loaded.',
+    empty: {
+      title: 'No reports',
+      description: 'When a member reports a chat message, it shows here.',
+    },
+    reportedBy: 'Reported by {{name}} · {{time}}',
+    noText: 'No text',
+    note: 'Note: {{note}}',
+    deleteMessage: 'Delete message',
   },
   emoji: {
     problems: {

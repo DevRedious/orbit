@@ -2,6 +2,8 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { ChevronRight, Danger, Global, Refresh } from 'reicon-react'
 import { cn } from 'cn'
 import type { MailDomain, MailMailbox, MailProviderView } from '@orbit/api/generated/types.gen'
@@ -25,7 +27,7 @@ import { useWorkspace } from '@/features/workspaces/workspaceContext'
 import { shortDate } from '@/lib/format'
 import { DomainRouteRow, RouteSelect } from './DomainRoute'
 import { MailDomainRecords } from './MailDomainRecords'
-import { count, dateTime, DIRECT, domainHealth, isMailDisabled, mailProblem, since } from './mailSettingsLib'
+import { dateTime, DIRECT, domainHealth, isMailDisabled, mailProblem, since } from './mailSettingsLib'
 
 /** **Check now** reads the domain this often until the check job has run, for at most `CHECK_WAIT_MS`. */
 const CHECK_POLL_MS = 2000
@@ -34,16 +36,19 @@ const NO_CATCH_ALL = 'none'
 
 /** Shown to members without `mail.manage`; the server refuses them too. */
 export function MailManagersOnly({ title }: { title: string }) {
-  return <SettingsCard title={title}><p className="m-0 text-muted-foreground">Only workspace owners and administrators can manage mail.</p></SettingsCard>
+  const { t } = useTranslation('settings')
+  return <SettingsCard title={title}><p className="m-0 text-muted-foreground">{t('mail.managersOnly')}</p></SettingsCard>
 }
 
 /** The workspace's mail domains: add one, publish its records, check them, catch-all, turn mail off, remove. */
 export function MailDomainsPage() {
-  if (!useCan('mail.manage')) return <MailManagersOnly title="Mail domains" />
+  const { t } = useTranslation('settings')
+  if (!useCan('mail.manage')) return <MailManagersOnly title={t('mail.domains.title')} />
   return <MailDomains />
 }
 
 function MailDomains() {
+  const { t } = useTranslation('settings')
   const domains = useMailDomains()
   const mailboxes = useMailboxes()
   const providerList = useMailProviders('workspace')
@@ -59,7 +64,7 @@ function MailDomains() {
     const trimmed = name.trim()
     if (!trimmed || create.isPending) return
     create.mutate({ name: trimmed, providerId: route === DIRECT ? null : route }, {
-      onSuccess: (domain) => { setName(''); toast(`${domain.name} added`) },
+      onSuccess: (domain) => { setName(''); toast(t('mail.domains.added', { name: domain.name })) },
       onError: (error) => { if (isMailDisabled(error)) setDisabled(true) },
     })
   }
@@ -69,14 +74,14 @@ function MailDomains() {
       {disabled ? (
         <Alert>
           <Danger />
-          <AlertTitle>Mail is off on this Orbit server</AlertTitle>
-          <AlertDescription>An instance administrator can turn it on in Admin → Inbound mail.</AlertDescription>
+          <AlertTitle>{t('mail.domains.mailOff')}</AlertTitle>
+          <AlertDescription>{t('mail.domains.mailOffHint')}</AlertDescription>
         </Alert>
       ) : null}
-      <SettingsCard title="Add a domain" description="Orbit receives mail for the domain once its verification record is in the DNS.">
+      <SettingsCard title={t('mail.domains.addTitle')} description={t('mail.domains.addDescription')}>
         <form className="flex flex-col gap-3" onSubmit={submit}>
           <Field>
-            <FieldLabel htmlFor="mail-domain-name">Domain</FieldLabel>
+            <FieldLabel htmlFor="mail-domain-name">{t('mail.domains.domain')}</FieldLabel>
             <div className="flex flex-wrap items-center gap-2">
               <Input
                 id="mail-domain-name"
@@ -87,28 +92,28 @@ function MailDomains() {
                 disabled={disabled}
                 onChange={(event) => { setName(event.target.value); if (create.isError) create.reset() }}
               />
-              <Button type="submit" disabled={!name.trim() || create.isPending || disabled}>{create.isPending ? 'Adding…' : 'Add domain'}</Button>
+              <Button type="submit" disabled={!name.trim() || create.isPending || disabled}>{create.isPending ? t('mail.domains.adding') : t('mail.domains.add')}</Button>
             </div>
-            <FieldDescription>A domain belongs to one workspace. A subdomain of a domain of another workspace is refused.</FieldDescription>
+            <FieldDescription>{t('mail.domains.oneWorkspace')}</FieldDescription>
           </Field>
           {providers.length > 0 ? (
             <Field>
-              <FieldLabel htmlFor="mail-domain-route">Receive mail</FieldLabel>
-              <RouteSelect id="mail-domain-route" label="Where the domain's mail arrives" value={route} providers={providers} disabled={disabled} onChange={setRoute} />
-              <FieldDescription>Through a provider, this server needs no open port 25. You can change it later.</FieldDescription>
+              <FieldLabel htmlFor="mail-domain-route">{t('mail.route.title')}</FieldLabel>
+              <RouteSelect id="mail-domain-route" label={t('mail.domains.routeAria')} value={route} providers={providers} disabled={disabled} onChange={setRoute} />
+              <FieldDescription>{t('mail.domains.routeHint')}</FieldDescription>
             </Field>
           ) : null}
-          {create.isError && !disabled ? <p role="alert" className="text-xs text-destructive">{mailProblem(create.error, 'The domain could not be added.')}</p> : null}
+          {create.isError && !disabled ? <p role="alert" className="text-xs text-destructive">{mailProblem(create.error, t('mail.domains.addFailed'))}</p> : null}
         </form>
       </SettingsCard>
-      {domains.isPending ? <SettingsCard title="Domains"><p role="status">Loading domains…</p></SettingsCard> : null}
+      {domains.isPending ? <SettingsCard title={t('mail.domains.listTitle')}><p role="status">{t('mail.domains.loading')}</p></SettingsCard> : null}
       {domains.isError ? (
-        <SettingsCard title="Domains">
-          <p role="alert">Domains could not be loaded. <Button variant="ghost" onClick={() => void domains.refetch()}>Retry</Button></p>
+        <SettingsCard title={t('mail.domains.listTitle')}>
+          <p role="alert">{t('mail.domains.loadFailed')} <Button variant="ghost" onClick={() => void domains.refetch()}>{t('retry')}</Button></p>
         </SettingsCard>
       ) : null}
       {domains.data?.length === 0 ? (
-        <EmptyState icon={Global} title="No mail domains yet" description="Add a domain above, then publish its DNS records." />
+        <EmptyState icon={Global} title={t('mail.domains.emptyTitle')} description={t('mail.domains.emptyDescription')} />
       ) : null}
       {domains.data?.map((domain) => <DomainCard key={domain.id} listed={domain} mailboxes={mailboxes.data ?? []} providers={providers} />)}
     </>
@@ -116,6 +121,7 @@ function MailDomains() {
 }
 
 function DomainCard({ listed, mailboxes, providers }: { listed: MailDomain; mailboxes: MailMailbox[]; providers: MailProviderView[] }) {
+  const { t } = useTranslation('settings')
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const workspaceId = useWorkspace().workspace.id
@@ -145,46 +151,46 @@ function DomainCard({ listed, mailboxes, providers }: { listed: MailDomain; mail
     }
     const timer = setTimeout(() => {
       setChecking(null)
-      toast('The DNS has not answered yet. Orbit checks again on its next run.')
+      toast(t('mail.domains.dnsNoAnswer'))
     }, Math.max(0, checking.until - Date.now()))
     return () => clearTimeout(timer)
-  }, [checking, waiting, queryClient, workspaceId])
+  }, [checking, waiting, queryClient, workspaceId, t])
 
   function checkNow() {
     check.mutate(domain.id, {
       onSuccess: () => setChecking({ startedAt: Date.now(), checkedAt: domain.checked_at ?? null, until: Date.now() + CHECK_WAIT_MS }),
-      onError: (error) => toast.error(mailProblem(error, 'The check could not start.')),
+      onError: (error) => toast.error(mailProblem(error, t('mail.domains.checkFailed'))),
     })
   }
 
   async function removeDomain() {
     if (domain.address_count > 0) {
       const go = await confirmAction({
-        title: `${domain.name} has addresses`,
-        description: `${count(domain.address_count, 'address uses', 'addresses use')} this domain. Remove those mailboxes and aliases first; then the domain can be removed.`,
-        confirmLabel: 'Go to mailboxes',
+        title: t('mail.domains.hasAddressesTitle', { name: domain.name }),
+        description: t('mail.domains.hasAddressesDescription', { count: domain.address_count }),
+        confirmLabel: t('mail.domains.goToMailboxes'),
       })
       if (go) void navigate('/settings/mail/mailboxes')
       return
     }
     const confirmed = await confirmAction({
-      title: `Remove ${domain.name}?`,
-      description: 'No address uses it. Orbit stops receiving mail for it, and you can delete its DNS records afterwards.',
-      confirmLabel: 'Remove',
+      title: t('mail.domains.removeTitle', { name: domain.name }),
+      description: t('mail.domains.removeDescription'),
+      confirmLabel: t('remove'),
       danger: true,
     })
     if (!confirmed) return
     remove.mutate(domain.id, {
-      onSuccess: () => toast(`${domain.name} removed`),
-      onError: (error) => toast.error(mailProblem(error, 'The domain could not be removed.')),
+      onSuccess: () => toast(t('mail.domains.removed', { name: domain.name })),
+      onError: (error) => toast.error(mailProblem(error, t('mail.domains.removeFailed'))),
     })
   }
 
   const health = domainHealth(domain)
   const verify = domain.records.find((record) => record.kind === 'verify')
   const catchAllOptions = [
-    { value: NO_CATCH_ALL, label: 'None: refuse unknown addresses' },
-    ...mailboxes.map((mailbox) => ({ value: mailbox.id, label: `${mailbox.name} (${mailbox.addresses[0]?.address ?? 'no address'})` })),
+    { value: NO_CATCH_ALL, label: t('mail.domains.noCatchAll') },
+    ...mailboxes.map((mailbox) => ({ value: mailbox.id, label: t('mail.domains.mailboxOption', { name: mailbox.name, address: mailbox.addresses[0]?.address ?? t('mail.domains.noAddress') }) })),
   ]
   const catchAll = domain.catch_all_mailbox_id ?? NO_CATCH_ALL
 
@@ -205,24 +211,24 @@ function DomainCard({ listed, mailboxes, providers }: { listed: MailDomain; mail
         <div id={`mail-domain-${domain.id}`} className="relative min-w-0 overflow-hidden rounded-b-lg border-t bg-background">
           <div className="flex flex-col divide-y">
             <SettingsRow className="flex-nowrap">
-              <span className="min-w-0 flex-1 text-xs text-muted-foreground">{statusText(domain)}</span>
+              <span className="min-w-0 flex-1 text-xs text-muted-foreground">{statusText(t, domain)}</span>
               <div className="flex shrink-0 items-center gap-2">
                 <Button type="button" variant="outline" disabled={check.isPending || waiting} onClick={checkNow}>
                   <Refresh />
-                  {waiting ? 'Checking…' : 'Check now'}
+                  {waiting ? t('mail.domains.checking') : t('mail.domains.checkNow')}
                 </Button>
-                <Button type="button" variant="ghost" className="text-destructive" disabled={remove.isPending} onClick={() => void removeDomain()}>Remove</Button>
+                <Button type="button" variant="ghost" className="text-destructive" disabled={remove.isPending} onClick={() => void removeDomain()}>{t('remove')}</Button>
               </div>
             </SettingsRow>
             {domain.status === 'suspended' ? (
               <div className="p-3">
                 <Alert variant="destructive">
                   <Danger />
-                  <AlertTitle>The verification record is gone</AlertTitle>
+                  <AlertTitle>{t('mail.domains.verificationGone')}</AlertTitle>
                   <AlertDescription>
-                    {verify?.status.status === 'wrong' ? `The TXT record at ${verify.name} has another value. ` : `The TXT record at ${verify?.name ?? `_orbit-verify.${domain.name}`} was not found. `}
-                    {domain.grace_ends_at ? `Orbit receives mail for ${domain.name} until ${dateTime(domain.grace_ends_at)}, then refuses it. ` : null}
-                    Publish the record again, then click Check now.
+                    {verify?.status.status === 'wrong' ? t('mail.domains.txtWrong', { name: verify.name }) : t('mail.domains.txtMissing', { name: verify?.name ?? `_orbit-verify.${domain.name}` })}
+                    {domain.grace_ends_at ? t('mail.domains.graceUntil', { domain: domain.name, date: dateTime(domain.grace_ends_at) }) : null}
+                    {t('mail.domains.publishAgain')}
                   </AlertDescription>
                 </Alert>
               </div>
@@ -230,33 +236,33 @@ function DomainCard({ listed, mailboxes, providers }: { listed: MailDomain; mail
             {providers.length > 0 || domain.provider ? <DomainRouteRow domain={domain} providers={providers} /> : null}
             <SettingsRow className="flex-nowrap">
               <span className="flex min-w-0 flex-1 items-center gap-1.5 text-[0.8125rem] font-medium text-foreground">
-                Mail on
-                <InfoTip text={`Off: Orbit refuses all mail for ${domain.name}. Mailboxes and their mail stay.`} />
+                {t('mail.domains.mailOn')}
+                <InfoTip text={t('mail.domains.mailOnHint', { domain: domain.name })} />
               </span>
               <Switch
-                aria-label={`Receive mail for ${domain.name}`}
+                aria-label={t('mail.domains.mailOnAria', { domain: domain.name })}
                 checked={domain.status !== 'disabled'}
                 disabled={setEnabled.isPending}
                 onCheckedChange={(enabled: boolean) => setEnabled.mutate({ domainId: domain.id, enabled }, {
-                  onError: (error) => toast.error(mailProblem(error, 'The domain could not be changed.')),
+                  onError: (error) => toast.error(mailProblem(error, t('mail.domains.changeFailed'))),
                 })}
               />
             </SettingsRow>
             <SettingsRow className="flex-nowrap">
               <span className="flex min-w-0 flex-1 items-center gap-1.5 text-[0.8125rem] font-medium text-foreground">
-                Catch-all
-                <InfoTip text={`The mailbox that gets mail for addresses of ${domain.name} that no mailbox has.`} />
+                {t('mail.domains.catchAll')}
+                <InfoTip text={t('mail.domains.catchAllHint', { domain: domain.name })} />
               </span>
               <Select
                 items={catchAllOptions}
                 value={catchAll}
                 disabled={setCatchAll.isPending}
                 onValueChange={(value) => setCatchAll.mutate({ domainId: domain.id, mailboxId: value === NO_CATCH_ALL ? null : (value as string) }, {
-                  onSuccess: () => toast('Catch-all saved'),
-                  onError: (error) => toast.error(mailProblem(error, 'The catch-all could not be saved.')),
+                  onSuccess: () => toast(t('mail.domains.catchAllSaved')),
+                  onError: (error) => toast.error(mailProblem(error, t('mail.domains.catchAllFailed'))),
                 })}
               >
-                <SelectTrigger aria-label={`Catch-all for ${domain.name}`} className="w-80 max-w-[55vw]"><SelectValue /></SelectTrigger>
+                <SelectTrigger aria-label={t('mail.domains.catchAllAria', { domain: domain.name })} className="w-80 max-w-[55vw]"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {catchAllOptions.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
                 </SelectContent>
@@ -272,16 +278,18 @@ function DomainCard({ listed, mailboxes, providers }: { listed: MailDomain; mail
   )
 }
 
-function statusText(domain: MailDomain): string {
-  const checked = domain.checked_at ? ` Last checked ${since(domain.checked_at)}.` : ' Not checked yet.'
+function statusText(t: TFunction<'settings'>, domain: MailDomain): string {
+  const checked = domain.checked_at ? t('mail.domains.lastChecked', { since: since(domain.checked_at) }) : t('mail.domains.notChecked')
   switch (domain.status) {
     case 'pending':
-      return `Publish the records below at your DNS provider. Orbit checks every 10 minutes for 72 hours after you add the domain; Check now checks at once.${checked}`
+      return t('mail.domains.statusPending', { checked })
     case 'verified':
-      return `Receives mail${domain.verified_at ? ` since ${shortDate(domain.verified_at)}` : ''}. ${count(domain.address_count, 'address', 'addresses')}.${checked}`
+      return domain.verified_at
+        ? t('mail.domains.statusVerifiedSince', { date: shortDate(domain.verified_at), count: domain.address_count, checked })
+        : t('mail.domains.statusVerified', { count: domain.address_count, checked })
     case 'suspended':
-      return `Still receives mail during the grace period.${checked}`
+      return t('mail.domains.statusSuspended', { checked })
     case 'disabled':
-      return 'Mail for this domain is refused.'
+      return t('mail.domains.statusDisabled')
   }
 }

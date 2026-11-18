@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { UserBlock } from 'reicon-react'
 import { EmptyState } from '@/components/common/EmptyState'
 import { SettingsCard } from '@/components/common/SettingsCard'
@@ -12,26 +13,27 @@ import { shortDate } from '@/lib/format'
 
 /** Account view: the people the user blocked in chat, each with "Unblock". */
 export function BlockedPeoplePage() {
+  const { t } = useTranslation('settings')
   const blocks = useChatBlocks()
   const blocking = useBlockPerson()
 
   return (
-    <SettingsCard title="Blocked people" description="Chat hides messages from these people. They cannot send you direct messages." flush>
+    <SettingsCard title={t('blocked.title')} description={t('blocked.description')} flush>
       <div className="flex flex-col divide-y">
-        {blocks.isPending ? <SettingsRow><LoadingText>Loading blocked people…</LoadingText></SettingsRow> : null}
-        {blocks.isError ? <SettingsRow role="alert">Blocked people could not be loaded. <Button variant="ghost" onClick={() => void blocks.refetch()}>Retry</Button></SettingsRow> : null}
+        {blocks.isPending ? <SettingsRow><LoadingText>{t('blocked.loading')}</LoadingText></SettingsRow> : null}
+        {blocks.isError ? <SettingsRow role="alert">{t('blocked.loadFailed')} <Button variant="ghost" onClick={() => void blocks.refetch()}>{t('retry')}</Button></SettingsRow> : null}
         {blocks.data?.length === 0 ? (
-          <EmptyState size="sm" icon={UserBlock} title="No blocked people" description="To block a person, open the menu of one of their chat messages, or open their profile." />
+          <EmptyState size="sm" icon={UserBlock} title={t('blocked.empty.title')} description={t('blocked.empty.description')} />
         ) : null}
         {blocks.data?.map((block) => (
           <SettingsRow key={block.user_id} className="flex-nowrap">
             <UserAvatar user={{ name: block.display_name, color: userColor(block.user_id), avatarUrl: block.avatar_url }} size={28} />
             <div className="flex min-w-0 flex-1 flex-col gap-0.5">
               <span className="truncate text-[0.8125rem] font-medium text-foreground">{block.display_name}</span>
-              <span className="text-xs text-muted-foreground/70">Blocked {shortDate(block.created_at)}</span>
+              <span className="text-xs text-muted-foreground/70">{t('blocked.since', { date: shortDate(block.created_at) })}</span>
             </div>
-            <Button type="button" variant="ghost" aria-label={`Unblock ${block.display_name}`} disabled={blocking.isPending} onClick={() => blocking.unblock(block.user_id, block.display_name)}>
-              Unblock
+            <Button type="button" variant="ghost" aria-label={t('blocked.unblockNamed', { name: block.display_name })} disabled={blocking.isPending} onClick={() => blocking.unblock(block.user_id, block.display_name)}>
+              {t('blocked.unblock')}
             </Button>
           </SettingsRow>
         ))}

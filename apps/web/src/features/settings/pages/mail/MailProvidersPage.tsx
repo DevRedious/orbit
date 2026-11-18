@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
+import { useTranslation } from 'react-i18next'
 import { Add, InfoCircle, Routing } from 'reicon-react'
 import type { MailProviderView } from '@orbit/api/generated/types.gen'
 import { confirmAction } from '@/components/common/confirmAction'
@@ -13,13 +14,14 @@ import { useDeleteProvider, useUpdateProvider } from '@/features/mail/api/mutati
 import { useMailProviders, type ProviderScope } from '@/features/mail/api/queries'
 import { useCan } from '@/features/workspaces/permissions'
 import { MailManagersOnly } from './MailDomainsPage'
-import { count, mailProblem, PROVIDER_LABELS, since } from './mailSettingsLib'
+import { mailProblem, PROVIDER_LABELS, since } from './mailSettingsLib'
 import { ProviderForm } from './ProviderForm'
 import { ProviderSetup } from './ProviderSetup'
 
 /** Settings → Mail → Providers: the workspace's own providers, and the instance's ones it may use. */
 export function MailProvidersPage() {
-  if (!useCan('mail.manage')) return <MailManagersOnly title="Mail providers" />
+  const { t } = useTranslation('settings')
+  if (!useCan('mail.manage')) return <MailManagersOnly title={t('mail.providers.title')} />
   return <MailProviders scope="workspace" />
 }
 
@@ -28,6 +30,7 @@ export function MailProvidersPage() {
  * Orbit over HTTPS. Each own provider shows what to set up at the provider; secrets Orbit makes show once.
  */
 export function MailProviders({ scope }: { scope: ProviderScope }) {
+  const { t } = useTranslation('settings')
   const providers = useMailProviders(scope)
   const [adding, setAdding] = useState(false)
   const [editing, setEditing] = useState<MailProviderView | null>(null)
@@ -40,29 +43,25 @@ export function MailProviders({ scope }: { scope: ProviderScope }) {
       {scope === 'workspace' && providers.data && !providers.data.workspace_providers_enabled ? (
         <Alert>
           <InfoCircle />
-          <AlertTitle>Your server admin has turned off workspace providers.</AlertTitle>
-          <AlertDescription>Your domains can still use the providers your server admin set up, listed below.</AlertDescription>
+          <AlertTitle>{t('mail.providers.workspaceOff')}</AlertTitle>
+          <AlertDescription>{t('mail.providers.workspaceOffHint')}</AlertDescription>
         </Alert>
       ) : null}
       <SettingsCard
-        title="Mail providers"
-        description={
-          scope === 'instance'
-            ? 'Providers that every workspace can route its domains to. Use one when this server cannot receive on port 25.'
-            : 'Receive a domain through your own account at PostShiba, Cloudflare, Postmark, Mailgun, Resend or Amazon SES, when this server cannot receive on port 25.'
-        }
-        actions={canAdd ? <Button type="button" onClick={() => setAdding(true)}><Add />Add provider</Button> : undefined}
+        title={t('mail.providers.title')}
+        description={scope === 'instance' ? t('mail.providers.instanceDescription') : t('mail.providers.workspaceDescription')}
+        actions={canAdd ? <Button type="button" onClick={() => setAdding(true)}><Add />{t('mail.providers.add')}</Button> : undefined}
         flush
       >
-        {providers.isPending ? <p role="status" className="m-0 p-4 text-sm text-muted-foreground">Loading providers…</p> : null}
+        {providers.isPending ? <p role="status" className="m-0 p-4 text-sm text-muted-foreground">{t('mail.providers.loading')}</p> : null}
         {providers.isError ? (
           <p role="alert" className="m-0 p-4 text-sm text-destructive">
-            {mailProblem(providers.error, 'The providers could not be loaded.')}{' '}
-            <Button variant="ghost" onClick={() => void providers.refetch()}>Retry</Button>
+            {mailProblem(providers.error, t('mail.providers.loadFailed'))}{' '}
+            <Button variant="ghost" onClick={() => void providers.refetch()}>{t('retry')}</Button>
           </p>
         ) : null}
         {providers.data?.providers.length === 0 ? (
-          <EmptyState icon={Routing} title="No providers yet" description="Without a provider, mail for your domains arrives through this server's SMTP listener." />
+          <EmptyState icon={Routing} title={t('mail.providers.emptyTitle')} description={t('mail.providers.emptyDescription')} />
         ) : null}
         <div className="flex flex-col divide-y">
           {providers.data?.providers.map((provider) => (
@@ -71,17 +70,17 @@ export function MailProviders({ scope }: { scope: ProviderScope }) {
               scope={scope}
               provider={provider}
               onEdit={() => setEditing(provider)}
-              onNewSecret={(changed) => setShown({ provider: changed, title: `New secret for ${changed.name}` })}
+              onNewSecret={(changed) => setShown({ provider: changed, title: t('mail.providers.newSecretFor', { name: changed.name }) })}
             />
           ))}
         </div>
       </SettingsCard>
       {adding ? (
-        <ProviderForm scope={scope} onClose={() => setAdding(false)} onCreated={(created) => setShown({ provider: created, title: `Set up ${created.name}` })} />
+        <ProviderForm scope={scope} onClose={() => setAdding(false)} onCreated={(created) => setShown({ provider: created, title: t('mail.providers.setUp', { name: created.name }) })} />
       ) : null}
       {editing ? <ProviderForm scope={scope} provider={editing} onClose={() => setEditing(null)} /> : null}
       {shown?.provider.setup ? (
-        <Modal title={shown.title} description={`Do these steps at ${PROVIDER_LABELS[shown.provider.kind]}.`} onClose={() => setShown(null)}>
+        <Modal title={shown.title} description={t('mail.providers.doTheseSteps', { provider: PROVIDER_LABELS[shown.provider.kind] })} onClose={() => setShown(null)}>
           <ProviderSetup setup={shown.provider.setup} generated={shown.provider.generated_secrets} />
         </Modal>
       ) : null}
@@ -100,6 +99,7 @@ function ProviderRow({
   onEdit: () => void
   onNewSecret: (changed: MailProviderView) => void
 }) {
+  const { t } = useTranslation('settings')
   const remove = useDeleteProvider(scope)
   const update = useUpdateProvider(scope)
   // Orbit makes these secrets, so Orbit can replace them
@@ -109,26 +109,23 @@ function ProviderRow({
 
   async function removeProvider() {
     const confirmed = await confirmAction({
-      title: `Remove ${provider.name}?`,
-      description: 'Orbit stops accepting mail from it. Remove it at the provider too.',
-      confirmLabel: 'Remove',
+      title: t('mail.providers.removeTitle', { name: provider.name }),
+      description: t('mail.providers.removeDescription'),
+      confirmLabel: t('remove'),
       danger: true,
     })
     if (!confirmed) return
     remove.mutate(provider.id, {
-      onSuccess: () => toast(`${provider.name} removed`),
-      onError: (error) => toast.error(mailProblem(error, 'The provider could not be removed.')),
+      onSuccess: () => toast(t('mail.providers.removed', { name: provider.name })),
+      onError: (error) => toast.error(mailProblem(error, t('mail.providers.removeFailed'))),
     })
   }
 
   async function newSecret() {
     const confirmed = await confirmAction({
-      title: `Make a new secret for ${provider.name}?`,
-      description:
-        provider.kind === 'cloudflare'
-          ? 'The old signing secret stops working now. Mail is refused until you set the new one on the Worker.'
-          : 'The old credentials stop working now. Mail is refused until you set the new webhook URL in Postmark.',
-      confirmLabel: 'Make new secret',
+      title: t('mail.providers.newSecretTitle', { name: provider.name }),
+      description: provider.kind === 'cloudflare' ? t('mail.providers.newSecretCloudflare') : t('mail.providers.newSecretPostmark'),
+      confirmLabel: t('mail.providers.makeNewSecret'),
       danger: true,
     })
     if (!confirmed) return
@@ -136,7 +133,7 @@ function ProviderRow({
       { providerId: provider.id, body: { regenerate_secrets: true } },
       {
         onSuccess: onNewSecret,
-        onError: (error) => toast.error(mailProblem(error, 'The new secret could not be made.')),
+        onError: (error) => toast.error(mailProblem(error, t('mail.providers.newSecretFailed'))),
       },
     )
   }
@@ -148,22 +145,22 @@ function ProviderRow({
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-[0.8125rem] font-medium text-foreground">{provider.name}</span>
             <Badge variant="outline">{PROVIDER_LABELS[provider.kind]}</Badge>
-            {scope === 'workspace' && provider.scope === 'instance' ? <Badge variant="secondary">Server</Badge> : null}
+            {scope === 'workspace' && provider.scope === 'instance' ? <Badge variant="secondary">{t('mail.providers.server')}</Badge> : null}
           </div>
           <span className="text-xs text-muted-foreground">
-            {count(provider.domain_count, 'domain', 'domains')}
-            {provider.last_received_at ? ` · Last message ${since(provider.last_received_at)}` : ' · No message yet'}
+            {t('mail.providers.domains', { count: provider.domain_count })}
+            {provider.last_received_at ? t('mail.providers.lastMessage', { since: since(provider.last_received_at) }) : t('mail.providers.noMessage')}
           </span>
-          {provider.last_error ? <span role="status" className="text-xs text-destructive">Last error: {provider.last_error}</span> : null}
+          {provider.last_error ? <span role="status" className="text-xs text-destructive">{t('mail.providers.lastError', { error: provider.last_error })}</span> : null}
         </div>
         {own ? (
           <div className="flex items-center gap-1">
-            <Button type="button" variant="outline" size="sm" aria-expanded={open} onClick={() => setOpen(!open)}>{open ? 'Hide setup' : 'Setup'}</Button>
-            <Button type="button" variant="ghost" size="sm" onClick={onEdit}>Change</Button>
+            <Button type="button" variant="outline" size="sm" aria-expanded={open} onClick={() => setOpen(!open)}>{open ? t('mail.providers.hideSetup') : t('mail.providers.setup')}</Button>
+            <Button type="button" variant="ghost" size="sm" onClick={onEdit}>{t('mail.providers.change')}</Button>
             {madeByOrbit ? (
-              <Button type="button" variant="ghost" size="sm" disabled={update.isPending} onClick={() => void newSecret()}>New secret</Button>
+              <Button type="button" variant="ghost" size="sm" disabled={update.isPending} onClick={() => void newSecret()}>{t('mail.providers.newSecret')}</Button>
             ) : null}
-            <Button type="button" variant="ghost" size="sm" className="text-destructive" disabled={remove.isPending} onClick={() => void removeProvider()}>Remove</Button>
+            <Button type="button" variant="ghost" size="sm" className="text-destructive" disabled={remove.isPending} onClick={() => void removeProvider()}>{t('remove')}</Button>
           </div>
         ) : null}
       </div>

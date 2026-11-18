@@ -1,4 +1,6 @@
 import { useId, useState, type FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
+import type { ParseKeys } from 'i18next'
 import type { MailProviderKind, MailProviderSecretsBody, MailProviderSettings, MailProviderView } from '@orbit/api/generated/types.gen'
 import { Modal } from '@/components/common/Modal'
 import { Button } from '@/components/ui/button'
@@ -11,32 +13,31 @@ import type { ProviderScope } from '@/features/mail/api/queries'
 import { mailProblem, PROVIDER_LABELS } from './mailSettingsLib'
 
 const RECOMMENDED: MailProviderKind = 'postshiba'
-const KIND_OPTIONS = (Object.keys(PROVIDER_LABELS) as MailProviderKind[]).map((kind) => ({
-  value: kind,
-  label: kind === RECOMMENDED ? `${PROVIDER_LABELS[kind]} (recommended)` : PROVIDER_LABELS[kind],
-}))
+const KINDS = Object.keys(PROVIDER_LABELS) as MailProviderKind[]
 
 const MAILGUN_REGIONS = [
   { value: 'us', label: 'US' },
   { value: 'eu', label: 'EU' },
 ]
 
-/** The secrets each kind needs from its provider; Orbit makes Cloudflare's and Postmark's. */
-const SECRET_FIELDS: Record<MailProviderKind, { name: keyof MailProviderSecretsBody; label: string; hint?: string }[]> = {
+type SettingsKey = ParseKeys<'settings'>
+
+/** The secrets each kind needs from its provider; Orbit makes Cloudflare's and Postmark's. `hint` is a key, or literal when `literalHint`. */
+const SECRET_FIELDS: Record<MailProviderKind, { name: keyof MailProviderSecretsBody; label: SettingsKey; hint?: SettingsKey; literalHint?: string }[]> = {
   postshiba: [
-    { name: 'api_key', label: 'API key', hint: 'A key of a team admin: Orbit reads the raw message with it.' },
-    { name: 'webhook_secret', label: 'Inbox signing secret', hint: 'In the inbox’s Webhook dialog.' },
+    { name: 'api_key', label: 'mail.providerForm.secrets.apiKey', hint: 'mail.providerForm.secrets.postshibaApiKeyHint' },
+    { name: 'webhook_secret', label: 'mail.providerForm.secrets.inboxSigningSecret', hint: 'mail.providerForm.secrets.inboxSigningSecretHint' },
   ],
   cloudflare: [],
   postmark: [],
-  mailgun: [{ name: 'signing_key', label: 'HTTP webhook signing key' }],
+  mailgun: [{ name: 'signing_key', label: 'mail.providerForm.secrets.mailgunSigningKey' }],
   resend: [
-    { name: 'api_key', label: 'API key', hint: 'A key that can read received emails.' },
-    { name: 'webhook_secret', label: 'Webhook signing secret', hint: 'whsec_…' },
+    { name: 'api_key', label: 'mail.providerForm.secrets.apiKey', hint: 'mail.providerForm.secrets.resendApiKeyHint' },
+    { name: 'webhook_secret', label: 'mail.providerForm.secrets.webhookSigningSecret', literalHint: 'whsec_…' },
   ],
   ses: [
-    { name: 'access_key_id', label: 'Access key ID', hint: 'An IAM user with s3:GetObject and s3:DeleteObject on the bucket.' },
-    { name: 'secret_access_key', label: 'Secret access key' },
+    { name: 'access_key_id', label: 'mail.providerForm.secrets.accessKeyId', hint: 'mail.providerForm.secrets.accessKeyIdHint' },
+    { name: 'secret_access_key', label: 'mail.providerForm.secrets.secretAccessKey' },
   ],
 }
 
@@ -55,7 +56,12 @@ export function ProviderForm({
   onClose: () => void
   onCreated?: (created: MailProviderView) => void
 }) {
+  const { t } = useTranslation('settings')
   const ids = useId()
+  const kindOptions = KINDS.map((option) => ({
+    value: option,
+    label: option === RECOMMENDED ? t('mail.providerForm.recommended', { name: PROVIDER_LABELS[option] }) : PROVIDER_LABELS[option],
+  }))
   const create = useCreateProvider(scope)
   const update = useUpdateProvider(scope)
   const [kind, setKind] = useState<MailProviderKind>(provider?.kind ?? RECOMMENDED)
@@ -91,47 +97,47 @@ export function ProviderForm({
   const ready = provider ? !secretsTouched || secretsGiven : secretsGiven
   return (
     <Modal
-      title={provider ? `Change ${provider.name}` : 'Add a mail provider'}
-      description="The provider receives the domain's mail and sends each message to Orbit over HTTPS: this server needs no open port 25."
+      title={provider ? t('mail.providerForm.changeTitle', { name: provider.name }) : t('mail.providerForm.addTitle')}
+      description={t('mail.providerForm.description')}
       onClose={onClose}
       dismissible={!saving}
     >
       <form className="grid gap-4" onSubmit={submit}>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field>
-            <FieldLabel htmlFor={`${ids}-kind`}>Provider</FieldLabel>
-            <Select items={KIND_OPTIONS} value={kind} disabled={Boolean(provider)} onValueChange={(value) => { setKind(value as MailProviderKind); setSecrets({}) }}>
+            <FieldLabel htmlFor={`${ids}-kind`}>{t('mail.providerForm.provider')}</FieldLabel>
+            <Select items={kindOptions} value={kind} disabled={Boolean(provider)} onValueChange={(value) => { setKind(value as MailProviderKind); setSecrets({}) }}>
               <SelectTrigger id={`${ids}-kind`}><SelectValue /></SelectTrigger>
               <SelectContent>
-                {KIND_OPTIONS.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
+                {kindOptions.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
               </SelectContent>
             </Select>
           </Field>
           <Field>
-            <FieldLabel htmlFor={`${ids}-name`}>Name</FieldLabel>
+            <FieldLabel htmlFor={`${ids}-name`}>{t('mail.providerForm.name')}</FieldLabel>
             <Input id={`${ids}-name`} autoComplete="off" placeholder={PROVIDER_LABELS[kind]} value={name} onChange={(event) => setName(event.target.value)} />
           </Field>
         </div>
         {fields.length === 0 && !provider ? (
-          <p className="m-0 text-[0.8125rem] text-muted-foreground">Orbit makes the secret for this provider and shows it once, after you add it.</p>
+          <p className="m-0 text-[0.8125rem] text-muted-foreground">{t('mail.providerForm.orbitMakesSecret')}</p>
         ) : null}
         {fields.map((field) => (
           <Field key={field.name}>
-            <FieldLabel htmlFor={`${ids}-${field.name}`}>{field.label}</FieldLabel>
+            <FieldLabel htmlFor={`${ids}-${field.name}`}>{t(field.label)}</FieldLabel>
             <Input
               id={`${ids}-${field.name}`}
               type="password"
               autoComplete="off"
-              placeholder={provider?.secrets_set.includes(field.name) ? 'Set. Leave empty to keep it.' : undefined}
+              placeholder={provider?.secrets_set.includes(field.name) ? t('mail.providerForm.secretSet') : undefined}
               value={secrets[field.name] ?? ''}
               onChange={(event) => setSecrets((current) => ({ ...current, [field.name]: event.target.value }))}
             />
-            {field.hint ? <FieldDescription>{field.hint}</FieldDescription> : null}
+            {field.hint || field.literalHint ? <FieldDescription>{field.hint ? t(field.hint) : field.literalHint}</FieldDescription> : null}
           </Field>
         ))}
         {kind === 'mailgun' ? (
           <Field>
-            <FieldLabel htmlFor={`${ids}-region`}>Region</FieldLabel>
+            <FieldLabel htmlFor={`${ids}-region`}>{t('mail.providerForm.region')}</FieldLabel>
             <Select items={MAILGUN_REGIONS} value={settings.region === 'eu' ? 'eu' : 'us'} onValueChange={(value) => setting('region', value === 'eu' ? 'eu' : '')}>
               <SelectTrigger id={`${ids}-region`} className="w-40"><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -143,32 +149,32 @@ export function ProviderForm({
         {kind === 'ses' ? (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Field>
-              <FieldLabel htmlFor={`${ids}-ses-region`}>AWS region</FieldLabel>
+              <FieldLabel htmlFor={`${ids}-ses-region`}>{t('mail.providerForm.awsRegion')}</FieldLabel>
               <Input id={`${ids}-ses-region`} autoComplete="off" placeholder="us-east-1" value={settings.region ?? ''} onChange={(event) => setting('region', event.target.value)} />
             </Field>
             <Field>
-              <FieldLabel htmlFor={`${ids}-bucket`}>S3 bucket</FieldLabel>
+              <FieldLabel htmlFor={`${ids}-bucket`}>{t('mail.providerForm.bucket')}</FieldLabel>
               <Input id={`${ids}-bucket`} autoComplete="off" value={settings.bucket ?? ''} onChange={(event) => setting('bucket', event.target.value)} />
             </Field>
             <Field>
-              <FieldLabel htmlFor={`${ids}-prefix`}>Key prefix</FieldLabel>
-              <Input id={`${ids}-prefix`} autoComplete="off" placeholder="Optional" value={settings.prefix ?? ''} onChange={(event) => setting('prefix', event.target.value)} />
+              <FieldLabel htmlFor={`${ids}-prefix`}>{t('mail.providerForm.prefix')}</FieldLabel>
+              <Input id={`${ids}-prefix`} autoComplete="off" placeholder={t('mail.providerForm.optional')} value={settings.prefix ?? ''} onChange={(event) => setting('prefix', event.target.value)} />
             </Field>
             <Field>
-              <FieldLabel htmlFor={`${ids}-topic`}>SNS topic ARN</FieldLabel>
+              <FieldLabel htmlFor={`${ids}-topic`}>{t('mail.providerForm.topic')}</FieldLabel>
               <Input id={`${ids}-topic`} autoComplete="off" placeholder="arn:aws:sns:…" value={settings.topic_arn ?? ''} onChange={(event) => setting('topic_arn', event.target.value)} />
             </Field>
           </div>
         ) : null}
         <Field>
-          <FieldLabel htmlFor={`${ids}-mx`}>MX hosts</FieldLabel>
-          <Input id={`${ids}-mx`} autoComplete="off" placeholder={kind === 'resend' ? 'The MX host that Resend shows' : 'Empty: the provider’s usual hosts'} value={mx} onChange={(event) => setMx(event.target.value)} />
-          <FieldDescription>Domains routed to this provider must point their MX to one of these. Separate them with commas.</FieldDescription>
+          <FieldLabel htmlFor={`${ids}-mx`}>{t('mail.providerForm.mxHosts')}</FieldLabel>
+          <Input id={`${ids}-mx`} autoComplete="off" placeholder={kind === 'resend' ? t('mail.providerForm.mxResend') : t('mail.providerForm.mxDefault')} value={mx} onChange={(event) => setMx(event.target.value)} />
+          <FieldDescription>{t('mail.providerForm.mxHint')}</FieldDescription>
         </Field>
-        {error ? <p role="alert" className="text-sm text-destructive">{mailProblem(error, 'The provider was not saved.')}</p> : null}
+        {error ? <p role="alert" className="text-sm text-destructive">{mailProblem(error, t('mail.providerForm.saveFailed'))}</p> : null}
         <DialogFooter>
-          <DialogClose render={<Button type="button" variant="outline" />}>Cancel</DialogClose>
-          <Button type="submit" disabled={saving || !ready}>{saving ? 'Saving…' : provider ? 'Save' : 'Add provider'}</Button>
+          <DialogClose render={<Button type="button" variant="outline" />}>{t('cancel')}</DialogClose>
+          <Button type="submit" disabled={saving || !ready}>{saving ? t('mail.saving') : provider ? t('mail.save') : t('mail.providers.add')}</Button>
         </DialogFooter>
       </form>
     </Modal>

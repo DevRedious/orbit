@@ -76,7 +76,7 @@ function BucketForm({ workspaceId, bucket, started, onStart }: {
       ? (bucket.removing ? t('fileStorage.leftToMoveBack', { count }) : t('fileStorage.leftToMove', { count }))
       : null
   const moved = started && !moving && !bucket.removing && !bucket.move_error
-    ? (started === 'remove' ? "Done. All files are back in Orbit's storage." : 'Done. All files are in your bucket.')
+    ? (started === 'remove' ? t('fileStorage.movedBack') : t('fileStorage.moved'))
     : null
   return (
     <S3BucketForm

@@ -127,11 +127,7 @@ export type Glyph =
 export type ValueOption = { value: string; label: string; glyph: Glyph }
 
 /** Cycle filter values the server resolves per project, at query time. */
-const RELATIVE_CYCLES = [
-  { value: 'current', label: 'Current cycle' },
-  { value: 'next', label: 'Next cycle' },
-  { value: 'previous', label: 'Previous cycle' },
-]
+const RELATIVE_CYCLES = ['current', 'next', 'previous'] as const
 
 const byName = <T extends { name: string }>(a: T, b: T) => a.name.localeCompare(b.name)
 
@@ -180,7 +176,7 @@ export function valueOptions(field: FilterField, options: FilterOptions): ValueO
       return [...options.milestones].sort((a, b) => a.position - b.position).map((milestone): ValueOption => ({ value: milestone.id, label: milestone.name, glyph: { kind: 'icon', icon: Diamonds } }))
     case 'cycle':
       return [
-        ...RELATIVE_CYCLES.map((cycle): ValueOption => ({ ...cycle, glyph: { kind: 'icon', icon: RefreshCircle } })),
+        ...RELATIVE_CYCLES.map((cycle): ValueOption => ({ value: cycle, label: i18n.t(`views:filter.relativeCycles.${cycle}`), glyph: { kind: 'icon', icon: RefreshCircle } })),
         ...[...options.cycles].sort((a, b) => a.starts_at.localeCompare(b.starts_at)).map((cycle): ValueOption => ({ value: cycle.id, label: cycleName(cycle), glyph: { kind: 'icon', icon: RefreshCircle } })),
       ]
     case 'sub_issues':

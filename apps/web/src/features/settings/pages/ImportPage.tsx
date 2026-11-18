@@ -15,23 +15,21 @@ import { useMembers } from '@/features/workspaces/api'
 import { useCan } from '@/features/workspaces/permissions'
 import { useWorkspace } from '@/features/workspaces/workspaceContext'
 
+/** `key`: the source's description at `import.sources.<key>`. */
 const SOURCES = [
-  { name: 'Notion', description: 'Import pages and databases into Docs.', to: '/docs/import' },
-  { name: 'Obsidian', description: 'Import a vault (.zip) into Docs.', to: '/docs/import/obsidian' },
-  { name: 'CSV', description: 'Create a Docs database from a .csv file.', to: '/docs/import/csv' },
-  { name: 'Asana', description: 'Import projects and their tasks into Tasks.', to: '/tasks-import' },
-  { name: 'Linear', description: 'Import teams and their issues into Tasks.', to: '/tasks-import/linear' },
-  { name: 'Trello', description: 'Import boards and their cards into Tasks.', to: '/tasks-import/trello' },
-  { name: 'Orbit', description: 'Import projects, pages and chats from another Orbit instance.', to: '/settings/import/orbit' },
-]
+  { name: 'Notion', key: 'notion', to: '/docs/import' },
+  { name: 'Obsidian', key: 'obsidian', to: '/docs/import/obsidian' },
+  { name: 'CSV', key: 'csv', to: '/docs/import/csv' },
+  { name: 'Asana', key: 'asana', to: '/tasks-import' },
+  { name: 'Linear', key: 'linear', to: '/tasks-import/linear' },
+  { name: 'Trello', key: 'trello', to: '/tasks-import/trello' },
+  { name: 'Orbit', key: 'orbit', to: '/settings/import/orbit' },
+] as const
 
 const SOURCE_NAMES: Record<ImportSource, string> = { asana: 'Asana', linear: 'Linear', trello: 'Trello' }
 /** The Select value of "Not assigned" (Select values are strings). */
 const UNMAPPED = 'none'
 
-function tasks(count: number) {
-  return count === 1 ? '1 task' : `${count} tasks`
-}
 
 /** Where to bring data into the workspace from other tools. */
 export function ImportPage() {
@@ -45,7 +43,7 @@ export function ImportPage() {
             <RowIcon>
               <Import />
             </RowIcon>
-            <span className="flex min-w-0 flex-1 items-center gap-1.5 text-[0.8125rem] font-medium text-foreground">{source.name} <InfoTip text={source.description} /></span>
+            <span className="flex min-w-0 flex-1 items-center gap-1.5 text-[0.8125rem] font-medium text-foreground">{source.name} <InfoTip text={t(`import.sources.${source.key}`)} /></span>
             <Link to={source.to} className={buttonVariants({ variant: 'outline', size: 'sm' })}>
               {t('import.from', { name: source.name })}
             </Link>
@@ -59,6 +57,7 @@ export function ImportPage() {
 
 /** Assignees of imported tasks that no member had the email of: an admin picks the member who gets their tasks. */
 function ImportPeople() {
+  const { t } = useTranslation('settings')
   const { workspace } = useWorkspace()
   const people = useImportPeople(workspace.id)
   const members = useMembers(workspace.id)
@@ -73,23 +72,23 @@ function ImportPeople() {
     mapPerson.mutate(
       { personId: person.id, userId },
       {
-        onError: (error) => toast.error(error instanceof ApiProblem ? error.detail : `${person.name}'s tasks could not be assigned.`),
+        onError: (error) => toast.error(error instanceof ApiProblem ? error.detail : t('import.people.assignFailed', { name: person.name })),
       },
     )
   }
 
   return (
     <SettingsCard
-      title="People from imports"
-      description="Assignees of imported tasks that no member had the email of. Pick a member to assign all of their tasks; the email does not need to match."
+      title={t('import.people.title')}
+      description={t('import.people.description')}
       flush
     >
       {items.map((person) => {
         const value = person.user_id ?? UNMAPPED
         const options = [
-          { value: UNMAPPED, label: 'Not assigned' },
+          { value: UNMAPPED, label: t('import.people.notAssigned') },
           ...active.map((member) => ({ value: member.id, label: member.name })),
-          ...(person.user_id && !active.some((member) => member.id === person.user_id) ? [{ value: person.user_id, label: 'Former member' }] : []),
+          ...(person.user_id && !active.some((member) => member.id === person.user_id) ? [{ value: person.user_id, label: t('import.people.formerMember') }] : []),
         ]
         const sending = mapPerson.isPending && mapPerson.variables?.personId === person.id
         // the pick shows at once; a job then moves the tasks, which takes a while for thousands of them
@@ -106,16 +105,16 @@ function ImportPeople() {
               {saving ? (
                 <span role="status" className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <Spinner className="size-3" />
-                  {toMember ? 'Assigning' : 'Unassigning'} {tasks(person.task_count)}…
+                  {t(toMember ? 'import.people.assigning' : 'import.people.unassigning', { count: person.task_count })}
                 </span>
               ) : (
                 <span className="truncate text-xs text-muted-foreground">
-                  {[SOURCE_NAMES[person.source], person.email, tasks(person.task_count)].filter(Boolean).join(' · ')}
+                  {[SOURCE_NAMES[person.source], person.email, t('import.people.tasks', { count: person.task_count })].filter(Boolean).join(' · ')}
                 </span>
               )}
             </div>
             <Select items={options} value={shown} disabled={saving} onValueChange={(next) => change(person, next)}>
-              <SelectTrigger aria-label={`Member for ${person.name}`} size="sm" className="w-48 max-[899px]:w-full">
+              <SelectTrigger aria-label={t('import.people.memberFor', { name: person.name })} size="sm" className="w-48 max-[899px]:w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

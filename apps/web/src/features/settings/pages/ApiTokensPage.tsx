@@ -35,9 +35,9 @@ type ExpirationValue = typeof EXPIRATION_OPTIONS[number]['value']
 
 /** An export scope stands alone on a personal token, so it is a kind of token, not an access level. */
 const TOKEN_KINDS = [
-  { value: 'access', label: 'Tasks, docs and chat', description: 'For scripts, bots and AI clients.' },
-  { value: 'workspace:export', label: 'Workspace export', description: 'Lets another Orbit instance import this workspace as you see it: tasks, docs, chat and files.' },
-  { value: 'workspace:export:personal', label: 'Personal export', description: 'Lets another Orbit instance import only your private docs, your private channels and your DMs.' },
+  { value: 'access', key: 'access' },
+  { value: 'workspace:export', key: 'workspaceExport' },
+  { value: 'workspace:export:personal', key: 'personalExport' },
 ] as const
 
 type TokenKind = typeof TOKEN_KINDS[number]['value']
@@ -78,7 +78,12 @@ export function ApiTokensPage() {
   const [copied, setCopied] = useState(false)
 
   const access = kind === 'access'
-  const kindDescription = TOKEN_KINDS.find((option) => option.value === kind)?.description
+  const tokenKinds = TOKEN_KINDS.map((option) => ({
+    value: option.value,
+    label: t(`apiTokens.kinds.${option.key}.label`),
+    description: t(`apiTokens.kinds.${option.key}.description`),
+  }))
+  const kindDescription = tokenKinds.find((option) => option.value === kind)?.description
   // Projects only limit task access, so a token without a task scope needs none.
   const taskScope = access && scopes.some((scope) => scope.startsWith('tasks:'))
   const ready = name.trim() !== '' && (!access || (scopes.length > 0 && (!taskScope || allProjects || projectIds.length > 0)))
@@ -105,10 +110,10 @@ export function ApiTokensPage() {
   }
 
   return <>
-    <SettingsCard title={t('apiTokens.create.title')} description={canManage ? t('apiTokens.create.description') : `${kindDescription} Paste it with this workspace's URL in the other instance. The secret is shown only once.`}>
+    <SettingsCard title={t('apiTokens.create.title')} description={canManage ? t('apiTokens.create.description') : t('apiTokens.create.exportDescription', { kind: kindDescription ?? '' })}>
       <form onSubmit={(event) => void submit(event)}>
         <FieldGrid>
-        <Field><FieldLabel htmlFor="api-token-name">{t('apiTokens.create.name')} <RequiredMark /></FieldLabel><Input id="api-token-name" value={name} maxLength={100} onChange={(event) => setName(event.target.value)} placeholder={access ? t('apiTokens.create.namePlaceholder') : 'Orbit import'} /></Field>
+        <Field><FieldLabel htmlFor="api-token-name">{t('apiTokens.create.name')} <RequiredMark /></FieldLabel><Input id="api-token-name" value={name} maxLength={100} onChange={(event) => setName(event.target.value)} placeholder={access ? t('apiTokens.create.namePlaceholder') : t('apiTokens.create.exportNamePlaceholder')} /></Field>
         <Field>
           <FieldLabel htmlFor="api-token-expiration">{t('apiTokens.create.expiration')}</FieldLabel>
           <Select items={expirationOptions} value={expiration} onValueChange={(value) => setExpiration(value as ExpirationValue)}>
@@ -121,13 +126,13 @@ export function ApiTokensPage() {
           </Select>
         </Field>
         {canManage ? <Field className="min-[900px]:col-span-2">
-          <FieldLabel htmlFor="api-token-kind" className="items-center gap-1.5">Token type {kindDescription ? <InfoTip text={kindDescription} /> : null}</FieldLabel>
-          <Select items={TOKEN_KINDS} value={kind} onValueChange={(value) => setKind(value as TokenKind)}>
-            <SelectTrigger id="api-token-kind" aria-label="Token type">
+          <FieldLabel htmlFor="api-token-kind" className="items-center gap-1.5">{t('apiTokens.create.kind')} {kindDescription ? <InfoTip text={kindDescription} /> : null}</FieldLabel>
+          <Select items={tokenKinds} value={kind} onValueChange={(value) => setKind(value as TokenKind)}>
+            <SelectTrigger id="api-token-kind" aria-label={t('apiTokens.create.kind')}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {TOKEN_KINDS.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
+              {tokenKinds.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
             </SelectContent>
           </Select>
         </Field> : null}
@@ -146,7 +151,7 @@ export function ApiTokensPage() {
             <ProjectPicker id="api-token-projects" projects={projects} selected={projectIds} onChange={setProjectIds} all={allProjects} onAllChange={setAllProjects} empty={projectsQuery.isPending ? t('apiTokens.create.loadingProjects') : projects.length ? undefined : t('apiTokens.create.noProjects')} />
             {scopes.includes('tasks:write') ? <Label className="mt-3 flex items-start gap-2">
               <Checkbox className="mt-0.5" checked={scopes.includes('tasks:import')} onCheckedChange={(checked) => setScopes(checked ? [...scopes, 'tasks:import'] : scopes.filter((scope) => scope !== 'tasks:import'))} />
-              <span className="grid gap-0.5">Import mode<span className="text-xs font-normal text-muted-foreground">Keeps original dates, numbers and authors. Sends no notifications.</span></span>
+              <span className="grid gap-0.5">{t('apiTokens.create.importMode')}<span className="text-xs font-normal text-muted-foreground">{t('apiTokens.create.importModeHint')}</span></span>
             </Label> : null}
           </> : null)} scopes={scopes} onChange={(next) => setScopes(next.includes('tasks:write') ? next : next.filter((scope) => scope !== 'tasks:import'))} />
         </div>

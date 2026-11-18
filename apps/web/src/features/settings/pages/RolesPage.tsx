@@ -1,4 +1,6 @@
 import { toast } from 'sonner'
+import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { useState, type FormEvent } from 'react'
 import { UserTag } from 'reicon-react'
 import { ApiProblem } from '@orbit/api/problem'
@@ -24,30 +26,32 @@ import { RequiredMark, RowIcon, SettingsRow } from '@/features/settings/componen
 
 type GrantablePermission = Exclude<Permission, 'workspace.delete' | 'workspace.transfer' | 'billing.manage' | 'roles.manage' | 'workspace.export_personal'>
 
-const PERMISSION_LABELS: Record<GrantablePermission, string> = {
-  'workspace.update': 'Change workspace settings',
-  'members.manage': 'Invite and manage members',
-  'audit.view': 'View the audit log',
-  'api_tokens.manage': 'Manage API tokens',
-  'integrations.manage': 'Manage integrations and webhooks',
-  'teamspaces.delete': 'Delete teamspaces',
-  'pages.purge': 'Permanently delete pages and tasks (all projects)',
-  'tasks.purge': 'Permanently delete tasks',
-  'projects.view_private': 'See private projects',
-  'projects.manage': 'Manage project settings, members, statuses and labels',
-  'views.manage_shared': 'Manage shared views',
-  'comments.moderate': 'Moderate comments',
-  'chat.manage': 'Manage chat',
-  'mail.manage': 'Manage mail',
-  'storage.manage': 'Manage file storage',
-  'workspace.export': 'Export the workspace',
-}
+/** Catalog keys of the permissions a role may grant. */
+const PERMISSION_KEYS = {
+  'workspace.update': 'roles.permissionLabels.workspace_update',
+  'members.manage': 'roles.permissionLabels.members_manage',
+  'audit.view': 'roles.permissionLabels.audit_view',
+  'api_tokens.manage': 'roles.permissionLabels.api_tokens_manage',
+  'integrations.manage': 'roles.permissionLabels.integrations_manage',
+  'teamspaces.delete': 'roles.permissionLabels.teamspaces_delete',
+  'pages.purge': 'roles.permissionLabels.pages_purge',
+  'tasks.purge': 'roles.permissionLabels.tasks_purge',
+  'projects.view_private': 'roles.permissionLabels.projects_view_private',
+  'projects.manage': 'roles.permissionLabels.projects_manage',
+  'views.manage_shared': 'roles.permissionLabels.views_manage_shared',
+  'comments.moderate': 'roles.permissionLabels.comments_moderate',
+  'chat.manage': 'roles.permissionLabels.chat_manage',
+  'mail.manage': 'roles.permissionLabels.mail_manage',
+  'storage.manage': 'roles.permissionLabels.storage_manage',
+  'workspace.export': 'roles.permissionLabels.workspace_export',
+} as const satisfies Record<GrantablePermission, string>
 
-const permissionLabel = (permission: Permission) => PERMISSION_LABELS[permission as GrantablePermission] ?? permission
+type SettingsT = TFunction<'settings'>
+
+/** A permission in words; one the app does not know (from the server) shows as it is. */
+const permissionLabel = (t: SettingsT, permission: Permission) => Object.hasOwn(PERMISSION_KEYS, permission) ? t(PERMISSION_KEYS[permission as GrantablePermission]) : permission
 
 const failure = (error: unknown, fallback: string) => error instanceof ApiProblem ? error.detail : fallback
-
-const memberCount = (count: number) => count === 1 ? '1 member' : `${count} members`
 
 /** One project row in the role dialog; `rowId` keeps the row's identity while its project changes. */
 type GrantRow = { rowId: number; projectId: string; permissions: Permission[] }
@@ -56,6 +60,7 @@ let nextRowId = 0
 const grantRow = (projectId: string, permissions: Permission[] = []): GrantRow => ({ rowId: nextRowId++, projectId, permissions })
 
 export function RolesPage() {
+  const { t } = useTranslation('settings')
   const { workspace } = useWorkspace()
   const canManage = useCan('roles.manage')
   const roles = useWorkspaceRoles(workspace.id, canManage)
@@ -63,41 +68,41 @@ export function RolesPage() {
   const deleteRole = useDeleteWorkspaceRole(workspace.id)
   const [editing, setEditing] = useState<WorkspaceRoleRecord | 'new'>()
 
-  if (!canManage) return <SettingsCard title="Roles"><p className="m-0 text-muted-foreground">Only workspace owners and administrators can manage roles.</p></SettingsCard>
+  if (!canManage) return <SettingsCard title={t('roles.title')}><p className="m-0 text-muted-foreground">{t('roles.managersOnly')}</p></SettingsCard>
 
   async function remove(role: WorkspaceRoleRecord) {
-    const description = role.member_count > 0 ? `${memberCount(role.member_count)} with this role become ordinary members.` : undefined
-    if (!await confirmAction({ title: `Delete ${role.name}?`, description, confirmLabel: 'Delete', danger: true })) return
-    deleteRole.mutate(role.id, { onError: (error) => toast.error(failure(error, 'The role could not be deleted.')) })
+    const description = role.member_count > 0 ? t('roles.deleteDescription', { count: role.member_count }) : undefined
+    if (!await confirmAction({ title: t('roles.deleteTitle', { name: role.name }), description, confirmLabel: t('delete'), danger: true })) return
+    deleteRole.mutate(role.id, { onError: (error) => toast.error(failure(error, t('roles.deleteFailed'))) })
   }
 
   return <>
     <SettingsCard
-      title="Roles"
-      description="A custom role gives ordinary members extra permissions on top of the member role. Give a member a role from their row in Members."
-      actions={<Button type="button" disabled={!roles.data} onClick={() => setEditing('new')}>Add role</Button>}
+      title={t('roles.title')}
+      description={t('roles.description')}
+      actions={<Button type="button" disabled={!roles.data} onClick={() => setEditing('new')}>{t('roles.add')}</Button>}
       flush
     >
       <div className="flex flex-col divide-y">
-        {roles.isPending ? <SettingsRow><LoadingText>Loading roles…</LoadingText></SettingsRow> : null}
-        {roles.isError ? <SettingsRow role="alert">Roles could not be loaded. <Button variant="ghost" onClick={() => void roles.refetch()}>Retry</Button></SettingsRow> : null}
-        {roles.data?.items.length === 0 ? <SettingsRow className="text-muted-foreground">No custom roles yet.</SettingsRow> : null}
+        {roles.isPending ? <SettingsRow><LoadingText>{t('roles.loading')}</LoadingText></SettingsRow> : null}
+        {roles.isError ? <SettingsRow role="alert">{t('roles.loadFailed')} <Button variant="ghost" onClick={() => void roles.refetch()}>{t('retry')}</Button></SettingsRow> : null}
+        {roles.data?.items.length === 0 ? <SettingsRow className="text-muted-foreground">{t('roles.empty')}</SettingsRow> : null}
         {roles.data?.items.map((role) => <SettingsRow key={role.id} data-role-row className="flex-nowrap">
           <RowIcon><UserTag /></RowIcon>
           <div className="flex min-w-0 flex-1 flex-col gap-1">
-            <span className="flex items-center gap-2 text-[13px] font-medium text-foreground">{role.name}<span className="text-xs font-normal text-muted-foreground">{memberCount(role.member_count)}</span></span>
+            <span className="flex items-center gap-2 text-[13px] font-medium text-foreground">{role.name}<span className="text-xs font-normal text-muted-foreground">{t('roles.memberCount', { count: role.member_count })}</span></span>
             <span className="flex flex-wrap gap-1">
               {role.permissions.length > 0
-                ? role.permissions.map((permission) => <Badge key={permission} variant="secondary">{permissionLabel(permission)}</Badge>)
-                : <span className="text-xs text-muted-foreground">No extra permissions</span>}
+                ? role.permissions.map((permission) => <Badge key={permission} variant="secondary">{permissionLabel(t, permission)}</Badge>)
+                : <span className="text-xs text-muted-foreground">{t('roles.noExtraPermissions')}</span>}
               {projects.data ? role.project_grants.map((grant) => <Badge key={grant.project_id} variant="outline" data-project-grant>
-                {projects.data.find((project) => project.id === grant.project_id)?.name ?? 'Unknown project'}: {grant.permissions.map(permissionLabel).join(', ')}
+                {t('roles.projectGrant', { project: projects.data.find((project) => project.id === grant.project_id)?.name ?? t('roles.unknownProject'), permissions: grant.permissions.map((permission) => permissionLabel(t, permission)).join(', ') })}
               </Badge>) : null}
             </span>
           </div>
           <span className="flex shrink-0 gap-1">
-            <Button variant="ghost" type="button" onClick={() => setEditing(role)}>Edit</Button>
-            <Button variant="ghost" type="button" disabled={deleteRole.isPending} onClick={() => void remove(role)}>Delete</Button>
+            <Button variant="ghost" type="button" onClick={() => setEditing(role)}>{t('roles.edit')}</Button>
+            <Button variant="ghost" type="button" disabled={deleteRole.isPending} onClick={() => void remove(role)}>{t('delete')}</Button>
           </span>
         </SettingsRow>)}
       </div>
@@ -115,36 +120,37 @@ export function RolesPage() {
 }
 
 function ProjectAccessCard({ workspaceId, projectScoped, projects }: { workspaceId: string; projectScoped?: Permission[]; projects?: ProjectRecord[] }) {
+  const { t } = useTranslation('settings')
   const grants = useProjectGrants(workspaceId)
   const revoke = useRevokeProjectGrant(workspaceId)
   const [editing, setEditing] = useState<MemberProjectGrant | 'new'>()
 
   async function requestRevoke(grant: MemberProjectGrant) {
-    if (!await confirmAction({ title: `Revoke ${grant.display_name}'s access to ${grant.project_name}?`, description: 'They keep what their role allows.', confirmLabel: 'Revoke', danger: true })) return
-    revoke.mutate({ projectId: grant.project_id, userId: grant.user_id }, { onError: (error) => toast.error(failure(error, 'The access could not be revoked.')) })
+    if (!await confirmAction({ title: t('roles.access.revokeTitle', { name: grant.display_name, project: grant.project_name }), description: t('roles.access.revokeDescription'), confirmLabel: t('revoke'), danger: true })) return
+    revoke.mutate({ projectId: grant.project_id, userId: grant.user_id }, { onError: (error) => toast.error(failure(error, t('roles.access.revokeFailed'))) })
   }
 
   const ready = Boolean(projectScoped && projects && grants.data)
 
   return <>
     <SettingsCard
-      title="Project access"
-      description="Members who hold a permission in a single project directly, for example the creator of a project, who manages it until you revoke this."
-      actions={<Button type="button" disabled={!ready} onClick={() => setEditing('new')}>Add access</Button>}
+      title={t('roles.access.title')}
+      description={t('roles.access.description')}
+      actions={<Button type="button" disabled={!ready} onClick={() => setEditing('new')}>{t('roles.access.add')}</Button>}
       flush
     >
       <div className="flex flex-col divide-y">
-        {grants.isPending ? <SettingsRow><LoadingText>Loading project access…</LoadingText></SettingsRow> : null}
-        {grants.isError ? <SettingsRow role="alert">{failure(grants.error, 'Project access could not be loaded.')} <Button variant="ghost" onClick={() => void grants.refetch()}>Retry</Button></SettingsRow> : null}
-        {grants.data?.length === 0 ? <SettingsRow className="text-muted-foreground">No member holds a permission in a single project.</SettingsRow> : null}
+        {grants.isPending ? <SettingsRow><LoadingText>{t('roles.access.loading')}</LoadingText></SettingsRow> : null}
+        {grants.isError ? <SettingsRow role="alert">{failure(grants.error, t('roles.access.loadFailed'))} <Button variant="ghost" onClick={() => void grants.refetch()}>{t('retry')}</Button></SettingsRow> : null}
+        {grants.data?.length === 0 ? <SettingsRow className="text-muted-foreground">{t('roles.access.empty')}</SettingsRow> : null}
         {grants.data?.map((grant) => <SettingsRow key={`${grant.project_id}:${grant.user_id}`} data-project-access-row className="flex-nowrap">
           <div className="flex min-w-0 flex-1 flex-col gap-1">
             <span className="flex items-center gap-2 text-[13px] font-medium text-foreground">{grant.display_name}<span className="truncate text-xs font-normal text-muted-foreground">{grant.project_name}</span></span>
-            <span className="flex flex-wrap gap-1">{grant.permissions.map((permission) => <Badge key={permission} variant="secondary">{permissionLabel(permission)}</Badge>)}</span>
+            <span className="flex flex-wrap gap-1">{grant.permissions.map((permission) => <Badge key={permission} variant="secondary">{permissionLabel(t, permission)}</Badge>)}</span>
           </div>
           <span className="flex shrink-0 gap-1">
-            <Button variant="ghost" type="button" disabled={!ready} onClick={() => setEditing(grant)}>Edit</Button>
-            <Button variant="ghost" type="button" disabled={revoke.isPending} onClick={() => void requestRevoke(grant)}>Revoke</Button>
+            <Button variant="ghost" type="button" disabled={!ready} onClick={() => setEditing(grant)}>{t('roles.edit')}</Button>
+            <Button variant="ghost" type="button" disabled={revoke.isPending} onClick={() => void requestRevoke(grant)}>{t('revoke')}</Button>
           </span>
         </SettingsRow>)}
       </div>
@@ -169,6 +175,7 @@ function ProjectGrantDialog({ workspaceId, grant, grants, projectScoped, project
   projects: ProjectRecord[]
   onClose: () => void
 }) {
+  const { t } = useTranslation('settings')
   const members = useMembers(workspaceId)
   const save = useSetProjectGrant(workspaceId)
   const [userId, setUserId] = useState(grant?.user_id ?? '')
@@ -193,42 +200,42 @@ function ProjectGrantDialog({ workspaceId, grant, grants, projectScoped, project
       await save.mutateAsync({ project_id: projectId, user_id: userId, permissions: projectScoped.filter((permission) => permissions.includes(permission)) })
       onClose()
     } catch (caught) {
-      setError(failure(caught, 'The access could not be saved.'))
+      setError(failure(caught, t('roles.access.saveFailed')))
     }
   }
 
-  return <Modal title={grant ? `Edit ${grant.display_name}'s access to ${grant.project_name}` : 'Add project access'} onClose={onClose} dismissible={!save.isPending} className="sm:max-w-lg">
+  return <Modal title={grant ? t('roles.access.editTitle', { name: grant.display_name, project: grant.project_name }) : t('roles.access.addTitle')} onClose={onClose} dismissible={!save.isPending} className="sm:max-w-lg">
     <form className="grid gap-4" onSubmit={(event) => void submit(event)}>
       {grant ? null : <>
         <Field>
-          <FieldLabel>Member <RequiredMark /> <InfoTip text="Only members with the member role. Owners and admins already hold every permission." /></FieldLabel>
+          <FieldLabel>{t('roles.access.member')} <RequiredMark /> <InfoTip text={t('roles.access.memberHint')} /></FieldLabel>
           <Select items={memberOptions} value={userId || null} onValueChange={(value) => select(value as string, projectId)}>
-            <SelectTrigger aria-label="Member"><SelectValue placeholder={members.isPending ? 'Loading members…' : 'Choose a member'} /></SelectTrigger>
+            <SelectTrigger aria-label={t('roles.access.member')}><SelectValue placeholder={members.isPending ? t('roles.access.loadingMembers') : t('roles.access.chooseMember')} /></SelectTrigger>
             <SelectContent>{memberOptions.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent>
           </Select>
         </Field>
         <Field>
-          <FieldLabel>Project <RequiredMark /></FieldLabel>
+          <FieldLabel>{t('roles.project')} <RequiredMark /></FieldLabel>
           <Select items={projectOptions} value={projectId || null} onValueChange={(value) => select(userId, value as string)}>
-            <SelectTrigger aria-label="Project"><SelectValue placeholder="Choose a project" /></SelectTrigger>
+            <SelectTrigger aria-label={t('roles.project')}><SelectValue placeholder={t('roles.access.chooseProject')} /></SelectTrigger>
             <SelectContent>{projectOptions.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent>
           </Select>
         </Field>
       </>}
       <div role="group" aria-labelledby="grant-permissions" className="grid gap-3">
-        <span className="flex items-center gap-1.5"><span id="grant-permissions" className="text-sm font-medium">Permissions</span><InfoTip text="What the member may do in this project on top of their role. Saving replaces what they held there." /></span>
+        <span className="flex items-center gap-1.5"><span id="grant-permissions" className="text-sm font-medium">{t('roles.permissions')}</span><InfoTip text={t('roles.access.permissionsHint')} /></span>
         {projectScoped.map((permission) => <Label key={permission} className="flex items-center gap-2 font-normal">
           <Checkbox
             checked={permissions.includes(permission)}
             onCheckedChange={(checked) => setPermissions(checked ? [...permissions, permission] : permissions.filter((other) => other !== permission))}
           />
-          {permissionLabel(permission)}
+          {permissionLabel(t, permission)}
         </Label>)}
       </div>
       {error ? <p className="m-0 text-destructive" role="alert">{error}</p> : null}
       <DialogFooter>
-        <DialogClose render={<Button type="button" variant="outline" disabled={save.isPending} />}>Cancel</DialogClose>
-        <Button type="submit" disabled={save.isPending || !userId || !projectId || permissions.length === 0}>Save</Button>
+        <DialogClose render={<Button type="button" variant="outline" disabled={save.isPending} />}>{t('cancel')}</DialogClose>
+        <Button type="submit" disabled={save.isPending || !userId || !projectId || permissions.length === 0}>{t('roles.save')}</Button>
       </DialogFooter>
     </form>
   </Modal>
@@ -242,6 +249,7 @@ function RoleDialog({ workspaceId, role, grantable, projectScoped, projects, onC
   projects: ProjectRecord[]
   onClose: () => void
 }) {
+  const { t } = useTranslation('settings')
   const createRole = useCreateWorkspaceRole(workspaceId)
   const updateRole = useUpdateWorkspaceRole(workspaceId)
   const [name, setName] = useState(role?.name ?? '')
@@ -266,31 +274,31 @@ function RoleDialog({ workspaceId, role, grantable, projectScoped, projects, onC
       else await createRole.mutateAsync({ name: trimmed, permissions: ordered, project_grants: projectGrants })
       onClose()
     } catch (caught) {
-      setError(failure(caught, role ? 'The role could not be saved.' : 'The role could not be created.'))
+      setError(failure(caught, role ? t('roles.saveFailed') : t('roles.createFailed')))
     }
   }
 
-  return <Modal title={role ? `Edit ${role.name}` : 'Add role'} onClose={onClose} dismissible={!pending} className="sm:max-w-lg">
+  return <Modal title={role ? t('roles.editTitle', { name: role.name }) : t('roles.add')} onClose={onClose} dismissible={!pending} className="sm:max-w-lg">
     <form className="grid gap-4" onSubmit={(event) => void submit(event)}>
       <Field>
-        <FieldLabel htmlFor="role-name">Name <RequiredMark /></FieldLabel>
-        <Input id="role-name" value={name} required maxLength={40} onChange={(event) => setName(event.target.value)} placeholder="Moderator" />
+        <FieldLabel htmlFor="role-name">{t('name')} <RequiredMark /></FieldLabel>
+        <Input id="role-name" value={name} required maxLength={40} onChange={(event) => setName(event.target.value)} placeholder={t('roles.namePlaceholder')} />
       </Field>
       <div role="group" aria-labelledby="role-permissions" className="grid gap-3">
-        <span className="flex items-center gap-1.5"><span id="role-permissions" className="text-sm font-medium">Permissions</span><InfoTip text="What a member with this role may do beyond an ordinary member." /></span>
+        <span className="flex items-center gap-1.5"><span id="role-permissions" className="text-sm font-medium">{t('roles.permissions')}</span><InfoTip text={t('roles.permissionsHint')} /></span>
         {grantable.map((permission) => <Label key={permission} className="flex items-center gap-2 font-normal">
           <Checkbox
             checked={permissions.includes(permission)}
             onCheckedChange={(checked) => setPermissions(checked ? [...permissions, permission] : permissions.filter((other) => other !== permission))}
           />
-          {permissionLabel(permission)}
+          {permissionLabel(t, permission)}
         </Label>)}
       </div>
       {projectScoped.length > 0 ? <ProjectGrants grants={grants} onChange={setGrants} projectScoped={projectScoped} workspaceWide={permissions} projects={projects} /> : null}
       {error ? <p className="m-0 text-destructive" role="alert">{error}</p> : null}
       <DialogFooter>
-        <DialogClose render={<Button type="button" variant="outline" disabled={pending} />}>Cancel</DialogClose>
-        <Button type="submit" disabled={pending || !name.trim()}>{role ? 'Save' : 'Add role'}</Button>
+        <DialogClose render={<Button type="button" variant="outline" disabled={pending} />}>{t('cancel')}</DialogClose>
+        <Button type="submit" disabled={pending || !name.trim()}>{role ? t('roles.save') : t('roles.add')}</Button>
       </DialogFooter>
     </form>
   </Modal>
@@ -303,32 +311,33 @@ function ProjectGrants({ grants, onChange, projectScoped, workspaceWide, project
   workspaceWide: Permission[]
   projects: ProjectRecord[]
 }) {
+  const { t } = useTranslation('settings')
   const unused = projects.filter((project) => !grants.some((grant) => grant.projectId === project.id))
   const firstUnusedId = unused[0]?.id
   const update = (rowId: number, change: Partial<GrantRow>) => onChange(grants.map((grant) => grant.rowId === rowId ? { ...grant, ...change } : grant))
 
   return <div role="group" aria-labelledby="role-project-permissions" className="grid gap-3">
     <span className="flex items-center gap-1.5">
-      <span id="role-project-permissions" className="text-sm font-medium">Project permissions</span>
-      <InfoTip text="Extra permissions in single projects. A permission ticked above already applies to every project." />
+      <span id="role-project-permissions" className="text-sm font-medium">{t('roles.projectPermissions')}</span>
+      <InfoTip text={t('roles.projectPermissionsHint')} />
     </span>
     {grants.map((grant) => {
       // a row offers its own project and the ones no other row uses
       const options = projects
         .filter((project) => project.id === grant.projectId || unused.includes(project))
         .map((project) => ({ value: project.id, label: project.name }))
-      const projectName = options.find((option) => option.value === grant.projectId)?.label ?? 'Unknown project'
+      const projectName = options.find((option) => option.value === grant.projectId)?.label ?? t('roles.unknownProject')
       return <div key={grant.rowId} role="group" aria-label={projectName} data-project-grant-row className="grid gap-2 rounded-md border p-3">
         <div className="flex items-center gap-2">
           <Select items={options} value={grant.projectId} onValueChange={(value) => update(grant.rowId, { projectId: value as string })}>
-            <SelectTrigger aria-label="Project" className="min-w-0 flex-1">
+            <SelectTrigger aria-label={t('roles.project')} className="min-w-0 flex-1">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               {options.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
             </SelectContent>
           </Select>
-          <Button type="button" variant="ghost" onClick={() => onChange(grants.filter((other) => other.rowId !== grant.rowId))}>Remove</Button>
+          <Button type="button" variant="ghost" onClick={() => onChange(grants.filter((other) => other.rowId !== grant.rowId))}>{t('remove')}</Button>
         </div>
         {projectScoped.map((permission) => {
           const everywhere = workspaceWide.includes(permission)
@@ -338,11 +347,11 @@ function ProjectGrants({ grants, onChange, projectScoped, workspaceWide, project
               disabled={everywhere}
               onCheckedChange={(checked) => update(grant.rowId, { permissions: checked ? [...grant.permissions, permission] : grant.permissions.filter((other) => other !== permission) })}
             />
-            {permissionLabel(permission)}
+            {permissionLabel(t, permission)}
           </Label>
         })}
       </div>
     })}
-    <Button type="button" variant="outline" className="justify-self-start" disabled={firstUnusedId === undefined} onClick={() => firstUnusedId !== undefined && onChange([...grants, grantRow(firstUnusedId)])}>Add project</Button>
+    <Button type="button" variant="outline" className="justify-self-start" disabled={firstUnusedId === undefined} onClick={() => firstUnusedId !== undefined && onChange([...grants, grantRow(firstUnusedId)])}>{t('roles.addProject')}</Button>
   </div>
 }

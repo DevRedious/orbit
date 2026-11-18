@@ -88,7 +88,7 @@ export function S3BucketForm({ s3, title, description, endpointPlaceholder, savi
               <Switch checked={draft.path_style} disabled={disabled} onCheckedChange={(checked: boolean) => setDraft((current) => ({ ...current, path_style: checked }))} />
               {t('s3.pathStyle')}
             </label>
-            <InfoTip text="For MinIO and some other S3-compatible services." />
+            <InfoTip text={t('s3.pathStyleHint')} />
           </div>
           <div className="flex items-center gap-2">
             {onRemove ? <Button type="button" variant="ghost" className="text-destructive" disabled={disabled || removing} onClick={onRemove}>{t('s3.remove')}</Button> : null}

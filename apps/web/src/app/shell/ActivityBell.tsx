@@ -98,6 +98,7 @@ export function ActivityBell({ unread = false, topbar = false }: { unread?: bool
 
 /** The popover: the newest notifications or the unread ones, "Mark all read", and the way to the whole page. */
 function ActivityPanel({ onNavigate }: { onNavigate: () => void }) {
+  const { t } = useTranslation(['shell', 'common'])
   const { workspace } = useWorkspace()
   const [tab, setTab] = useState<PanelTab>('all')
   const latest = useLatestNotifications(workspace.id, { limit: LATEST })
@@ -116,25 +117,25 @@ function ActivityPanel({ onNavigate }: { onNavigate: () => void }) {
   return (
     <>
       <div className="flex h-11 shrink-0 items-center gap-2 pr-2 pl-3">
-        <PopoverTitle className="text-sm">Activity</PopoverTitle>
+        <PopoverTitle className="text-sm">{t('activity.label')}</PopoverTitle>
         {unreadCount > 0 ? <Badge className="h-4 min-w-4 px-1 text-[0.625rem] tabular-nums">{countLabel}</Badge> : null}
         <span className="flex-1" />
         <Button variant="ghost" size="xs" type="button" disabled={unreadCount === 0 || markAll.isPending} onClick={() => markAll.mutate()}>
-          {marking ? 'Marking…' : 'Mark all read'}
+          {marking ? t('inbox.marking') : t('inbox.markAllRead')}
         </Button>
       </div>
       <Tabs className="shrink-0 gap-0" value={tab} onValueChange={(value) => setTab(value as PanelTab)}>
         <TabsList variant="line" className="min-h-9 w-full justify-start gap-1 border-b px-2 group-data-horizontal/tabs:h-auto">
-          <TabsTrigger value="all" className="h-7 flex-none px-2 text-[0.8125rem]">All</TabsTrigger>
+          <TabsTrigger value="all" className="h-7 flex-none px-2 text-[0.8125rem]">{t('inbox.tabs.all')}</TabsTrigger>
           <TabsTrigger value="unread" className="h-7 flex-none gap-1.5 px-2 text-[0.8125rem]">
-            Unread
+            {t('inbox.tabs.unread')}
             {unreadCount > 0 ? <span className="text-xs text-muted-foreground tabular-nums">{countLabel}</span> : null}
           </TabsTrigger>
         </TabsList>
       </Tabs>
       <div data-slot="activity-panel-list" className="max-h-[min(560px,calc(100dvh-180px))] min-h-0 overflow-y-auto overscroll-contain">
         {query.isPending ? (
-          <div role="status" aria-label="Loading activity" className="flex flex-col">
+          <div role="status" aria-label={t('inbox.loadingTitle')} className="flex flex-col">
             {[0, 1, 2].map((index) => (
               <div key={index} className="flex h-14 items-center gap-2.5 border-b px-3 last:border-b-0">
                 <span className="w-2 shrink-0" />
@@ -150,14 +151,14 @@ function ActivityPanel({ onNavigate }: { onNavigate: () => void }) {
           <EmptyState
             size="sm"
             icon={BellOutline}
-            title="Activity unavailable"
-            description="Notifications could not be loaded."
-            action={<Button variant="outline" size="sm" type="button" onClick={() => void query.refetch()}>Retry</Button>}
+            title={t('inbox.unavailableTitle')}
+            description={t('inbox.unavailableDescription')}
+            action={<Button variant="outline" size="sm" type="button" onClick={() => void query.refetch()}>{t('common:retry')}</Button>}
           />
         ) : items.length === 0 ? (
           tab === 'unread'
-            ? <EmptyState size="sm" icon={BellOutline} title="No unread notifications" description="You're all caught up." />
-            : <EmptyState size="sm" icon={BellOutline} title="You're all caught up" description="Assignments and mentions appear here." />
+            ? <EmptyState size="sm" icon={BellOutline} title={t('activity.noUnreadTitle')} description={t('activity.noUnreadDescription')} />
+            : <EmptyState size="sm" icon={BellOutline} title={t('inbox.emptyTitle')} description={t('inbox.emptyDescription')} />
         ) : (
           // the last row's border would double the footer's
           <div className="[&>[data-slot=notification-row]:last-child_button]:border-b-0">
@@ -170,7 +171,7 @@ function ActivityPanel({ onNavigate }: { onNavigate: () => void }) {
         onClick={onNavigate}
         className="group/all flex h-10 shrink-0 items-center gap-1.5 border-t px-3 text-[0.8125rem] text-muted-foreground transition-colors outline-none hover:bg-muted hover:text-foreground focus-visible:bg-muted focus-visible:text-foreground"
       >
-        View all activity
+        {t('activity.viewAll')}
         <ArrowRight className="size-3.5 transition-transform duration-150 ease-out group-hover/all:translate-x-0.5 motion-reduce:transition-none" />
         <span className="flex-1" />
         <Shortcut id="nav.inbox" />

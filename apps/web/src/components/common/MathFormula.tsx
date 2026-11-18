@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { Formula } from './formulaHtml'
 
 /** A display formula. The drawer loads only when a formula is on screen. */
 export function MathFormula({ code }: { code: string }) {
+  const { t } = useTranslation('shell')
   const [formula, setFormula] = useState<Formula | null>(null)
 
   useEffect(() => {
@@ -15,7 +17,7 @@ export function MathFormula({ code }: { code: string }) {
     }
   }, [code])
 
-  if (!code.trim()) return <p className="text-center text-sm text-muted-foreground">Empty formula</p>
+  if (!code.trim()) return <p className="text-center text-sm text-muted-foreground">{t('mathFormula.empty')}</p>
   if (!formula || ('html' in formula && !formula.html)) return <div className="min-h-8" />
   if ('error' in formula) return <p className="text-center text-sm text-destructive">{formula.error}</p>
   return (

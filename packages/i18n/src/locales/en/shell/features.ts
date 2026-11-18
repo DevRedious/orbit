@@ -48,6 +48,7 @@ export default {
     emptyDescription: 'Assignments and mentions appear here.',
     rowBody: '{{actor}} · {{body}}',
     unknownActor: 'Unknown',
+    markAsRead: 'Mark as read',
   },
   notification: {
     someone: 'Someone',
@@ -65,6 +66,15 @@ export default {
     descriptionMentionedBody: 'Someone mentioned you in a task description.',
     assignedTitle: 'You were assigned a task',
     assignedBody: 'A task was assigned to you.',
+    chatReportedTitle: '{{actor}} reported a chat message',
+    chatReportedBody: 'Open the reports to see the message.',
+    // {{source}} is the app imported from: "Linear import complete".
+    importCompleteTitle: '{{source}} import complete',
+    importFailedTitle: '{{source}} import failed',
+    importCompleteTitleUnknown: 'An import is complete',
+    importFailedTitleUnknown: 'An import failed',
+    importCompleteBody: 'Open the import to see what was imported.',
+    importFailedBody: 'Open the import to see what happened.',
   },
   onboarding: {
     step: 'Step {{step}} of 2',

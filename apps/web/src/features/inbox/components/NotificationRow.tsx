@@ -59,12 +59,12 @@ export function NotificationRow({ notification, rows, onOpen }: { notification: 
       )}
       {/* over the time on hover: a pointer that reaches the row can clear it without opening it; touch opens or marks all */}
       {unread ? (
-        <Tip label="Mark as read">
+        <Tip label={t('inbox.markAsRead')}>
           <Button
             data-slot="notification-read"
             variant="ghost"
             size="icon-xs"
-            aria-label="Mark as read"
+            aria-label={t('inbox.markAsRead')}
             className="absolute top-1/2 right-2.5 -translate-y-1/2 pointer-events-none opacity-0 transition-opacity duration-100 focus-visible:pointer-events-auto focus-visible:opacity-100 hover-fine:group-hover/row:pointer-events-auto hover-fine:group-hover/row:opacity-100"
             onClick={() => rows.markRead(notification)}
           >

@@ -2,6 +2,7 @@
 // informs: it takes no focus and no clicks, so typing and selecting go on under it.
 import type { ReactNode } from 'react'
 import { createPortal } from 'react-dom'
+import { useTranslation } from 'react-i18next'
 import { cn } from 'cn'
 import { TaskStatusIcon } from '@/features/tasks/components/TaskStatusIcon'
 import { useLinkedTaskLookup } from '@/features/tasks/useLinkedTask'
@@ -43,16 +44,17 @@ export function PreviewNote({ tone = 'muted', children }: { tone?: 'muted' | 'wa
 
 /** A member: avatar, name, job title or handle. */
 export function PersonPreview({ userId, fallbackName, note }: { userId: string; fallbackName?: string; note?: ReactNode }) {
+  const { t } = useTranslation('shell')
   const { workspace } = useWorkspace()
   const member = useMembers(workspace.id).data?.find((candidate) => candidate.id === userId)
-  const name = member?.name ?? fallbackName ?? 'Unknown user'
+  const name = member?.name ?? fallbackName ?? t('referencePreview.unknownUser')
   return (
     <>
       <div className="flex items-center gap-2.5">
         <UserAvatar user={member ? { name: member.name, color: member.color, avatarUrl: member.avatarUrl } : undefined} name={name} size={36} />
         <div className="min-w-0">
           <div className="truncate font-medium">{name}</div>
-          <div className="truncate text-xs text-muted-foreground">{member ? member.title || `@${member.handle}` : 'No longer a member'}</div>
+          <div className="truncate text-xs text-muted-foreground">{member ? member.title || `@${member.handle}` : t('referencePreview.notMember')}</div>
         </div>
       </div>
       {note}
@@ -65,18 +67,19 @@ export function PersonPreview({ userId, fallbackName, note }: { userId: string; 
  * happens to the reference).
  */
 export function TaskPreview({ taskRef, note, missingNote }: { taskRef: string; note?: ReactNode; missingNote?: string }) {
+  const { t } = useTranslation('shell')
   const { workspace } = useWorkspace()
   const members = useMembers(workspace.id).data ?? []
   const { linked, missing, failed } = useLinkedTaskLookup(taskRef)
   if (!linked) {
-    if (failed) return <div className="text-muted-foreground">Could not load {taskRef}.</div>
+    if (failed) return <div className="text-muted-foreground">{t('referencePreview.loadFailed', { ref: taskRef })}</div>
     return missing ? (
       <>
-        <div className="font-medium">No task {taskRef}</div>
-        <PreviewNote>It does not exist, is in the trash, or you cannot see it.{missingNote ? ` ${missingNote}` : ''}</PreviewNote>
+        <div className="font-medium">{t('referencePreview.noTask', { ref: taskRef })}</div>
+        <PreviewNote>{t('referencePreview.missing')}{missingNote ? ` ${missingNote}` : ''}</PreviewNote>
       </>
     ) : (
-      <div className="text-muted-foreground">Loading {taskRef}…</div>
+      <div className="text-muted-foreground">{t('referencePreview.loading', { ref: taskRef })}</div>
     )
   }
   const { task, project, status } = linked
@@ -85,13 +88,13 @@ export function TaskPreview({ taskRef, note, missingNote }: { taskRef: string; n
     <>
       <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
         <span className="tabular-nums">{task.identifier}</span>
-        {project ? <span className="truncate">in {project.name}</span> : null}
+        {project ? <span className="truncate">{t('referencePreview.inProject', { project: project.name })}</span> : null}
       </div>
       <div className="mt-1 line-clamp-2 font-medium">{task.title}</div>
       <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
         <TaskStatusIcon status={status} size={13} />
-        <span className="truncate">{status?.name ?? 'No status'}</span>
-        {task.dueAt ? <span className="shrink-0">Due {shortDate(task.dueAt)}</span> : null}
+        <span className="truncate">{status?.name ?? t('referencePreview.noStatus')}</span>
+        {task.dueAt ? <span className="shrink-0">{t('referencePreview.due', { date: shortDate(task.dueAt) })}</span> : null}
         {assignees.length > 0 ? (
           <span className="ml-auto shrink-0">
             <UserAvatarStack users={assignees.map((member) => ({ id: member.id, name: member.name, color: member.color, avatarUrl: member.avatarUrl }))} size={18} />

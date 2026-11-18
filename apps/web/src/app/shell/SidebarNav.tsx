@@ -360,7 +360,7 @@ function ProjectLinks({ workspaceId, projects, selected, pathOf, onNavigate }: {
           active={selected === item.id}
           icon={dotIcon(item.color)}
           label={item.name}
-          aria-label={item.private ? `${item.name}, private` : item.name}
+          aria-label={item.private ? t('sidebar.privateProject', { name: item.name }) : item.name}
           trailing={item.private ? <ProjectLock project={item} className="text-sidebar-nav" /> : undefined}
           className="pr-8"
           // the row is the drag source, not the link (a dragged link carries its URL and a text drag image)
@@ -435,13 +435,14 @@ function BackToApp({ label, fallback = '/', onNavigate, onBack }: { label: strin
 
 /** A project's settings: Back to Tasks under the project's name, then the settings pages in their groups. */
 function ProjectSettingsAreaNav({ onNavigate, onBack }: { onNavigate?: () => void; onBack?: () => void }) {
+  const { t } = useTranslation('shell')
   const collapsed = useContext(SidebarNavCollapsed)
   const projectId = projectSettingsProjectOf(useLocation().pathname) ?? ''
   const workspaceId = useContext(WorkspaceContext)?.workspace.id ?? ''
   const project = useProjects(workspaceId, workspaceId !== '').data?.find((item) => item.id === projectId)
   return (
     <>
-      <BackToApp label={project?.name ?? 'Project settings'} fallback={`/tasks?project=${projectId}`} onNavigate={onNavigate} onBack={onBack} />
+      <BackToApp label={project?.name ?? t('sidebar.projectSettings')} fallback={`/tasks?project=${projectId}`} onNavigate={onNavigate} onBack={onBack} />
       {PROJECT_SETTINGS_GROUPS.map((group) => (
         <Fragment key={group.label}>
           <SidebarSection label={group.label} collapsed={collapsed} />
@@ -600,11 +601,11 @@ export function SidebarNav({
             <div className="-mx-1 flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto overscroll-contain px-1 pb-2">
               {area === 'tasks' ? <TasksAreaNav onNavigate={onNavigate} onBack={backShowsMenu ? () => setMainMenuFor(area) : undefined} /> : area === 'project-settings' ? <ProjectSettingsAreaNav onNavigate={onNavigate} onBack={backShowsMenu ? () => setMainMenuFor(area) : undefined} /> : area ? <SettingsAreaNav area={area} onNavigate={onNavigate} onBack={backShowsMenu ? () => setMainMenuFor(area) : undefined} /> : guest ? (
                 <>
-                  <SidebarNavItem to="/chat" icon={MessageSquare} label="Chat" badge={chatBadge} unread={chatUnread} onClick={onNavigate} />
+                  <SidebarNavItem to="/chat" icon={MessageSquare} label={t('nav.chat')} badge={chatBadge} unread={chatUnread} onClick={onNavigate} />
                   {isRoot ? (
                     <>
                       <div className="flex-1" aria-hidden="true" />
-                      <SidebarNavItem to="/admin" icon={SecurityUser} tone="neutral" label="Admin" onClick={onNavigate} />
+                      <SidebarNavItem to="/admin" icon={SecurityUser} tone="neutral" label={t('nav.admin')} onClick={onNavigate} />
                     </>
                   ) : null}
                 </>

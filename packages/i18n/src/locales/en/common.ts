@@ -13,11 +13,15 @@ export default {
   delete: 'Delete',
   done: 'Done',
   loading: 'Loading',
+  // A loading line shown as text, after a spinner.
+  loadingText: 'Loading…',
   menu: 'Menu',
   remove: 'Remove',
   reset: 'Reset',
   save: 'Save',
   search: 'Search',
+  // A page, task or document without a title.
+  untitled: 'Untitled',
   // Workspace roles as members see them.
   role: {
     owner: 'Owner',

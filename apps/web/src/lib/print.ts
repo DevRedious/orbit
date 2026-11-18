@@ -1,3 +1,5 @@
+import { i18n } from '@/i18n'
+
 /**
  * On `<html>` while the browser prints: `@media print` rules in index.css show only the `[data-print-root]` content
  * (a docs page, a mail conversation).
@@ -21,7 +23,7 @@ export function printPage(title: string, win: Window = window): void {
     win.removeEventListener('afterprint', restore)
   }
   root.setAttribute(PRINT_ATTR, '')
-  win.document.title = title.trim() || 'Untitled'
+  win.document.title = title.trim() || i18n.t('common:untitled')
   win.addEventListener('afterprint', restore)
   try {
     win.print()

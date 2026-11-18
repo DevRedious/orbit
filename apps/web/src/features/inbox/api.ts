@@ -164,16 +164,18 @@ export function notificationCopy(notification: NotificationRecord, pageTitle?: s
   const actor = actorName ?? t('someone')
   const page = () => (pageTitle === undefined ? t('aPage') : t('quotedPage', { title: pageTitle.trim() || t('untitled') }))
   if (notification.kind === 'import_finished') {
-    const name = IMPORTS[notification.import_source ?? '']?.name ?? 'An'
-    return notification.import_status === 'failed'
-      ? { title: `${name} import failed`, body: 'Open the import to see what happened.' }
-      : { title: `${name} import complete`, body: 'Open the import to see what was imported.' }
+    const source = IMPORTS[notification.import_source ?? '']?.name
+    const failed = notification.import_status === 'failed'
+    const title = source
+      ? t(failed ? 'importFailedTitle' : 'importCompleteTitle', { source })
+      : t(failed ? 'importFailedTitleUnknown' : 'importCompleteTitleUnknown')
+    return { title, body: t(failed ? 'importFailedBody' : 'importCompleteBody') }
   }
   if (notification.kind === 'chat_mentioned') {
     return { title: t('chatMentionedTitle', { actor }), body: t('chatMentionedBody') }
   }
   if (notification.kind === 'chat_reported') {
-    return { title: `${actorName ?? 'Someone'} reported a chat message`, body: 'Open the reports to see the message.' }
+    return { title: t('chatReportedTitle', { actor }), body: t('chatReportedBody') }
   }
   if (notification.kind === 'page_mentioned') {
     return { title: t('pageMentionedTitle', { actor, page: page() }), body: t('pageMentionedBody') }

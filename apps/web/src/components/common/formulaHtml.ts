@@ -1,5 +1,6 @@
 // A display formula from LaTeX. KaTeX returns HTML (and MathML for assistive tech). The styles are in index.css.
 import katex from 'katex'
+import { i18n } from '@/i18n'
 
 export type Formula = { html: string } | { error: string }
 
@@ -19,6 +20,6 @@ export function formulaHtml(source: string, display = true): Formula {
     }
   } catch (cause) {
     const message = cause instanceof Error ? cause.message.replace(/^KaTeX parse error:\s*/i, '').replace(/\s+/g, ' ').trim() : ''
-    return { error: message || 'Could not draw the formula.' }
+    return { error: message || i18n.t('shell:mathFormula.drawFailed') }
   }
 }

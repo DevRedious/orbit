@@ -13,11 +13,12 @@ function Spinner({ className, ...props }: React.ComponentProps<"svg">) {
 }
 
 /** A loading message with the spinner before it. */
-function LoadingText({ className, children = "Loading…" }: { className?: string; children?: React.ReactNode }) {
+function LoadingText({ className, children }: { className?: string; children?: React.ReactNode }) {
+  const { t } = useTranslation("common")
   return (
     <span role="status" className={cn("inline-flex items-center gap-2 text-muted-foreground", className)}>
       <Spinner role="presentation" aria-hidden aria-label={undefined} className="size-3.5" />
-      {children}
+      {children ?? t("loadingText")}
     </span>
   )
 }

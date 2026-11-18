@@ -1,6 +1,7 @@
 // Full-screen PDF preview, like the ImageViewer. pdf.js draws each page into a canvas when it comes near the view:
 // no text layer, no links and no PDF scripts, so a file from anyone is safe to show. This module is loaded on demand.
 import { useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Download, Xmark as X } from 'reicon-react'
 import { getDocument, GlobalWorkerOptions, version, type PDFDocumentProxy, type RenderTask } from 'pdfjs-dist'
 import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
@@ -25,6 +26,7 @@ const A4_RATIO = 297 / 210
 type Loaded = { status: 'loading' } | { status: 'failed' } | { status: 'ready'; pdf: PDFDocumentProxy }
 
 export function PdfViewer({ attachment, onClose }: { attachment: Attachment; onClose: () => void }) {
+  const { t } = useTranslation('shell')
   // Closing plays the dialog's exit first; the caller unmounts the viewer once it has finished.
   const [open, setOpen] = useState(true)
   const [loaded, setLoaded] = useState<Loaded>({ status: 'loading' })
@@ -62,13 +64,13 @@ export function PdfViewer({ attachment, onClose }: { attachment: Attachment; onC
 
   const pageCount = loaded.status === 'ready' ? loaded.pdf.numPages : 0
   const download = (
-    <Tip label="Download PDF" side="bottom">
+    <Tip label={t('pdfViewer.download')} side="bottom">
       <a
         data-slot="image-viewer-button"
         href={attachment.url}
         download={attachment.fileName}
         className={cn(buttonVariants({ variant: 'ghost', size: 'icon-lg' }), 'bg-white/10 text-white hover:bg-white/15 hover:text-white dark:hover:bg-white/15')}
-        aria-label="Download PDF"
+        aria-label={t('pdfViewer.download')}
       >
         <Download className="size-4" />
       </a>
@@ -94,22 +96,22 @@ export function PdfViewer({ attachment, onClose }: { attachment: Attachment; onC
           <div className="min-w-0">
             <div className="truncate text-sm font-bold">{attachment.fileName}</div>
             <div className="text-xs font-semibold text-white/55 tabular-nums">
-              {pageCount > 0 ? `${pageCount} ${pageCount === 1 ? 'page' : 'pages'}` : 'PDF'}
+              {pageCount > 0 ? t('pdfViewer.pageCount', { count: pageCount }) : 'PDF'}
             </div>
           </div>
           <div className="flex items-center gap-2">
             {download}
-            <ViewerBarButton title="Close PDF viewer" aria-label="Close PDF viewer" onClick={() => setOpen(false)}>
+            <ViewerBarButton title={t('pdfViewer.close')} aria-label={t('pdfViewer.close')} onClick={() => setOpen(false)}>
               <X className="size-4" />
             </ViewerBarButton>
           </div>
         </div>
         <div ref={measure} className="flex min-h-0 flex-1 flex-col items-center gap-4 overflow-y-auto overscroll-contain p-2 sm:p-6">
           {loaded.status === 'loading' ? (
-            <Spinner className="m-auto text-white/70" aria-label="Loading the PDF" />
+            <Spinner className="m-auto text-white/70" aria-label={t('pdfViewer.loading')} />
           ) : loaded.status === 'failed' ? (
             <div className="m-auto flex flex-col items-center gap-3 text-center text-sm text-white/80">
-              <p>This PDF cannot be shown here. Download it to open it.</p>
+              <p>{t('pdfViewer.failed')}</p>
               {download}
             </div>
           ) : (
@@ -119,7 +121,7 @@ export function PdfViewer({ attachment, onClose }: { attachment: Attachment; onC
               ))}
               {pageCount > PAGE_LIMIT ? (
                 <p className="pb-4 text-sm text-white/70">
-                  The first {PAGE_LIMIT} of {pageCount} pages are shown. Download the PDF to see all of them.
+                  {t('pdfViewer.truncated', { limit: PAGE_LIMIT, count: pageCount })}
                 </p>
               ) : null}
             </>
@@ -132,6 +134,7 @@ export function PdfViewer({ attachment, onClose }: { attachment: Attachment; onC
 
 /** One page: its place is kept from its size, and pdf.js draws it once it is near the view. */
 function PdfPage({ pdf, number, width }: { pdf: PDFDocumentProxy; number: number; width: number }) {
+  const { t } = useTranslation('shell')
   const canvas = useRef<HTMLCanvasElement>(null)
   const [pageSize, setPageSize] = useState<{ width: number; height: number } | null>(null)
   const [near, setNear] = useState(false)
@@ -185,7 +188,7 @@ function PdfPage({ pdf, number, width }: { pdf: PDFDocumentProxy; number: number
     <canvas
       ref={canvas}
       role="img"
-      aria-label={`Page ${number}`}
+      aria-label={t('pdfViewer.page', { number })}
       className="shrink-0 rounded-sm bg-white shadow-[0_25px_50px_-12px_rgba(0,0,0,0.6)]"
       style={{ width, height }}
     />

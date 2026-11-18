@@ -3,6 +3,7 @@ export default {
   attachments: {
     remove: 'Remove {{name}}',
     openImage: 'Open image {{name}}',
+    openFile: 'Open {{name}}',
     deletedFile: 'Deleted file',
     deletedByAdmin: '{{name}} · an admin deleted it',
   },
@@ -22,6 +23,40 @@ export default {
     drawing: 'Drawing the diagram…',
     empty: 'The diagram is empty.',
     failed: 'Could not draw the diagram.',
+  },
+  guestBadge: 'Guest',
+  listPager: {
+    // The rows shown: "11-20 of 54".
+    range: '{{first}}-{{last}} of {{total}}',
+    perPage: 'Items per page',
+    previous: 'Previous page',
+    next: 'Next page',
+  },
+  mathFormula: {
+    empty: 'Empty formula',
+    drawFailed: 'Could not draw the formula.',
+  },
+  pdfViewer: {
+    download: 'Download PDF',
+    close: 'Close PDF viewer',
+    loading: 'Loading the PDF',
+    failed: 'This PDF cannot be shown here. Download it to open it.',
+    pageCount_one: '{{count}} page',
+    pageCount_other: '{{count}} pages',
+    truncated: 'The first {{limit}} of {{count}} pages are shown. Download the PDF to see all of them.',
+    page: 'Page {{number}}',
+  },
+  // The card shown while the pointer rests on a mention of a person or a task.
+  referencePreview: {
+    unknownUser: 'Unknown user',
+    notMember: 'No longer a member',
+    loadFailed: 'Could not load {{ref}}.',
+    noTask: 'No task {{ref}}',
+    missing: 'It does not exist, is in the trash, or you cannot see it.',
+    loading: 'Loading {{ref}}…',
+    inProject: 'in {{project}}',
+    noStatus: 'No status',
+    due: 'Due {{date}}',
   },
   colorSwatch: {
     custom: 'Custom color',
@@ -67,6 +102,7 @@ export default {
     people: 'People',
     channels: 'Channels',
     tasks: 'Tasks',
+    searchingTasks: 'Searching tasks…',
   },
   orbitUnavailable: {
     title: 'Orbit is unavailable',
@@ -107,6 +143,10 @@ export default {
   },
   // src/lib
   image: 'Image',
+  customTheme: {
+    // A custom theme that is not one of the presets.
+    yourColors: 'Your colors',
+  },
   messagePreview: {
     sticker: 'Sticker',
     file: 'Sent a file',

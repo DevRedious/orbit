@@ -34,6 +34,7 @@ export default {
     projectSettings: 'Project settings',
     projectSettingsOf: '{{name}} settings',
     newProject: 'New project',
+    privateProject: '{{name}}, private',
     favoriteViews: 'Favorite views',
     backToMainMenu: 'Back to the main menu',
     expand: 'Expand sidebar',
@@ -52,6 +53,9 @@ export default {
   activity: {
     label: 'Activity',
     unread: 'Activity, unread',
+    noUnreadTitle: 'No unread notifications',
+    noUnreadDescription: "You're all caught up.",
+    viewAll: 'View all activity',
   },
   userMenu: {
     account: 'Account',
@@ -106,5 +110,17 @@ export default {
     openConversationFailed: 'Could not open the conversation with {{name}}. Try again.',
     noteLabel: 'Private note about {{name}}',
     notePlaceholder: 'Add a note. Only you can see it.',
+    block: 'Block',
+    unblock: 'Unblock',
+  },
+  // Self-hosted Orbit: the monthly reminder to installation admins.
+  donation: {
+    label: 'Support Orbit',
+    dismiss: 'Dismiss donation reminder',
+    title: 'Enjoy Orbit? Support our work.',
+    body: 'Orbit will be free forever. To support our work, please consider a donation.',
+    sponsors: 'GitHub Sponsors',
+    otherWays: 'Other ways',
+    later: 'Maybe next time',
   },
 } as const

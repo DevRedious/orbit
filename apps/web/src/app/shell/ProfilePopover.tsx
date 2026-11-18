@@ -291,6 +291,7 @@ function MessageAction({ userId, name, onDone }: { userId: string; name: string;
 
 /** "Block" asks first, then hides the member's messages for the user in chat; "Unblock" undoes it at once. */
 function BlockAction({ userId, name, onDone }: { userId: string; name: string; onDone: () => void }) {
+  const { t } = useTranslation('shell')
   const client = useChatClient()
   const blocking = useBlockPerson()
   if (!client) return null
@@ -307,7 +308,7 @@ function BlockAction({ userId, name, onDone }: { userId: string; name: string; o
         else void blocking.block(userId, name)
       }}
     >
-      {blocked ? 'Unblock' : 'Block'}
+      {blocked ? t('profilePopover.unblock') : t('profilePopover.block')}
     </Button>
   )
 }

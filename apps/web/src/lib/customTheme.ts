@@ -1,4 +1,5 @@
 import { useSyncExternalStore, type CSSProperties } from 'react'
+import { i18n } from '@/i18n'
 
 /**
  * Account settings → Appearance → Custom: a personal colour theme for the whole app, in place of Light, System or
@@ -58,7 +59,7 @@ export type CustomThemeChoice = CustomTheme | { apps: AppLooks } | null
 export function themeName(theme: CustomTheme | null): string {
   if (!theme) return 'Orbit'
   const code = serializeCustomTheme(theme)
-  return CUSTOM_THEME_PRESETS.find((preset) => serializeCustomTheme(preset.theme) === code)?.name ?? 'Your colors'
+  return CUSTOM_THEME_PRESETS.find((preset) => serializeCustomTheme(preset.theme) === code)?.name ?? i18n.t('shell:customTheme.yourColors')
 }
 
 export function appSectionOf(pathname: string): AppSection | null {

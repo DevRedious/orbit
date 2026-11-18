@@ -62,7 +62,7 @@ export function MentionPopover({
         ref={list}
         className={cn('max-h-80 overflow-y-auto overscroll-contain py-2 transition-opacity duration-150', loading && suggestions.length > 0 && 'opacity-60')}
       >
-        {suggestions.length === 0 ? <LoadingText className="px-3 py-1 text-xs">Searching tasks…</LoadingText> : null}
+        {suggestions.length === 0 ? <LoadingText className="px-3 py-1 text-xs">{t('mentionPopover.searchingTasks')}</LoadingText> : null}
         {suggestions.map((suggestion, index) => {
           const section = SECTION[suggestion.kind]
           const heading = index === 0 || SECTION[suggestions[index - 1]!.kind] !== section

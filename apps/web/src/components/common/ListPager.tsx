@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ArrowRight } from 'reicon-react'
 import { Tip } from '@/components/common/Tip'
 import { Button } from '@/components/ui/button'
@@ -25,13 +26,14 @@ type PagerState = ReturnType<typeof usePagedList>['pager']
 
 /** Footer with the row range, the page size and the previous and next buttons. */
 export function ListPager({ total, page, lastPage, perPage, setPage, setPerPage }: PagerState) {
+  const { t } = useTranslation('shell')
   const firstRow = total === 0 ? 0 : (page - 1) * perPage + 1
   const lastRow = Math.min(page * perPage, total)
   return (
     <footer className="flex min-h-11 items-center justify-between border-t px-4 text-[0.6875rem] text-muted-foreground/70">
       <div className="inline-flex h-7 items-center gap-3 whitespace-nowrap tabular-nums">
         <span>
-          {firstRow}-{lastRow} of {total}
+          {t('listPager.range', { first: firstRow, last: lastRow, total })}
         </span>
         <Select
           items={PAGE_SIZE_OPTIONS}
@@ -41,7 +43,7 @@ export function ListPager({ total, page, lastPage, perPage, setPage, setPerPage 
             setPage(1)
           }}
         >
-          <SelectTrigger aria-label="Items per page" size="sm" className="w-16 px-2">
+          <SelectTrigger aria-label={t('listPager.perPage')} size="sm" className="w-16 px-2">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -50,13 +52,13 @@ export function ListPager({ total, page, lastPage, perPage, setPage, setPerPage 
         </Select>
       </div>
       <div className="flex items-center gap-1">
-        <Tip label="Previous page">
-          <Button type="button" variant="outline" size="icon-sm" aria-label="Previous page" disabled={page <= 1} onClick={() => setPage(page - 1)}>
+        <Tip label={t('listPager.previous')}>
+          <Button type="button" variant="outline" size="icon-sm" aria-label={t('listPager.previous')} disabled={page <= 1} onClick={() => setPage(page - 1)}>
             <ArrowRight className="size-3.5 rotate-180" />
           </Button>
         </Tip>
-        <Tip label="Next page">
-          <Button type="button" variant="outline" size="icon-sm" aria-label="Next page" disabled={page >= lastPage} onClick={() => setPage(page + 1)}>
+        <Tip label={t('listPager.next')}>
+          <Button type="button" variant="outline" size="icon-sm" aria-label={t('listPager.next')} disabled={page >= lastPage} onClick={() => setPage(page + 1)}>
             <ArrowRight className="size-3.5" />
           </Button>
         </Tip>

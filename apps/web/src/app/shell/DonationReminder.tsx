@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Heart, Xmark } from 'reicon-react'
 import { buttonVariants } from '@/components/ui/button'
 import { useAuthOptions } from '@/features/auth/api'
@@ -29,6 +30,7 @@ function readDismissedAt(): string | null {
  * month. Any choice (donate, "Maybe next time", close) hides it until next month in this browser.
  */
 export function DonationReminder() {
+  const { t } = useTranslation('shell')
   const options = useAuthOptions().data
   const admin = useIsInstallationAdmin()
   const [open, setOpen] = useState(() => shouldShowDonationReminder(readDismissedAt(), new Date()))
@@ -46,12 +48,12 @@ export function DonationReminder() {
   return (
     <section
       data-slot="donation-reminder"
-      aria-label="Support Orbit"
+      aria-label={t('donation.label')}
       className="fixed right-4 bottom-4 z-40 w-[min(380px,calc(100vw-2rem))] rounded-xl border bg-popover p-4 text-popover-foreground shadow-lg animate-in fade-in-0 slide-in-from-bottom-2 duration-200 ease-out motion-reduce:animate-none max-[899px]:bottom-[calc(5rem+env(safe-area-inset-bottom,0px))]"
     >
       <button
         type="button"
-        aria-label="Dismiss donation reminder"
+        aria-label={t('donation.dismiss')}
         onClick={dismiss}
         className="absolute top-2.5 right-2.5 flex size-7 items-center justify-center rounded-md text-muted-foreground transition-[color,background-color] hover:bg-muted hover:text-foreground"
       >
@@ -62,21 +64,21 @@ export function DonationReminder() {
           <Heart className="size-5" />
         </span>
         <div className="min-w-0">
-          <h2 className="text-sm font-semibold">Enjoy Orbit? Support our work.</h2>
+          <h2 className="text-sm font-semibold">{t('donation.title')}</h2>
           <p className="mt-1 text-xs leading-5 text-muted-foreground">
-            Orbit will be free forever. To support our work, please consider a donation.
+            {t('donation.body')}
           </p>
         </div>
       </div>
       <div className="mt-4 flex items-center gap-2">
         <a href={SPONSOR_URL} target="_blank" rel="noopener noreferrer" onClick={dismiss} className={buttonVariants({ size: 'sm' })}>
-          GitHub Sponsors
+          {t('donation.sponsors')}
         </a>
         <a href={OTHER_WAYS_URL} target="_blank" rel="noopener noreferrer" onClick={dismiss} className={buttonVariants({ variant: 'outline', size: 'sm' })}>
-          Other ways
+          {t('donation.otherWays')}
         </a>
         <button type="button" onClick={dismiss} className="ml-auto px-1 text-xs font-medium whitespace-nowrap text-muted-foreground transition-colors hover:text-foreground">
-          Maybe next time
+          {t('donation.later')}
         </button>
       </div>
     </section>

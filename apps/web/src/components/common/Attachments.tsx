@@ -115,7 +115,7 @@ export function Attachments({
               ) : isPdf(att) ? (
                 <button
                   type="button"
-                  aria-label={`Open ${att.fileName}`}
+                  aria-label={t('attachments.openFile', { name: att.fileName })}
                   onClick={() => setViewerPdf(att)}
                   className="group/card flex w-full cursor-pointer items-center gap-3 rounded-lg border border-border bg-background p-3 text-left text-muted-foreground shadow-sm transition-colors hover:bg-muted"
                 >

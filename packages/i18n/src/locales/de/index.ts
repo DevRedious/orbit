@@ -1,0 +1,16 @@
+import admin from './admin'
+import auth from './auth'
+import chat from './chat'
+import common from './common'
+import database from './database'
+import docs from './docs'
+import errors from './errors'
+import mail from './mail'
+import profile from './profile'
+import settings from './settings'
+import shell from './shell'
+import tasks from './tasks'
+import views from './views'
+import workspaces from './workspaces'
+
+export const de = { common, errors, shell, auth, profile, admin, tasks, views, settings, docs, database, chat, workspaces, mail } as const

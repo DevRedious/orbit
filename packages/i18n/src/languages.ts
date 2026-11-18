@@ -1,4 +1,4 @@
-export const LANGUAGES = ['en', 'fr'] as const
+export const LANGUAGES = ['en', 'fr', 'de'] as const
 export type Language = (typeof LANGUAGES)[number]
 
 export const DEFAULT_LANGUAGE: Language = 'en'
@@ -7,6 +7,7 @@ export const DEFAULT_LANGUAGE: Language = 'en'
 export const LANGUAGE_LABELS: Record<Language, string> = {
   en: 'English',
   fr: 'Français',
+  de: 'Deutsch',
 }
 
 export function isLanguage(value: unknown): value is Language {

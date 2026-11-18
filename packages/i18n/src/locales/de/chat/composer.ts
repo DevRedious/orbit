@@ -1,0 +1,71 @@
+import type { Translation } from '../../../types'
+import type source from '../../en/chat/composer'
+
+export default {
+  everyoneHere: 'alle hier',
+  everyoneOnline: 'alle, die online sind',
+  notify: {
+    title: '{{number}} Personen benachrichtigen?',
+    channel: '@channel benachrichtigt alle in {{title}}.',
+    here: '@here benachrichtigt alle in {{title}}, die online sind.',
+    confirm: 'Senden',
+  },
+  replyingTo: 'Antwort an <name>{{name}}</name>',
+  unknownAuthor: 'Unbekannt',
+  cancelReply: 'Antwort abbrechen',
+  replyInThread: 'Im Thread antworten',
+  messageTo: 'Nachricht an {{title}}',
+  replyPlaceholder: 'Antworten …',
+  attachFiles: 'Dateien anhängen',
+  addEmoji: 'Emoji hinzufügen',
+  sendSticker: 'Sticker senden',
+  mentionSomeone: 'Jemanden erwähnen',
+  mentionChannelOrTask: 'Kanal oder Aufgabe erwähnen',
+  taskHint: 'Gib einen Aufgabentitel oder eine ID ein, z. B. ENG-12',
+  /** The hover card of a reference in the message box. */
+  reference: {
+    notifiesChannel: 'Benachrichtigt alle in dieser Konversation.',
+    notifiesHere: 'Benachrichtigt alle in dieser Konversation, die online sind.',
+    notInConversation: 'Nicht in dieser Konversation, daher keine Benachrichtigung.',
+    taskMissing: 'Bleibt in der Nachricht als reiner Text stehen.',
+    unknownChannel: 'Unbekannter Kanal',
+    privateChannel: 'Privater Kanal',
+    channel: 'Kanal',
+    members_one: '{{count}} Mitglied',
+    members_other: '{{count}} Mitglieder',
+    archived: 'Archiviert',
+  },
+  charactersOver_one: '{{count}} Zeichen über dem Limit',
+  charactersOver_other: '{{count}} Zeichen über dem Limit',
+  charactersLeft_one: 'Noch {{count}} Zeichen',
+  charactersLeft_other: 'Noch {{count}} Zeichen',
+  sendMessage: 'Nachricht senden',
+  alsoSendTo: 'Auch an {{title}} senden',
+  alsoSendToConversation: 'Auch an diese Konversation senden',
+  globalMentionInThread: '@channel und @here bewirken in einem Thread nichts.',
+  uploads: {
+    pastedFile: 'Eingefügte Datei',
+    uploading: '{{name}} wird hochgeladen',
+    storageFull: 'Der Speicher des Arbeitsbereichs ist voll.',
+    failed: 'Hochladen fehlgeschlagen.',
+    tryAgain: 'Erneut versuchen',
+    cancel: 'Hochladen von {{name}} abbrechen',
+    remove: '{{name}} entfernen',
+  },
+  emoji: {
+    heading: 'Emojis zu :{{query}}',
+    label: 'Emojis zu {{query}}',
+  },
+  typing: {
+    someone: 'Jemand',
+    one: '{{name}} schreibt …',
+    two: '{{first}} und {{second}} schreiben …',
+    several: 'Mehrere Personen schreiben …',
+  },
+  reconnecting:
+    'Verbindung wird wiederhergestellt … Nachrichten, die du jetzt sendest, werden verschickt, sobald du wieder online bist.',
+  stickers: {
+    search: 'Sticker suchen',
+    noMatch: 'Keine passenden Sticker',
+  },
+} satisfies Translation<typeof source>

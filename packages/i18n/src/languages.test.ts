@@ -7,16 +7,17 @@ test('a region tag matches its base language', () => {
 })
 
 test('the first supported tag wins', () => {
-  expect(matchLanguage(['de-DE', 'fr', 'en'])).toBe('fr')
+  expect(matchLanguage(['ja-JP', 'de-DE', 'fr', 'en'])).toBe('de')
 })
 
 test('no supported tag gives null', () => {
-  expect(matchLanguage(['de', 'ja-JP'])).toBeNull()
+  expect(matchLanguage(['ja', 'ko-KR'])).toBeNull()
   expect(matchLanguage([])).toBeNull()
 })
 
 test('only shipped languages are languages', () => {
   expect(isLanguage('fr')).toBe(true)
-  expect(isLanguage('de')).toBe(false)
+  expect(isLanguage('de')).toBe(true)
+  expect(isLanguage('ja')).toBe(false)
   expect(isLanguage(null)).toBe(false)
 })

@@ -2,6 +2,7 @@ import { queryOptions, useMutation, useQuery, useQueryClient, type QueryClient }
 import { toast } from 'sonner'
 import { apiClient } from '@/api/client'
 import { queryKeys } from '@/api/queryKeys'
+import { i18n } from '@/i18n'
 import {
   createDatabaseLink,
   createDatabaseProperty,
@@ -164,7 +165,7 @@ export function useUpdateValues(workspaceId: string, databaseId: string) {
     optimistic: (detail, { rowId, values }) => withRow(detail, rowId, (row) => ({ ...row, values: patchValues(row.values, values) })),
     // A write's row has no gallery preview (only reads of a gallery send one): the cached one stays.
     reconcile: (detail, row) => withRow(detail, row.id, (cached) => (cached.preview ? { ...row, preview: cached.preview } : row)),
-    error: 'Could not save the value.',
+    error: i18n.t('database:api.saveValueFailed'),
   })
 }
 
@@ -185,7 +186,7 @@ export function useUpdateRowTitle(workspaceId: string, databaseId: string) {
     optimistic: (detail, { rowId, title }) => withRow(detail, rowId, (row) => ({ ...row, title })),
     reconcile: (detail, page, { rowId }) =>
       withRow(detail, rowId, (row) => ({ ...row, title: page.title, version: page.version, updated_at: page.updated_at, updated_by: page.updated_by })),
-    error: 'Could not rename the row.',
+    error: i18n.t('database:api.renameRowFailed'),
   })
 }
 
@@ -200,7 +201,7 @@ export function useCreateRow(workspaceId: string, databaseId: string) {
       database: { ...detail.database, row_count: detail.database.row_count + 1 },
       rows: [...detail.rows.map((other) => (other.position >= row.position ? { ...other, position: other.position + 1 } : other)), row],
     }),
-    error: 'Could not add the row.',
+    error: i18n.t('database:api.addRowFailed'),
   })
 }
 
@@ -223,7 +224,7 @@ export function useMoveRow(workspaceId: string, databaseId: string) {
       return { ...detail, rows: values ? rows.map((row) => (row.id === rowId ? { ...row, values: patchValues(row.values, values) } : row)) : rows }
     },
     refetch: true,
-    error: 'Could not move the row.',
+    error: i18n.t('database:api.moveRowFailed'),
   })
 }
 
@@ -251,15 +252,15 @@ export function useTrashRows(workspaceId: string, databaseId: string) {
       return { ...detail, database: { ...detail.database, row_count: kept.length }, rows: kept }
     },
     refetch: true,
-    error: 'Could not delete the rows.',
+    error: i18n.t('database:api.deleteRowsFailed'),
   })
   const trash = (rows: DatabaseRow[]) =>
     mutation.mutate(
       { rows },
       {
         onSuccess: () =>
-          toast.success(rows.length === 1 ? 'Row moved to the trash.' : `${rows.length} rows moved to the trash.`, {
-            action: { label: 'Undo', onClick: () => void restoreRows(queryClient, workspaceId, databaseId, rows) },
+          toast.success(i18n.t('database:api.rowsTrashed', { count: rows.length }), {
+            action: { label: i18n.t('database:api.undo'), onClick: () => void restoreRows(queryClient, workspaceId, databaseId, rows) },
           }),
       },
     )
@@ -274,7 +275,7 @@ async function restoreRows(queryClient: QueryClient, workspaceId: string, databa
     ),
   )
   const failed = results.find((result) => result.status === 'rejected')
-  if (failed) toast.error(databaseErrorMessage(failed.reason, 'Could not restore every row. Find them in the trash.'))
+  if (failed) toast.error(databaseErrorMessage(failed.reason, i18n.t('database:api.restoreRowsFailed')))
   void queryClient.invalidateQueries({ queryKey: queryKeys.database(workspaceId, databaseId) })
   void queryClient.invalidateQueries({ queryKey: queryKeys.pages.trash(workspaceId) })
 }
@@ -293,7 +294,7 @@ export function useCreateProperty(workspaceId: string, databaseId: string) {
       views: source ? detail.views.map((view) => withCopiedColumn(view, source, property.id)) : detail.views,
     }),
     refetch: true,
-    error: 'Could not add the property.',
+    error: i18n.t('database:api.addPropertyFailed'),
   })
 }
 
@@ -315,7 +316,7 @@ export function useUpdateProperty(workspaceId: string, databaseId: string) {
       ),
     }),
     refetch: true,
-    error: 'Could not change the property.',
+    error: i18n.t('database:api.changePropertyFailed'),
   })
 }
 
@@ -346,7 +347,7 @@ export function useDeleteProperty(workspaceId: string, databaseId: string) {
     },
     optimistic: (detail, propertyId) => ({ ...detail, properties: detail.properties.filter((property) => property.id !== propertyId) }),
     refetch: true,
-    error: 'Could not delete the property.',
+    error: i18n.t('database:api.deletePropertyFailed'),
   })
 }
 
@@ -362,7 +363,7 @@ export function useCreateView(workspaceId: string, databaseId: string, linkId?: 
       },
       reconcile: (detail, view) => ({ ...detail, views: [...detail.views, view] }),
       refetch: true,
-      error: 'Could not add the view.',
+      error: i18n.t('database:api.addViewFailed'),
     },
     linkId,
   )
@@ -390,7 +391,7 @@ export function useUpdateView(workspaceId: string, databaseId: string, linkId?: 
     }),
     reconcile: (detail, saved) => ({ ...detail, views: detail.views.map((view) => (view.id === saved.id ? saved : view)) }),
     refetch: false,
-    error: 'Could not save the view.',
+    error: i18n.t('database:api.saveViewFailed'),
   }, linkId)
 }
 
@@ -400,7 +401,7 @@ export function useDeleteView(workspaceId: string, databaseId: string, linkId?: 
       await deleteDatabaseView({ client: apiClient, path: { ...path, view_id: viewId }, ...(linkId ? { query: { link_id: linkId } } : {}), throwOnError: true })
     },
     optimistic: (detail, viewId) => ({ ...detail, views: detail.views.filter((view) => view.id !== viewId) }),
-    error: 'Could not delete the view.',
+    error: i18n.t('database:api.deleteViewFailed'),
   }, linkId)
 }
 

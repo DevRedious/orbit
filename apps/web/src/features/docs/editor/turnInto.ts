@@ -1,5 +1,6 @@
 import { editorHasBlockWithType, type BlockNoteEditor } from '@blocknote/core'
 import { CALLOUT_DEFAULT_BACKGROUND } from '@orbit/editor/schema'
+import { i18n } from '@/i18n'
 
 /** One row in the block handle's "Turn into" menu. */
 export interface TurnIntoChoice {
@@ -15,33 +16,36 @@ export interface TurnIntoChoice {
 }
 
 interface ChoiceSpec {
-  name: string
+  /** Catalog key of the row's name (docs namespace). */
+  name: TurnIntoKey
   type: string
   props?: Record<string, boolean | number | string>
   match?: Record<string, boolean | number | string>
 }
 
 /** Same order as the block handle in the docs reference: text, headings, lists, code, quote, callout, toggle headings. */
+type TurnIntoKey = `turnInto.${'text' | `heading${1 | 2 | 3 | 4 | 5 | 6}` | 'bulletedList' | 'numberedList' | 'todoList' | 'toggleList' | 'code' | 'quote' | 'callout' | `toggleHeading${1 | 2 | 3 | 4}`}`
+
 const CHOICE_SPECS: readonly ChoiceSpec[] = [
-  { name: 'Text', type: 'paragraph' },
-  { name: 'Heading 1', type: 'heading', props: { level: 1, isToggleable: false } },
-  { name: 'Heading 2', type: 'heading', props: { level: 2, isToggleable: false } },
-  { name: 'Heading 3', type: 'heading', props: { level: 3, isToggleable: false } },
-  { name: 'Heading 4', type: 'heading', props: { level: 4, isToggleable: false } },
-  { name: 'Heading 5', type: 'heading', props: { level: 5, isToggleable: false } },
-  { name: 'Heading 6', type: 'heading', props: { level: 6, isToggleable: false } },
-  { name: 'Bulleted list', type: 'bulletListItem' },
-  { name: 'Numbered list', type: 'numberedListItem' },
-  { name: 'To-do list', type: 'checkListItem' },
-  { name: 'Toggle list', type: 'toggleListItem' },
-  { name: 'Code', type: 'codeBlock' },
-  { name: 'Quote', type: 'quote' },
+  { name: 'turnInto.text', type: 'paragraph' },
+  { name: 'turnInto.heading1', type: 'heading', props: { level: 1, isToggleable: false } },
+  { name: 'turnInto.heading2', type: 'heading', props: { level: 2, isToggleable: false } },
+  { name: 'turnInto.heading3', type: 'heading', props: { level: 3, isToggleable: false } },
+  { name: 'turnInto.heading4', type: 'heading', props: { level: 4, isToggleable: false } },
+  { name: 'turnInto.heading5', type: 'heading', props: { level: 5, isToggleable: false } },
+  { name: 'turnInto.heading6', type: 'heading', props: { level: 6, isToggleable: false } },
+  { name: 'turnInto.bulletedList', type: 'bulletListItem' },
+  { name: 'turnInto.numberedList', type: 'numberedListItem' },
+  { name: 'turnInto.todoList', type: 'checkListItem' },
+  { name: 'turnInto.toggleList', type: 'toggleListItem' },
+  { name: 'turnInto.code', type: 'codeBlock' },
+  { name: 'turnInto.quote', type: 'quote' },
   // A paragraph's `backgroundColor: "default"` would win over the callout default if we did not set this.
-  { name: 'Callout', type: 'callout', props: { backgroundColor: CALLOUT_DEFAULT_BACKGROUND }, match: {} },
-  { name: 'Toggle heading 1', type: 'heading', props: { level: 1, isToggleable: true } },
-  { name: 'Toggle heading 2', type: 'heading', props: { level: 2, isToggleable: true } },
-  { name: 'Toggle heading 3', type: 'heading', props: { level: 3, isToggleable: true } },
-  { name: 'Toggle heading 4', type: 'heading', props: { level: 4, isToggleable: true } },
+  { name: 'turnInto.callout', type: 'callout', props: { backgroundColor: CALLOUT_DEFAULT_BACKGROUND }, match: {} },
+  { name: 'turnInto.toggleHeading1', type: 'heading', props: { level: 1, isToggleable: true } },
+  { name: 'turnInto.toggleHeading2', type: 'heading', props: { level: 2, isToggleable: true } },
+  { name: 'turnInto.toggleHeading3', type: 'heading', props: { level: 3, isToggleable: true } },
+  { name: 'turnInto.toggleHeading4', type: 'heading', props: { level: 4, isToggleable: true } },
 ]
 
 export interface TurnBlock {
@@ -58,7 +62,7 @@ function propTypes(props: ChoiceSpec['props']) {
 /** Rows the editor's schema can store. An image, a file, a table, or a page has none. */
 export function turnIntoChoices(editor: BlockNoteEditor<any, any, any>): TurnIntoChoice[] {
   return CHOICE_SPECS.filter((spec) => editorHasBlockWithType(editor, spec.type, propTypes(spec.props))).map(({ name, type, props, match }) => ({
-    name,
+    name: i18n.t(`docs:${name}`),
     type,
     props,
     match,
@@ -96,10 +100,10 @@ export function applyTurnInto(editor: BlockNoteEditor<any, any, any>, block: Tur
 /** What a `page` block linking to a database and a `database` block turn into: each other (spec 3.5 "Turn into"). */
 export function databaseTurn(block: TurnBlock, isDatabase: (pageId: string) => boolean): { label: string; type: 'page' | 'database'; props: Record<string, string> } | null {
   if (block.type === 'page' && typeof block.props.pageId === 'string' && isDatabase(block.props.pageId)) {
-    return { label: 'Inline database', type: 'database', props: { databaseId: block.props.pageId, linkId: '' } }
+    return { label: i18n.t('docs:turnInto.inlineDatabase'), type: 'database', props: { databaseId: block.props.pageId, linkId: '' } }
   }
   if (block.type === 'database' && typeof block.props.databaseId === 'string' && block.props.databaseId) {
-    return { label: 'Page link', type: 'page', props: { pageId: block.props.databaseId } }
+    return { label: i18n.t('docs:turnInto.pageLink'), type: 'page', props: { pageId: block.props.databaseId } }
   }
   return null
 }

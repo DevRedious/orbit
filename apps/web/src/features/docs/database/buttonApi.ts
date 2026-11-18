@@ -4,6 +4,7 @@ import type { DatabaseButtonPress } from '@orbit/api/generated/types.gen'
 import { dayOf } from '@orbit/database/dates'
 import { apiClient } from '@/api/client'
 import { queryKeys } from '@/api/queryKeys'
+import { i18n } from '@/i18n'
 import { useDatabaseMutation } from './api'
 
 export type PressInput = { rowId: string; propertyId: string }
@@ -28,7 +29,7 @@ export function usePressButton(workspaceId: string, databaseId: string) {
     },
     reconcile: (detail, press) => ({ ...detail, rows: detail.rows.map((row) => (row.id === press.row.id ? press.row : row)) }),
     refetch: true,
-    error: 'Could not run the button.',
+    error: i18n.t('database:buttonConfig.runFailed'),
   })
   /** `opensUrl`: the button has an `open_url` action, so a tab opens during the click (later, a popup blocker stops it). */
   const press = (input: PressInput, opensUrl: boolean) => {

@@ -1,4 +1,5 @@
 import { useLayoutEffect, useState, type ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { cn } from 'cn'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
@@ -19,6 +20,7 @@ interface DatabasePageProps {
 
 /** A database page (spec 7.1): the page header above the database's views, in one scroller both ways. */
 export function DatabasePage({ workspaceId, databaseId, locked, cover, title }: DatabasePageProps) {
+  const { t } = useTranslation('database')
   const query = useDatabase(workspaceId, databaseId)
   const env = useDatabaseEnvValue(workspaceId, databaseId, locked)
   const [scroller, setScroller] = useState<HTMLDivElement | null>(null)
@@ -55,9 +57,9 @@ export function DatabasePage({ workspaceId, databaseId, locked, cover, title }: 
         {header(
           query.isError ? (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              The database could not load.
+              {t('page.loadFailed')}
               <Button type="button" variant="outline" size="sm" onClick={() => void query.refetch()}>
-                Retry
+                {t('page.retry')}
               </Button>
             </div>
           ) : (

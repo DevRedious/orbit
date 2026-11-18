@@ -1,4 +1,5 @@
 import { useRef, useState, type ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ArrowSwapHorizontal, Calendar, DocumentDownload, DocumentUpload, Eye, EyeSlash, Filter, Kanban, Link, Lock, MoreH, RowHorizontal, Search, Sort, Unlock, Xmark } from 'reicon-react'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
@@ -63,6 +64,7 @@ interface ViewToolbarProps {
 
 /** Filter, Sort, search, "⋯" (properties or a board's group and card properties, wrap cells, lock, link) and New (spec 7.1). */
 export function ViewToolbar({ properties, config, onConfig, onAddFilter, onAdvancedFilter, search, onSearch, locked, viewType, onNew, onExportCsv, templates, onEditTemplate, viewLink }: ViewToolbarProps) {
+  const { t } = useTranslation('database')
   const { workspaceId, databaseId, canEditValues, canEditSchema } = useDatabaseEnv()
   const [merging, setMerging] = useState(false)
   const setLock = useSetPageLock(workspaceId)
@@ -74,16 +76,16 @@ export function ViewToolbar({ properties, config, onConfig, onAddFilter, onAdvan
 
   const copyLink = () => {
     void navigator.clipboard.writeText(new URL(viewLink, window.location.origin).toString()).then(
-      () => toast.success('Link to the view copied.'),
-      () => toast.error('Could not copy the link.'),
+      () => toast.success(t('toolbar.linkCopied')),
+      () => toast.error(t('toolbar.linkCopyFailed')),
     )
   }
   const toggleLock = () =>
     setLock.mutate(
       { pageId: databaseId, locked: !locked },
       {
-        onSuccess: () => toast.success(locked ? 'Database unlocked.' : 'Database locked. Properties and views cannot change until it is unlocked.'),
-        onError: () => toast.error(locked ? 'Could not unlock the database.' : 'Could not lock the database.'),
+        onSuccess: () => toast.success(locked ? t('toolbar.unlocked') : t('toolbar.locked')),
+        onError: () => toast.error(locked ? t('toolbar.unlockFailed') : t('toolbar.lockFailed')),
       },
     )
 
@@ -91,13 +93,13 @@ export function ViewToolbar({ properties, config, onConfig, onAddFilter, onAdvan
     <div className="ml-auto flex min-w-0 items-center gap-0.5">
       <PropertyPicker
         properties={properties.filter((property) => filterable(property.type))}
-        label="Filter by"
+        label={t('toolbar.filterBy')}
         onPick={onAddFilter}
         onAdvanced={onAdvancedFilter}
         trigger={
-          <Button type="button" variant="ghost" size="sm" data-active={rules > 0 || undefined} className="text-muted-foreground data-active:text-primary" aria-label={rules > 0 ? `Filter (${rules})` : 'Filter'}>
+          <Button type="button" variant="ghost" size="sm" data-active={rules > 0 || undefined} className="text-muted-foreground data-active:text-primary" aria-label={rules > 0 ? t('toolbar.filterCount', { count: rules }) : t('toolbar.filter')}>
             <Filter />
-            <span className="@max-lg/controls:hidden">Filter</span>
+            <span className="@max-lg/controls:hidden">{t('toolbar.filter')}</span>
             {rules > 0 ? <Badge className="h-4 min-w-4 px-1 text-[0.625rem] tabular-nums">{rules}</Badge> : null}
           </Button>
         }
@@ -107,9 +109,9 @@ export function ViewToolbar({ properties, config, onConfig, onAddFilter, onAdvan
         config={config}
         onConfig={onConfig}
         trigger={
-          <Button type="button" variant="ghost" size="sm" data-active={sorts > 0 || undefined} className="text-muted-foreground data-active:text-primary" aria-label={sorts > 0 ? `Sort (${sorts})` : 'Sort'}>
+          <Button type="button" variant="ghost" size="sm" data-active={sorts > 0 || undefined} className="text-muted-foreground data-active:text-primary" aria-label={sorts > 0 ? t('toolbar.sortCount', { count: sorts }) : t('toolbar.sort')}>
             <Sort />
-            <span className="@max-lg/controls:hidden">Sort</span>
+            <span className="@max-lg/controls:hidden">{t('toolbar.sort')}</span>
             {sorts > 0 ? <Badge className="h-4 min-w-4 px-1 text-[0.625rem] tabular-nums">{sorts}</Badge> : null}
           </Button>
         }
@@ -119,8 +121,8 @@ export function ViewToolbar({ properties, config, onConfig, onAddFilter, onAdvan
           <Search className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
           <input
             autoFocus
-            aria-label="Search this view"
-            placeholder="Search…"
+            aria-label={t('toolbar.searchView')}
+            placeholder={t('toolbar.searchPlaceholder')}
             className="min-w-0 flex-1 bg-transparent text-sm outline-none"
             value={search}
             onChange={(event) => onSearch(event.target.value)}
@@ -135,21 +137,21 @@ export function ViewToolbar({ properties, config, onConfig, onAddFilter, onAdvan
             }}
           />
           {search ? (
-            <button type="button" aria-label="Clear search" className="text-muted-foreground hover:text-foreground" onClick={() => onSearch('')}>
+            <button type="button" aria-label={t('toolbar.clearSearch')} className="text-muted-foreground hover:text-foreground" onClick={() => onSearch('')}>
               <Xmark className="size-3" />
             </button>
           ) : null}
         </div>
       ) : (
-        <Tip label="Search">
-          <Button type="button" variant="ghost" size="icon-sm" aria-label="Search" className="text-muted-foreground" onClick={() => setSearching(true)}>
+        <Tip label={t('search', { ns: 'common' })}>
+          <Button type="button" variant="ghost" size="icon-sm" aria-label={t('search', { ns: 'common' })} className="text-muted-foreground" onClick={() => setSearching(true)}>
             <Search />
           </Button>
         </Tip>
       )}
       <DropdownMenu>
-        <Tip label="View options">
-          <DropdownMenuTrigger render={<Button ref={moreRef} type="button" variant="ghost" size="icon-sm" aria-label="View options" className="text-muted-foreground" />}>
+        <Tip label={t('toolbar.viewOptions')}>
+          <DropdownMenuTrigger render={<Button ref={moreRef} type="button" variant="ghost" size="icon-sm" aria-label={t('toolbar.viewOptions')} className="text-muted-foreground" />}>
             <MoreH />
           </DropdownMenuTrigger>
         </Tip>
@@ -162,41 +164,41 @@ export function ViewToolbar({ properties, config, onConfig, onAddFilter, onAdvan
           ) : (
             <DropdownMenuItem onClick={() => setPropertiesOpen(true)}>
               <Eye />
-              {showsCards(viewType) ? 'Card properties' : 'Properties'}
+              {showsCards(viewType) ? t('toolbar.cardProperties') : t('toolbar.properties')}
             </DropdownMenuItem>
           )}
           {viewType === 'board' ? (
             <DropdownMenuCheckboxItem checked={config.hide_empty_groups} onCheckedChange={(checked) => onConfig({ ...config, hide_empty_groups: checked })}>
               <EyeSlash />
-              Hide empty groups
+              {t('toolbar.hideEmptyGroups')}
             </DropdownMenuCheckboxItem>
           ) : null}
           {viewType === 'table' ? (
             <DropdownMenuCheckboxItem checked={config.wrap_cells} onCheckedChange={(checked) => onConfig({ ...config, wrap_cells: checked })}>
               <ArrowSwapHorizontal />
-              Wrap cells
+              {t('toolbar.wrapCells')}
             </DropdownMenuCheckboxItem>
           ) : null}
           <DropdownMenuSeparator />
           {canEditValues ? (
             <DropdownMenuItem disabled={setLock.isPending} onClick={toggleLock}>
               {locked ? <Unlock /> : <Lock />}
-              {locked ? 'Unlock database' : 'Lock database'}
+              {locked ? t('toolbar.unlock') : t('toolbar.lock')}
             </DropdownMenuItem>
           ) : null}
           <DropdownMenuItem onClick={copyLink}>
             <Link />
-            Copy link to view
+            {t('toolbar.copyLink')}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={onExportCsv}>
             <DocumentDownload />
-            Export view as CSV
+            {t('toolbar.exportCsv')}
           </DropdownMenuItem>
           {canEditValues ? (
             <DropdownMenuItem onClick={() => setMerging(true)}>
               <DocumentUpload />
-              Merge with CSV
+              {t('toolbar.mergeCsv')}
             </DropdownMenuItem>
           ) : null}
         </DropdownMenuContent>
@@ -232,10 +234,11 @@ export function ViewToolbar({ properties, config, onConfig, onAddFilter, onAdvan
 
 /** Show, hide and reorder the view's columns. The title always shows. */
 function PropertiesList({ properties, config, onConfig }: { properties: Property[]; config: ViewConfig; onConfig: (config: ViewConfig) => void }) {
+  const { t } = useTranslation('database')
   const dragFrom = useRef<number | null>(null)
   const byId = new Map(properties.map((property) => [property.id, property]))
   return (
-    <ul aria-label="Properties" className="flex max-h-80 flex-col overflow-y-auto">
+    <ul aria-label={t('toolbar.properties')} className="flex max-h-80 flex-col overflow-y-auto">
       {config.columns.map((column, index) => {
         const property = byId.get(column.property_id)
         if (!property) return null
@@ -262,7 +265,7 @@ function PropertiesList({ properties, config, onConfig }: { properties: Property
               draggable
               role="button"
               tabIndex={-1}
-              aria-label={`Drag ${property.name}`}
+              aria-label={t('toolbar.drag', { name: property.name })}
               className="flex h-6 w-3 cursor-grab items-center justify-center text-muted-foreground"
               onDragStart={(event) => {
                 dragFrom.current = index
@@ -278,7 +281,7 @@ function PropertiesList({ properties, config, onConfig }: { properties: Property
             <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
             <span className="min-w-0 flex-1 truncate">{property.name}</span>
             <Checkbox
-              aria-label={`Show ${property.name}`}
+              aria-label={t('toolbar.show', { name: property.name })}
               checked={!column.hidden}
               disabled={property.type === 'title'}
               onCheckedChange={(checked) =>
@@ -299,17 +302,18 @@ const NO_LANES = { sub_group_by: null, sub_group_order: [], hidden_sub_groups: [
  * "Sub-group" (one of those or a checkbox, not the group property: its groups are the lanes; or None).
  */
 function GroupMenus({ properties, config, onConfig }: { properties: Property[]; config: ViewConfig; onConfig: (config: ViewConfig) => void }) {
+  const { t } = useTranslation('database')
   return (
     <>
       <GroupMenu
-        label="Group by"
+        label={t('board.groupBy')}
         icon={<Kanban />}
         choices={properties.filter(groupable)}
         value={config.group_by}
         onChange={(id) => onConfig(withGroupBy(config, id))}
       />
       <GroupMenu
-        label="Sub-group"
+        label={t('board.subGroup')}
         icon={<RowHorizontal />}
         choices={properties.filter((property) => laneable(property) && property.id !== config.group_by)}
         value={config.sub_group_by}
@@ -327,12 +331,13 @@ const SUNDAY = '2026-11-01'
 
 /** A calendar's "Calendar by" (its date property) and "Start week on" (this browser only, for every calendar). */
 function CalendarMenus({ properties, config, onConfig }: { properties: Property[]; config: ViewConfig; onConfig: (config: ViewConfig) => void }) {
+  const { t } = useTranslation('database')
   const { ctx } = useDatabaseEnv()
   const weekStart = useWeekStart(ctx.locale)
   return (
     <>
       <GroupMenu
-        label="Calendar by"
+        label={t('calendar.calendarBy')}
         icon={<Calendar />}
         choices={properties.filter(datable)}
         value={config.date_property_id ?? null}
@@ -341,7 +346,7 @@ function CalendarMenus({ properties, config, onConfig }: { properties: Property[
       <DropdownMenuSub>
         <DropdownMenuSubTrigger>
           <Calendar />
-          Start week on
+          {t('calendar.startWeekOn')}
           <span className="ml-auto text-xs text-muted-foreground">{weekdayName(addDays(SUNDAY, weekStart), ctx.locale)}</span>
         </DropdownMenuSubTrigger>
         <DropdownMenuSubContent className="w-40">
@@ -359,12 +364,13 @@ function CalendarMenus({ properties, config, onConfig }: { properties: Property[
 }
 
 function GroupMenu({ label, icon, choices, value, onChange, none = false }: { label: string; icon: ReactNode; choices: Property[]; value: string | null; onChange: (id: string | null) => void; none?: boolean }) {
+  const { t } = useTranslation('database')
   return (
     <DropdownMenuSub>
       <DropdownMenuSubTrigger disabled={choices.length === 0}>
         {icon}
         {label}
-        <span className="ml-auto max-w-20 truncate text-xs text-muted-foreground">{choices.find((property) => property.id === value)?.name ?? (none ? 'None' : '')}</span>
+        <span className="ml-auto max-w-20 truncate text-xs text-muted-foreground">{choices.find((property) => property.id === value)?.name ?? (none ? t('toolbar.none') : '')}</span>
       </DropdownMenuSubTrigger>
       <DropdownMenuSubContent className="w-48">
         <DropdownMenuRadioGroup
@@ -374,7 +380,7 @@ function GroupMenu({ label, icon, choices, value, onChange, none = false }: { la
             if (next !== value) onChange(next)
           }}
         >
-          {none ? <DropdownMenuRadioItem value="">None</DropdownMenuRadioItem> : null}
+          {none ? <DropdownMenuRadioItem value="">{t('toolbar.none')}</DropdownMenuRadioItem> : null}
           {choices.map((property) => {
             const Icon = PROPERTY_TYPES[property.type].icon
             return (
@@ -392,9 +398,10 @@ function GroupMenu({ label, icon, choices, value, onChange, none = false }: { la
 
 /** Show or hide the properties of a board's or a calendar's cards, after the title (which always shows). */
 function CardPropertiesList({ properties, config, onConfig }: { properties: Property[]; config: ViewConfig; onConfig: (config: ViewConfig) => void }) {
+  const { t } = useTranslation('database')
   const shown = new Set(config.card_properties)
   return (
-    <ul aria-label="Card properties" className="flex max-h-80 flex-col overflow-y-auto">
+    <ul aria-label={t('toolbar.cardProperties')} className="flex max-h-80 flex-col overflow-y-auto">
       {properties
         .filter((property) => property.type !== 'title')
         .map((property) => {
@@ -404,7 +411,7 @@ function CardPropertiesList({ properties, config, onConfig }: { properties: Prop
               <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
               <span className="min-w-0 flex-1 truncate">{property.name}</span>
               <Checkbox
-                aria-label={`Show ${property.name}`}
+                aria-label={t('toolbar.show', { name: property.name })}
                 checked={shown.has(property.id)}
                 onCheckedChange={(checked) =>
                   onConfig({

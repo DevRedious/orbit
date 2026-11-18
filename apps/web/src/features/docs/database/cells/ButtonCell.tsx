@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { cn } from 'cn'
 import { buttonLabel } from '@orbit/database/buttons'
 import type { Property, Row } from '@orbit/database/types'
@@ -19,6 +20,7 @@ type ButtonProperty = Extract<Property, { type: 'button' }>
 
 /** A button property's cell (spec P3 17.4): a press asks the confirmation when set, then shows a spinner until the server answers. */
 export function ButtonCell({ property, row, className }: { property: ButtonProperty; row: Row; className?: string }) {
+  const { t } = useTranslation(['database', 'common'])
   const { workspaceId, databaseId, canEditValues } = useDatabaseEnv()
   const { press, pending } = usePressButton(workspaceId, databaseId)
   const [confirming, setConfirming] = useState(false)
@@ -56,7 +58,7 @@ export function ButtonCell({ property, row, className }: { property: ButtonPrope
             </AlertDialogHeader>
             <AlertDialogFooter>
               <Button type="button" variant="outline" onClick={() => setConfirming(false)}>
-                Cancel
+                {t('common:cancel')}
               </Button>
               <Button
                 type="button"
@@ -65,7 +67,7 @@ export function ButtonCell({ property, row, className }: { property: ButtonPrope
                   run()
                 }}
               >
-                Continue
+                {t('buttonConfig.continue')}
               </Button>
             </AlertDialogFooter>
           </AlertDialogContent>

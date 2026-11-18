@@ -547,11 +547,11 @@ export function DocTree({
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => navigate('/docs/import/obsidian')}>
           <Import className="size-[14px]" />
-          Import from Obsidian
+          {t('obsidianImport.title')}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => navigate('/docs/import/csv')}>
           <Import className="size-[14px]" />
-          Import CSV
+          {t('tree.importCsv')}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -877,11 +877,12 @@ function SpacePages({ open, children }: { open: boolean; children: ReactNode }) 
 
 /** The project whose docs a teamspace holds, as a small label after its name. */
 function TeamspaceProject({ project }: { project: { name: string; color: string } | undefined }) {
+  const { t } = useTranslation('docs')
   if (!project) return null
   return (
     <span
       className="inline-flex min-w-0 shrink items-center gap-1 rounded-sm bg-muted px-1 text-[0.625rem] leading-4 font-medium text-muted-foreground"
-      title={`Docs of the project ${project.name}`}
+      title={t('teamspace.projectDocs', { name: project.name })}
     >
       <span className="size-1.5 shrink-0 rounded-full" style={{ backgroundColor: project.color }} aria-hidden="true" />
       <span className="truncate">{project.name}</span>

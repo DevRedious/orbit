@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { Add, Calendar, CalendarDate, Eye, SidebarLeft } from 'reicon-react'
@@ -16,7 +17,6 @@ import { addDays, localDay, pointDay } from '@orbit/database/dates'
 import type { Database, Property, Row, ViewConfig } from '@orbit/database/types'
 import {
   ZOOMS,
-  ZOOM_LABELS,
   axis as axisOf,
   barOf,
   dayIndex,
@@ -34,6 +34,7 @@ import { useUpdateValues } from './api'
 import { CellView } from './cells/CellView'
 import { useDatabaseEnv } from './context'
 import { PROPERTY_TYPES } from './propertyMeta'
+import { timelineZoomLabel } from './labels'
 
 const ROW_HEIGHT = 34
 const HEADER_HEIGHT = 52
@@ -75,6 +76,7 @@ type Drag = { rowId: string; edge: BarEdge; x: number; days: number; moved: bool
  * a click on their track sets a one-day date. Rows are virtualized in the timeline's own scroller.
  */
 export function DatabaseTimeline({ database, config, rows, onConfig, onAddRow, onOpenRow, filtered, onClearFilters, page }: DatabaseTimelineProps) {
+  const { t } = useTranslation('database')
   const { workspaceId, databaseId, canEditValues, ctx } = useDatabaseEnv()
   const updateValues = useUpdateValues(workspaceId, databaseId)
   const timeline = timelineOf(config, database.properties)
@@ -165,36 +167,36 @@ export function DatabaseTimeline({ database, config, rows, onConfig, onAddRow, o
     <div className="flex flex-col gap-2 pb-4">
       <div className="flex items-center gap-2 text-sm">
         {timeline.start === null ? (
-          <span className="text-muted-foreground">Add a date property to place rows on the timeline.</span>
+          <span className="text-muted-foreground">{t('timeline.noDate')}</span>
         ) : rows.length === 0 && filtered && database.rows.length > 0 ? (
           <span className="flex items-center gap-2 text-muted-foreground">
-            No results
+            {t('view.noResults')}
             <Button type="button" variant="outline" size="sm" onClick={onClearFilters}>
-              Clear filters
+              {t('view.clearFilters')}
             </Button>
           </span>
         ) : null}
         <span className="flex-1" />
         <Select value={timeline.zoom} onValueChange={(zoom) => onConfig({ ...config, zoom: zoom as TimelineZoom })}>
-          <SelectTrigger size="sm" aria-label="Zoom" className="w-28">
-            <SelectValue>{ZOOM_LABELS[timeline.zoom]}</SelectValue>
+          <SelectTrigger size="sm" aria-label={t('timeline.zoom')} className="w-28">
+            <SelectValue>{timelineZoomLabel(timeline.zoom)}</SelectValue>
           </SelectTrigger>
           <SelectContent>
             {ZOOMS.map((zoom) => (
               <SelectItem key={zoom} value={zoom}>
-                {ZOOM_LABELS[zoom]}
+                {timelineZoomLabel(zoom)}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
         <Button type="button" variant="outline" size="sm" onClick={() => scrollToToday()}>
-          Today
+          {t('today', { ns: 'common' })}
         </Button>
       </div>
       <div
         ref={setScroller}
         role="grid"
-        aria-label="Timeline"
+        aria-label={t('timeline.label')}
         aria-busy={updateValues.isPending}
         className="relative w-full overflow-auto rounded-md border border-border [contain:inline-size]"
         style={{ maxHeight: page ? 'max(320px, calc(100dvh - 260px))' : 480 }}
@@ -257,7 +259,7 @@ export function DatabaseTimeline({ database, config, rows, onConfig, onAddRow, o
                     }}
                   >
                     {!showTable && !item.bar ? (
-                      <span className="pointer-events-none sticky left-0 flex h-full w-fit max-w-60 items-center truncate px-2 text-sm text-muted-foreground">{row.title || 'Untitled'}</span>
+                      <span className="pointer-events-none sticky left-0 flex h-full w-fit max-w-60 items-center truncate px-2 text-sm text-muted-foreground">{row.title || t('untitled', { ns: 'docs' })}</span>
                     ) : null}
                     {ghost ? (
                       <div aria-hidden="true" className="absolute top-1.5 rounded-sm border border-dashed border-primary/60 bg-primary/10" style={{ left: xOf(ghost), width: Math.max(axis.dayWidth, MIN_BAR_WIDTH), height: ROW_HEIGHT - 12 }} />
@@ -284,7 +286,7 @@ export function DatabaseTimeline({ database, config, rows, onConfig, onAddRow, o
               <div className="absolute left-0 flex w-full" style={{ top: virtualizer.getTotalSize(), height: ROW_HEIGHT }}>
                 <button type="button" className="sticky left-0 flex items-center gap-1.5 px-2 text-sm text-muted-foreground outline-none hover:text-foreground focus-visible:text-foreground" onClick={onAddRow}>
                   <Add className="size-4" aria-hidden="true" />
-                  New
+                  {t('newRow.new')}
                 </button>
               </div>
             ) : null}
@@ -331,11 +333,12 @@ function movedBar(bar: Bar, drag: Drag, timeZone: string): Bar {
 }
 
 function TableHeader({ title, columns, width }: { title: Property | undefined; columns: Property[]; width: number }) {
+  const { t } = useTranslation('database')
   const cell = 'flex items-end gap-1.5 border-r border-border/60 px-2 pb-1.5 text-xs text-muted-foreground'
   return (
     <div className="sticky left-0 z-10 flex shrink-0 border-r border-border bg-background" style={{ width }}>
       <div className={cell} style={{ width: TITLE_WIDTH }}>
-        {title?.name ?? 'Name'}
+        {title?.name ?? t('timeline.name')}
       </div>
       {columns.map((property) => {
         const Icon = PROPERTY_TYPES[property.type].icon
@@ -381,7 +384,8 @@ interface BarViewProps {
 
 /** A row's bar: the middle moves it, the edges resize it; a click opens the row. */
 function BarView({ row, left, width, labelLeft, editable, dragging, onPointerDown, onPointerMove, onPointerUp, onPointerCancel }: BarViewProps) {
-  const label = row.title || 'Untitled'
+  const { t } = useTranslation('database')
+  const label = row.title || t('untitled', { ns: 'docs' })
   const inside = width >= LABEL_INSIDE_MIN
   const resizable = editable && width >= RESIZE_MIN
   const handlers = { onPointerMove, onPointerUp, onPointerCancel }
@@ -432,20 +436,21 @@ function EdgeHandle({ side, ...handlers }: { side: 'start' | 'end'; onPointerDow
 
 /** The timeline entries of the view options menu: start and end date properties, the table pane and its properties. */
 export function TimelineMenus({ properties, config, onConfig }: { properties: Property[]; config: ViewConfig; onConfig: (config: ViewConfig) => void }) {
+  const { t } = useTranslation('database')
   const timeline = timelineOf(config, properties)
   const dates = properties.filter((property) => property.type === 'date')
   const shown = new Set(timeline.columns.map((property) => property.id))
   return (
     <>
       <DateMenu
-        label="Start date"
+        label={t('timeline.startDate')}
         icon={<CalendarDate />}
         choices={dates}
         value={timeline.start?.id ?? null}
         onChange={(id) => onConfig({ ...config, start_property_id: id ?? undefined, ...(id === config.end_property_id ? { end_property_id: undefined } : {}) })}
       />
       <DateMenu
-        label="End date"
+        label={t('timeline.endDate')}
         icon={<Calendar />}
         choices={dates.filter((property) => property.id !== timeline.start?.id)}
         value={timeline.end?.id ?? null}
@@ -454,12 +459,12 @@ export function TimelineMenus({ properties, config, onConfig }: { properties: Pr
       />
       <DropdownMenuCheckboxItem checked={timeline.showTable} onCheckedChange={(checked) => onConfig({ ...config, show_table: checked })}>
         <SidebarLeft />
-        Show table
+        {t('timeline.showTable')}
       </DropdownMenuCheckboxItem>
       <DropdownMenuSub>
         <DropdownMenuSubTrigger className="whitespace-nowrap" disabled={!timeline.showTable}>
           <Eye />
-          Table properties
+          {t('timeline.tableProperties')}
         </DropdownMenuSubTrigger>
         <DropdownMenuSubContent className="max-h-80 w-52 overflow-y-auto">
           {properties
@@ -489,12 +494,13 @@ export function TimelineMenus({ properties, config, onConfig }: { properties: Pr
 }
 
 function DateMenu({ label, icon, choices, value, onChange, none = false }: { label: string; icon: ReactNode; choices: Property[]; value: string | null; onChange: (id: string | null) => void; none?: boolean }) {
+  const { t } = useTranslation('database')
   return (
     <DropdownMenuSub>
       <DropdownMenuSubTrigger className="whitespace-nowrap" disabled={choices.length === 0 && !none}>
         {icon}
         {label}
-        <span className="ml-auto max-w-20 min-w-0 truncate text-xs text-muted-foreground">{choices.find((property) => property.id === value)?.name ?? (none ? 'None' : '')}</span>
+        <span className="ml-auto max-w-20 min-w-0 truncate text-xs text-muted-foreground">{choices.find((property) => property.id === value)?.name ?? (none ? t('toolbar.none') : '')}</span>
       </DropdownMenuSubTrigger>
       <DropdownMenuSubContent className="w-48">
         <DropdownMenuRadioGroup
@@ -504,7 +510,7 @@ function DateMenu({ label, icon, choices, value, onChange, none = false }: { lab
             if (next !== value) onChange(next)
           }}
         >
-          {none ? <DropdownMenuRadioItem value="">None</DropdownMenuRadioItem> : null}
+          {none ? <DropdownMenuRadioItem value="">{t('toolbar.none')}</DropdownMenuRadioItem> : null}
           {choices.map((property) => (
             <DropdownMenuRadioItem key={property.id} value={property.id}>
               <CalendarDate className="text-muted-foreground" />

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { DropdownMenuGroup, DropdownMenuLabel } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { options } from '@orbit/database/values'
@@ -8,6 +9,7 @@ import { Pill } from './cells/Pill'
 
 /** The options of a select, multi-select or status in the "Edit property" menu: add, rename, recolor, delete. */
 export function PropertyOptions({ property, onOptions }: { property: Property; onOptions: (options: SelectOption[]) => Promise<void> }) {
+  const { t } = useTranslation('database')
   const [name, setName] = useState('')
   const list = options(property)
   const add = () => {
@@ -19,7 +21,7 @@ export function PropertyOptions({ property, onOptions }: { property: Property; o
 
   return (
     <DropdownMenuGroup>
-      <DropdownMenuLabel>Options</DropdownMenuLabel>
+      <DropdownMenuLabel>{t('propertyOptions.title')}</DropdownMenuLabel>
       {/* The menu must not take the keys typed in the name fields. */}
       <div className="flex flex-col gap-0.5 px-1 pb-1" onKeyDown={(event) => event.stopPropagation()}>
         {list.map((option) => (
@@ -30,8 +32,8 @@ export function PropertyOptions({ property, onOptions }: { property: Property; o
           </div>
         ))}
         <Input
-          aria-label="New option"
-          placeholder="Add an option…"
+          aria-label={t('propertyOptions.newLabel')}
+          placeholder={t('propertyOptions.addPlaceholder')}
           value={name}
           maxLength={200}
           onChange={(event) => setName(event.target.value)}

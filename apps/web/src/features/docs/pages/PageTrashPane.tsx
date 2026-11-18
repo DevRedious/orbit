@@ -114,7 +114,7 @@ export function PageTrashPane({ workspaceId }: { workspaceId: string }) {
   } else if (shown.length === 0) {
     body = (
       <div className="flex flex-1 flex-col p-6">
-        <EmptyState icon={Search} title="No results" description="No page in the trash has this title." />
+        <EmptyState icon={Search} title={t('trash.noResults')} description={t('trash.noResultsHint')} />
       </div>
     )
   } else {
@@ -125,7 +125,7 @@ export function PageTrashPane({ workspaceId }: { workspaceId: string }) {
             <button
               type="button"
               className="flex min-w-0 flex-1 cursor-pointer items-center gap-2.5 self-stretch rounded-sm text-left outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-              aria-label={`Preview “${pageTitle(page)}”`}
+              aria-label={t('trash.previewLabel', { title: pageTitle(page) })}
               onClick={() => navigate(`/docs/trash/${page.id}`)}
             >
               <span className="inline-flex w-[18px] shrink-0 items-center justify-center text-muted-foreground/70">

@@ -3,17 +3,17 @@ import type { DatabaseView } from '@orbit/database/types'
 
 type ViewType = DatabaseView['type']
 
-/** The "Add a new view" grid, in Notion's order. Entries without a `type` are not built yet. */
-export const VIEW_KINDS: readonly { label: string; icon: typeof Grid; type: ViewType | null }[] = [
-  { label: 'Table', icon: Grid, type: 'table' },
-  { label: 'Board', icon: Kanban, type: 'board' },
-  { label: 'List', icon: List, type: 'list' },
-  { label: 'Gallery', icon: Gallery, type: 'gallery' },
-  { label: 'Calendar', icon: Calendar, type: 'calendar' },
-  { label: 'Timeline', icon: RowHorizontal, type: 'timeline' },
-  { label: 'Chart', icon: Chart, type: null },
-  { label: 'Form', icon: ClipboardText, type: 'form' },
-]
+/** The "Add a new view" grid, in Notion's order (`label` is a `database` catalog key). Entries without a `type` are not built yet. */
+export const VIEW_KINDS = [
+  { label: 'viewTypes.table', icon: Grid, type: 'table' },
+  { label: 'viewTypes.board', icon: Kanban, type: 'board' },
+  { label: 'viewTypes.list', icon: List, type: 'list' },
+  { label: 'viewTypes.gallery', icon: Gallery, type: 'gallery' },
+  { label: 'viewTypes.calendar', icon: Calendar, type: 'calendar' },
+  { label: 'viewTypes.timeline', icon: RowHorizontal, type: 'timeline' },
+  { label: 'viewTypes.chart', icon: Chart, type: null },
+  { label: 'viewTypes.form', icon: ClipboardText, type: 'form' },
+] as const satisfies readonly { label: string; icon: typeof Grid; type: ViewType | null }[]
 
 export function viewIcon(type: ViewType): typeof Grid {
   return VIEW_KINDS.find((kind) => kind.type === type)?.icon ?? Grid

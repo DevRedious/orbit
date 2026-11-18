@@ -512,7 +512,7 @@ function PageEditorInner({
     if (!image?.src || !id || !image.contains(target)) return
     const block = editor.getBlock(id)
     const name = block?.type === 'image' && typeof block.props.name === 'string' ? block.props.name : ''
-    setZoomImage({ id, fileName: name || 'Image', mimeType: '', fileSize: 0, url: image.currentSrc || image.src })
+    setZoomImage({ id, fileName: name || t('editor.imageFallbackName'), mimeType: '', fileSize: 0, url: image.currentSrc || image.src })
   }
 
   const onClickCapture = (event: MouseEvent<HTMLDivElement>) => {

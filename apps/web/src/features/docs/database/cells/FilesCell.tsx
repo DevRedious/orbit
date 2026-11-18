@@ -1,4 +1,5 @@
 import { useRef, useState, type DragEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { CloseCircle, DocumentUpload, Paperclip } from 'reicon-react'
 import { toast } from 'sonner'
 import { cn } from 'cn'
@@ -36,6 +37,7 @@ export function FileChips({ row, files, wrap }: { row: Row; files: FileRef[]; wr
 
 /** The files popover (spec P3 12.2): upload or drop files onto the row, drag to reorder, remove. */
 export function FilesEditor({ property, row, anchor, onCommit, onClose, value }: CellEditorProps & { value: CellValue | null }) {
+  const { t } = useTranslation('database')
   const { workspaceId } = useDatabaseEnv()
   const [files, setFiles] = useState<FileRef[]>(value?.kind === 'files' ? value.files : [])
   /** The list as last committed: uploads finish after other changes. */
@@ -52,7 +54,7 @@ export function FilesEditor({ property, row, anchor, onCommit, onClose, value }:
   }
   const upload = async (picked: File[]) => {
     const room = MAX_FILES - latest.current.length
-    if (picked.length > room) toast.error(`A cell holds at most ${MAX_FILES} files.`)
+    if (picked.length > room) toast.error(t('cells.tooManyFiles', { count: MAX_FILES }))
     const batch = picked.slice(0, Math.max(room, 0))
     if (batch.length === 0) return
     setUploading((count) => count + batch.length)
@@ -127,7 +129,7 @@ export function FilesEditor({ property, row, anchor, onCommit, onClose, value }:
                 </a>
                 <button
                   type="button"
-                  aria-label={`Remove ${file.name}`}
+                  aria-label={t('cells.removeFile', { name: file.name })}
                   className="shrink-0 text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-foreground focus-visible:opacity-100"
                   onClick={() => commit(files.filter((other) => other.file_id !== file.file_id))}
                 >
@@ -137,7 +139,7 @@ export function FilesEditor({ property, row, anchor, onCommit, onClose, value }:
             ))}
           </ul>
         ) : (
-          <p className="px-2 py-1.5 text-xs text-muted-foreground">Drop files here or upload them.</p>
+          <p className="px-2 py-1.5 text-xs text-muted-foreground">{t('cells.dropFiles')}</p>
         )}
         <input
           ref={input}
@@ -159,7 +161,7 @@ export function FilesEditor({ property, row, anchor, onCommit, onClose, value }:
           onClick={() => input.current?.click()}
         >
           <DocumentUpload />
-          {uploading > 0 ? 'Uploading…' : 'Upload files'}
+          {uploading > 0 ? t('cells.uploading') : t('cells.uploadFiles')}
         </Button>
       </PopoverContent>
     </Popover>

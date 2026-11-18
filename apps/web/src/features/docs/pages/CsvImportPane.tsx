@@ -1,4 +1,5 @@
 import { useId, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { toast } from 'sonner'
 import { Input } from '@/components/ui/input'
@@ -15,6 +16,7 @@ import { useImportDestination } from '@/features/docs/import/destination'
 
 /** `/docs/import/csv`: a CSV becomes a new database (spec P2 9.4), placed like a Docs import. */
 export function CsvImportPane({ workspaceId }: { workspaceId: string }) {
+  const { t } = useTranslation('database')
   const navigate = useNavigate()
   const titleId = useId()
   const teamspaces = useTeamspaces(workspaceId)
@@ -27,13 +29,13 @@ export function CsvImportPane({ workspaceId }: { workspaceId: string }) {
   }
   return (
     <Pane>
-      <ImportHeader title="Import CSV" />
+      <ImportHeader title={t('csv.importTitle')} />
       <ImportBody>
         <section className="flex flex-col gap-4 rounded-lg border border-border p-5">
           <TitleTip
             as="h2"
-            title="Create a database from a CSV file"
-            text="Each row becomes a row of the database, and you choose a property type for each column. One column holds the row titles. Values that do not fit their type are left empty; you see how many before the import."
+            title={t('csv.createTitle')}
+            text={t('csv.createHint')}
             className="text-sm font-semibold text-foreground"
           />
           <CsvImportFlow
@@ -43,9 +45,9 @@ export function CsvImportPane({ workspaceId }: { workspaceId: string }) {
               <div className="flex flex-wrap gap-3">
                 <div className="grid gap-1.5">
                   <Label htmlFor={titleId} className="text-xs text-muted-foreground">
-                    Database name
+                    {t('csv.databaseName')}
                   </Label>
-                  <Input id={titleId} className="w-56" placeholder="Untitled" value={title} maxLength={500} onChange={(event) => setTitle(event.target.value)} />
+                  <Input id={titleId} className="w-56" placeholder={t('csv.untitled')} value={title} maxLength={500} onChange={(event) => setTitle(event.target.value)} />
                 </div>
                 <ImportDestinationFields destination={destination} />
               </div>

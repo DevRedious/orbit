@@ -1,6 +1,7 @@
 // "Move to": search and pick where a page goes (a space, a page, or a database, where it becomes a row).
 // Same Command list as PageLinkDialog; filtering stays ours (`shouldFilter={false}`).
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { DocumentText as FileText, Grid, Lock, People as Users } from 'reicon-react'
 import type { PageSummary, Teamspace } from '@orbit/api/generated/types.gen'
 import { moveDestinations } from '@orbit/database/moves'
@@ -24,6 +25,7 @@ export function MoveToDialog({
   onPick: (destination: MoveDestination) => void
   onClose: () => void
 }) {
+  const { t } = useTranslation('docs')
   const [query, setQuery] = useState('')
   const q = query.trim().toLowerCase()
 
@@ -37,13 +39,13 @@ export function MoveToDialog({
   )
 
   return (
-    <Modal title="Move to" onClose={onClose}>
-      <Command shouldFilter={false} label="Move to" className="gap-2 bg-transparent p-0">
-        <CommandInput autoFocus placeholder="Move to a space, page or database…" value={query} onValueChange={setQuery} />
+    <Modal title={t('pageMenu.moveTo')} onClose={onClose}>
+      <Command shouldFilter={false} label={t('pageMenu.moveTo')} className="gap-2 bg-transparent p-0">
+        <CommandInput autoFocus placeholder={t('moveDialog.search')} value={query} onValueChange={setQuery} />
         <CommandList className="max-h-[360px]">
-          <CommandEmpty className="px-3 py-7 text-[0.8125rem] text-muted-foreground/70">No pages found</CommandEmpty>
+          <CommandEmpty className="px-3 py-7 text-[0.8125rem] text-muted-foreground/70">{t('pageLinkDialog.empty')}</CommandEmpty>
           {spaces.length > 0 ? (
-            <CommandGroup heading="Spaces">
+            <CommandGroup heading={t('moveDialog.spaces')}>
               {spaces.map((space) => (
                 <CommandItem
                   key={space}
@@ -58,7 +60,7 @@ export function MoveToDialog({
             </CommandGroup>
           ) : null}
           {targets.length > 0 ? (
-            <CommandGroup heading="Pages and databases">
+            <CommandGroup heading={t('moveDialog.pages')}>
               {targets.map((page) => {
                 const parent = ancestorsOf(pages, page.id).at(-1)
                 return (
@@ -73,7 +75,7 @@ export function MoveToDialog({
                       <span className="truncate">{pageTitle(page)}</span>
                       {parent ? <span className="truncate text-[0.6875rem] text-muted-foreground/70">{pageTitle(parent)}</span> : null}
                     </span>
-                    {page.kind === 'database' ? <span className="shrink-0 text-[0.6875rem] text-muted-foreground/70">As a row</span> : null}
+                    {page.kind === 'database' ? <span className="shrink-0 text-[0.6875rem] text-muted-foreground/70">{t('moveDialog.asRow')}</span> : null}
                   </CommandItem>
                 )
               })}

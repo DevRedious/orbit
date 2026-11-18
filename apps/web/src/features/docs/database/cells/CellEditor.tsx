@@ -1,4 +1,5 @@
 import { useRef, useState, type KeyboardEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { MoreH, Trash } from 'reicon-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -13,7 +14,7 @@ import { cellOf, numberEditText, numberFromEditText, options, parseValue } from 
 import { dayOf, editedDate, localDate, localParts } from '@orbit/database/dates'
 import { OPTION_COLORS, type CellValue, type OptionColor, type Property, type Row, type SelectOption } from '@orbit/database/types'
 import { useDatabaseEnv } from '../context'
-import { OPTION_COLOR_LABELS } from '@orbit/database/meta'
+import { optionColorLabel } from '../labels'
 import { Pill } from './Pill'
 import { FilesEditor } from './FilesCell'
 import { RelationEditor } from './RelationCell'
@@ -35,11 +36,12 @@ export interface CellEditorProps {
 
 /** The editor of the active cell (spec 7.3): inline for title, number and URL, a popover for the rest. */
 export function CellEditor(props: CellEditorProps) {
+  const { t } = useTranslation('database')
   const { property, row, onCommit, onTitle, onClose } = props
   const value = cellOf(row, property)
   switch (property.type) {
     case 'title':
-      return <InlineEditor initial={row.title} label="Title" onSave={(text) => { if (text !== row.title) onTitle(text) }} onClose={onClose} />
+      return <InlineEditor initial={row.title} label={t('propertyType.title')} onSave={(text) => { if (text !== row.title) onTitle(text) }} onClose={onClose} />
     case 'number':
       return (
         <InlineEditor
@@ -49,7 +51,7 @@ export function CellEditor(props: CellEditorProps) {
           onSave={(text) => {
             if (text.trim() === '') return value ? onCommit(null) : undefined
             const number = numberFromEditText(property, text)
-            if (number === null) toast.error('Enter a number.')
+            if (number === null) toast.error(t('cells.invalidNumber'))
             else if (value?.kind !== 'number' || value.number !== number) onCommit({ kind: 'number', number })
           }}
           onClose={onClose}
@@ -64,7 +66,7 @@ export function CellEditor(props: CellEditorProps) {
             const trimmed = text.trim()
             if (trimmed === '') return value ? onCommit(null) : undefined
             const url = parseValue(property, trimmed)
-            if (!url) toast.error('Enter a link that starts with http:// or https://.')
+            if (!url) toast.error(t('cells.invalidUrl'))
             else if (value?.kind !== 'url' || value.url !== trimmed) onCommit(url)
           }}
           onClose={onClose}
@@ -80,7 +82,7 @@ export function CellEditor(props: CellEditorProps) {
             const trimmed = text.trim()
             if (trimmed === '') return value ? onCommit(null) : undefined
             const next = parseValue(property, trimmed)
-            if (!next) toast.error(property.type === 'email' ? 'Enter an email address.' : 'Enter a phone number (digits, spaces and + - ( ) .).')
+            if (!next) toast.error(property.type === 'email' ? t('cells.invalidEmail') : t('cells.invalidPhone'))
             else if (value?.kind !== 'text' || value.text !== trimmed) onCommit(next)
           }}
           onClose={onClose}
@@ -214,6 +216,7 @@ export function withNewOption(property: Property, list: readonly SelectOption[],
 }
 
 function ChoiceEditor({ property, row, anchor, onCommit, onOptions, onClose }: CellEditorProps) {
+  const { t } = useTranslation('database')
   const [query, setQuery] = useState('')
   const multi = property.type === 'multi_select'
   const value = cellOf(row, property)
@@ -256,8 +259,8 @@ function ChoiceEditor({ property, row, anchor, onCommit, onOptions, onClose }: C
         <Command label={property.name} loop shouldFilter={false} onKeyDown={(event) => event.stopPropagation()}>
           <CommandInput
             autoFocus
-            aria-label={`Search ${property.name}`}
-            placeholder={onOptions ? 'Search or create an option…' : 'Search options…'}
+            aria-label={t('cells.searchProperty', { name: property.name })}
+            placeholder={onOptions ? t('cells.searchOrCreateOption') : t('cells.searchOptions')}
             value={query}
             onValueChange={setQuery}
             onKeyDown={(event) => {
@@ -268,7 +271,7 @@ function ChoiceEditor({ property, row, anchor, onCommit, onOptions, onClose }: C
             }}
           />
           <CommandList>
-            <CommandEmpty className="py-3 text-center text-xs text-muted-foreground">No options</CommandEmpty>
+            <CommandEmpty className="py-3 text-center text-xs text-muted-foreground">{t('cells.noOptions')}</CommandEmpty>
             <CommandGroup>
               {shown.map((option) => (
                 <CommandItem
@@ -285,7 +288,7 @@ function ChoiceEditor({ property, row, anchor, onCommit, onOptions, onClose }: C
               ))}
               {canCreate ? (
                 <CommandItem value="create" onSelect={() => void create()}>
-                  <span className="text-muted-foreground">Create</span>
+                  <span className="text-muted-foreground">{t('cells.create')}</span>
                   <Pill color="default">{trimmed}</Pill>
                 </CommandItem>
               ) : null}
@@ -299,6 +302,7 @@ function ChoiceEditor({ property, row, anchor, onCommit, onOptions, onClose }: C
 
 /** Rename, recolor or delete one option. It saves the property's whole option list. */
 export function OptionMenu({ option, list, onOptions }: { option: SelectOption; list: readonly SelectOption[]; onOptions: (options: SelectOption[]) => Promise<void> }) {
+  const { t } = useTranslation(['database', 'common'])
   const [name, setName] = useState(option.name)
   const save = (change: Partial<SelectOption>) =>
     void onOptions(list.map((other) => (other.id === option.id ? { ...other, ...change } : other))).catch(() => undefined)
@@ -314,7 +318,7 @@ export function OptionMenu({ option, list, onOptions }: { option: SelectOption; 
             type="button"
             variant="ghost"
             size="icon-xs"
-            aria-label={`Edit option ${option.name}`}
+            aria-label={t('cells.editOption', { name: option.name })}
             className="text-muted-foreground hover-fine:opacity-0 hover-fine:group-hover/option:opacity-100 hover-fine:group-data-selected/option:opacity-100"
             onPointerDown={(event) => event.stopPropagation()}
             onClick={(event) => event.stopPropagation()}
@@ -325,7 +329,7 @@ export function OptionMenu({ option, list, onOptions }: { option: SelectOption; 
       </PopoverTrigger>
       <PopoverContent align="start" side="right" className="w-52 gap-1 p-1.5" onKeyDown={(event) => event.stopPropagation()}>
         <Input
-          aria-label="Option name"
+          aria-label={t('cells.optionName')}
           value={name}
           maxLength={200}
           onChange={(event) => setName(event.target.value)}
@@ -340,10 +344,10 @@ export function OptionMenu({ option, list, onOptions }: { option: SelectOption; 
           onClick={() => void onOptions(list.filter((other) => other.id !== option.id)).catch(() => undefined)}
         >
           <Trash />
-          Delete
+          {t('common:delete')}
         </Button>
-        <div className="px-1.5 pt-1 text-xs text-muted-foreground">Colors</div>
-        <div role="radiogroup" aria-label="Option color" className="flex flex-col">
+        <div className="px-1.5 pt-1 text-xs text-muted-foreground">{t('cells.colors')}</div>
+        <div role="radiogroup" aria-label={t('cells.optionColor')} className="flex flex-col">
           {OPTION_COLORS.map((color: OptionColor) => (
             <Button
               key={color}
@@ -356,7 +360,7 @@ export function OptionMenu({ option, list, onOptions }: { option: SelectOption; 
               onClick={() => save({ color })}
             >
               <Pill color={color} className="size-4 px-0" aria-hidden="true">{''}</Pill>
-              {OPTION_COLOR_LABELS[color]}
+              {optionColorLabel(color)}
             </Button>
           ))}
         </div>
@@ -366,6 +370,7 @@ export function OptionMenu({ option, list, onOptions }: { option: SelectOption; 
 }
 
 function DateEditor({ anchor, value, onCommit, onClose }: CellEditorProps & { value: Extract<CellValue, { kind: 'date' }> | null }) {
+  const { t } = useTranslation(['database', 'common'])
   const start = value ? localParts(value.date.start) : null
   const end = value?.date.end ? localParts(value.date.end) : null
   const [hasEnd, setHasEnd] = useState(end !== null)
@@ -405,7 +410,7 @@ function DateEditor({ anchor, value, onCommit, onClose }: CellEditorProps & { va
             />
           )}
           <label className="flex items-center justify-between gap-3 text-sm">
-            End date
+            {t('cells.endDate')}
             <Switch
               checked={hasEnd}
               onCheckedChange={(checked) => {
@@ -415,7 +420,7 @@ function DateEditor({ anchor, value, onCommit, onClose }: CellEditorProps & { va
             />
           </label>
           <label className="flex items-center justify-between gap-3 text-sm">
-            Include time
+            {t('cells.includeTime')}
             <Switch
               checked={withTime}
               onCheckedChange={(checked) => {
@@ -428,7 +433,7 @@ function DateEditor({ anchor, value, onCommit, onClose }: CellEditorProps & { va
             <div className="flex items-center gap-2">
               <Input
                 type="time"
-                aria-label="Start time"
+                aria-label={t('cells.startTime')}
                 value={startTime}
                 onChange={(event) => setStartTime(event.target.value)}
                 onBlur={() => { if (current.start && startTime) save({ ...current, start: current.start }) }}
@@ -436,7 +441,7 @@ function DateEditor({ anchor, value, onCommit, onClose }: CellEditorProps & { va
               {hasEnd && current.end ? (
                 <Input
                   type="time"
-                  aria-label="End time"
+                  aria-label={t('cells.endTime')}
                   value={endTime}
                   onChange={(event) => setEndTime(event.target.value)}
                   onBlur={() => { if (current.start && endTime) save({ ...current, start: current.start }) }}
@@ -454,7 +459,7 @@ function DateEditor({ anchor, value, onCommit, onClose }: CellEditorProps & { va
               onClose('stay')
             }}
           >
-            Clear
+            {t('common:clear')}
           </Button>
         </div>
       </PopoverContent>
@@ -463,6 +468,7 @@ function DateEditor({ anchor, value, onCommit, onClose }: CellEditorProps & { va
 }
 
 function PersonEditor({ property, anchor, ids, onCommit, onClose }: CellEditorProps & { ids: string[] }) {
+  const { t } = useTranslation('database')
   const { users } = useDatabaseEnv()
   const onOpenChange = usePopoverClose(anchor, onClose)
   const toggle = (id: string) => {
@@ -473,9 +479,9 @@ function PersonEditor({ property, anchor, ids, onCommit, onClose }: CellEditorPr
     <Popover open onOpenChange={onOpenChange}>
       <PopoverContent anchor={anchor} align="start" className="w-64 gap-0 p-0">
         <Command label={property.name} loop onKeyDown={(event) => event.stopPropagation()}>
-          <CommandInput autoFocus aria-label={`Search ${property.name}`} placeholder="Search people…" />
+          <CommandInput autoFocus aria-label={t('cells.searchProperty', { name: property.name })} placeholder={t('cells.searchPeople')} />
           <CommandList>
-            <CommandEmpty className="py-3 text-center text-xs text-muted-foreground">No people</CommandEmpty>
+            <CommandEmpty className="py-3 text-center text-xs text-muted-foreground">{t('cells.noPeople')}</CommandEmpty>
             <CommandGroup>
               {[...users.values()].map((user) => (
                 <CommandItem key={user.id} value={user.id} keywords={[user.name, user.email]} data-checked={ids.includes(user.id) || undefined} onSelect={() => toggle(user.id)}>

@@ -12,26 +12,21 @@ import type {
 } from '@orbit/api/generated/types.gen'
 import { ApiProblem } from '@orbit/api/problem'
 import { queryKeys } from '@/api/queryKeys'
+import { i18n } from '@/i18n'
 import { isActiveImport, isFinalImport } from './notionImports'
 
 /** How often an import that is still working is polled. */
 export const OBSIDIAN_IMPORT_POLL_MS = 2000
 
-const SKIPPED_LABELS: Record<keyof ObsidianSkippedFiles, [one: string, many: string]> = {
-  system: ['settings or system file (.obsidian/, .trash/)', 'settings and system files (.obsidian/, .trash/)'],
-  canvas: ['canvas', 'canvases'],
-  csv: ['CSV file', 'CSV files'],
-  unreferenced: ['file no note links to', 'files no note links to'],
-  too_large: ['file over the upload limit', 'files over the upload limit'],
-  duplicates: ['file whose name differs only in letter case', 'files whose names differ only in letter case'],
-}
+/** The kinds of skipped files, in display order. */
+const SKIPPED_KINDS: (keyof ObsidianSkippedFiles)[] = ['system', 'canvas', 'csv', 'unreferenced', 'too_large', 'duplicates']
 
 /** The skipped files as "2 canvases" parts (zero counts left out) and their total. */
 export function skippedSummary(skipped: ObsidianSkippedFiles): { total: number; parts: string[] } {
-  const entries = (Object.keys(SKIPPED_LABELS) as (keyof ObsidianSkippedFiles)[]).filter((kind) => skipped[kind] > 0)
+  const entries = SKIPPED_KINDS.filter((kind) => skipped[kind] > 0)
   return {
     total: entries.reduce((sum, kind) => sum + skipped[kind], 0),
-    parts: entries.map((kind) => `${skipped[kind]} ${SKIPPED_LABELS[kind][skipped[kind] === 1 ? 0 : 1]}`),
+    parts: entries.map((kind) => i18n.t(`docs:obsidianImport.skipped.${kind}`, { count: skipped[kind] })),
   }
 }
 
@@ -40,27 +35,27 @@ export function obsidianImportErrorMessage(error: unknown): string {
   if (error instanceof ApiProblem) {
     switch (error.code) {
       case 'import_in_progress':
-        return 'You already have an import running. Wait for it to finish or cancel it.'
+        return i18n.t('docs:notionImport.errors.inProgress')
       case 'obsidian_archive_too_large':
-        return 'The file is larger than the server’s upload limit. Remove large attachments from the vault and zip it again.'
+        return i18n.t('docs:obsidianImport.errors.archiveTooLarge')
       case 'obsidian_archive_invalid':
-        return 'Upload the vault as one .zip file.'
+        return i18n.t('docs:obsidianImport.errors.archiveInvalid')
       case 'obsidian_import_too_large':
-        return 'An import can contain at most 5,000 pages. Select fewer notes.'
+        return i18n.t('docs:obsidianImport.errors.tooLarge')
       case 'obsidian_import_state_conflict':
-        return 'This import changed in the meantime (it may have expired or been cancelled).'
+        return i18n.t('docs:notionImport.errors.stateConflict')
       case 'obsidian_import_not_found':
-        return 'This import no longer exists.'
+        return i18n.t('docs:notionImport.errors.notFound')
       case 'page_not_found':
-        return 'The destination page no longer exists. Choose another one.'
+        return i18n.t('docs:notionImport.errors.pageNotFound')
       case 'teamspace_not_found':
-        return 'The destination teamspace no longer exists. Choose another one.'
+        return i18n.t('docs:notionImport.errors.teamspaceNotFound')
     }
-    if (error.status === 413) return 'The file is larger than the server’s upload limit.'
-    if (error.status === 422) return 'The request was not valid. Check your input and try again.'
+    if (error.status === 413) return i18n.t('docs:obsidianImport.errors.uploadTooLarge')
+    if (error.status === 422) return i18n.t('docs:notionImport.errors.invalid')
   }
-  if (error instanceof UploadUnreachable) return 'The server could not be reached. Check your connection and try again.'
-  return 'Something went wrong. Try again.'
+  if (error instanceof UploadUnreachable) return i18n.t('docs:obsidianImport.errors.unreachable')
+  return i18n.t('docs:notionImport.errors.generic')
 }
 
 

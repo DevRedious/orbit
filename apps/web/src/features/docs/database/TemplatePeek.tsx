@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Copy, DocAdd, MoreH, Trash } from 'reicon-react'
 import { Button } from '@/components/ui/button'
@@ -11,6 +12,7 @@ const MAX_NAME_CHARS = 200
 
 /** The yellow bar over a template in the peek (spec P2 7.4), with the template's name. */
 export function TemplateBar({ workspaceId, databaseId, template }: { workspaceId: string; databaseId: string; template: DatabaseTemplate }) {
+  const { t } = useTranslation('database')
   const updateTemplate = useUpdateTemplate(workspaceId, databaseId)
   const [name, setName] = useState(template.name)
   const save = () => {
@@ -20,12 +22,12 @@ export function TemplateBar({ workspaceId, databaseId, template }: { workspaceId
   }
   return (
     <div role="status" className="flex shrink-0 items-center gap-2 border-b border-amber-500/30 bg-amber-400/15 px-4 py-1.5 text-sm text-amber-900 dark:text-amber-200">
-      <span className="shrink-0">You are editing a template</span>
+      <span className="shrink-0">{t('template.editing')}</span>
       <span aria-hidden="true" className="text-amber-900/40 dark:text-amber-200/40">
         ·
       </span>
       <input
-        aria-label="Template name"
+        aria-label={t('template.name')}
         value={name}
         maxLength={MAX_NAME_CHARS}
         className="h-6 min-w-0 flex-1 rounded-sm bg-transparent px-1 font-medium outline-none hover:bg-amber-500/10 focus-visible:bg-background/60 focus-visible:ring-2 focus-visible:ring-amber-500/40"
@@ -53,6 +55,7 @@ export function TemplateActions({ workspaceId, databaseId, template, flush, onSh
   onShowRow: (rowId: string) => void
   onClose: () => void
 }) {
+  const { t } = useTranslation('database')
   const createTemplate = useCreateTemplate(workspaceId, databaseId)
   const deleteTemplate = useDeleteTemplate(workspaceId, databaseId)
   const duplicate = async () => {
@@ -64,25 +67,25 @@ export function TemplateActions({ workspaceId, databaseId, template, flush, onSh
   }
   return (
     <DropdownMenu>
-      <Tip label="Template options" side="bottom">
-        <DropdownMenuTrigger render={<Button type="button" variant="ghost" size="icon-sm" className="text-muted-foreground/70" aria-label="Template options" />}>
+      <Tip label={t('template.options')} side="bottom">
+        <DropdownMenuTrigger render={<Button type="button" variant="ghost" size="icon-sm" className="text-muted-foreground/70" aria-label={t('template.options')} />}>
           <MoreH className="size-4" />
         </DropdownMenuTrigger>
       </Tip>
       <DropdownMenuContent align="end" className="w-auto min-w-40">
         <DropdownMenuItem disabled={createTemplate.isPending} onClick={() => void duplicate()}>
           <Copy className="size-[14px]" />
-          Duplicate
+          {t('template.duplicate')}
         </DropdownMenuItem>
         <DropdownMenuItem
           className="text-destructive focus:text-destructive"
           onClick={() => {
             onClose()
-            deleteTemplate.mutate(template.id, { onSuccess: () => toast.success('Template deleted.') })
+            deleteTemplate.mutate(template.id, { onSuccess: () => toast.success(t('template.deleted')) })
           }}
         >
           <Trash className="size-[14px]" />
-          Delete template
+          {t('template.delete')}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -98,6 +101,7 @@ export function SaveAsTemplateItem({ workspaceId, databaseId, rowId, title, flus
   flush: () => Promise<unknown>
   onShowRow: (rowId: string) => void
 }) {
+  const { t } = useTranslation('database')
   const createTemplate = useCreateTemplate(workspaceId, databaseId)
   const save = async () => {
     await flush()
@@ -107,7 +111,7 @@ export function SaveAsTemplateItem({ workspaceId, databaseId, rowId, title, flus
       {
         onSuccess: (template) => {
           onShowRow(template.id)
-          toast.success('Saved as a template.')
+          toast.success(t('template.saved'))
         },
       },
     )
@@ -115,7 +119,7 @@ export function SaveAsTemplateItem({ workspaceId, databaseId, rowId, title, flus
   return (
     <DropdownMenuItem disabled={createTemplate.isPending} onClick={() => void save()}>
       <DocAdd className="size-[14px]" />
-      Save as template
+      {t('template.saveAs')}
     </DropdownMenuItem>
   )
 }

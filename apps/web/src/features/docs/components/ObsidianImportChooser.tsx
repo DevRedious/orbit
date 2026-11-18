@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { DocumentText as FileText, Folder } from 'reicon-react'
 import type { ObsidianImport, ObsidianImportNode, ObsidianImportTree, PageSummary, Teamspace } from '@orbit/api/generated/types.gen'
 import { Button } from '@/components/ui/button'
@@ -18,6 +19,7 @@ interface Props {
 
 /** Pick notes and folders (tri-state tree), a destination, and start the import. */
 export function ObsidianImportChooser({ workspaceId, item, tree, teamspaces, pages }: Props) {
+  const { t } = useTranslation('docs')
   const index = useMemo(() => buildImportTree(tree.nodes, (node) => [node.path, node.parent_path]), [tree.nodes])
   const [selected, setSelected] = useState<ReadonlySet<string>>(() => selectAll(index))
   const destination = useImportDestination(teamspaces, pages)
@@ -37,22 +39,24 @@ export function ObsidianImportChooser({ workspaceId, item, tree, teamspaces, pag
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div role="status" aria-label="Vault contents" className="flex flex-col gap-1 border-b border-border px-4 py-2 text-xs text-muted-foreground">
+      <div role="status" aria-label={t('obsidianImport.vaultContents')} className="flex flex-col gap-1 border-b border-border px-4 py-2 text-xs text-muted-foreground">
         <p>
-          {tree.attachments} {tree.attachments === 1 ? 'attachment' : 'attachments'} ·{' '}
-          {tree.unresolved_links} unresolved {tree.unresolved_links === 1 ? 'link' : 'links'} (kept as text) · {skipped.total} skipped{' '}
-          {skipped.total === 1 ? 'file' : 'files'}
+          {[
+            t('obsidianImport.attachments', { count: tree.attachments }),
+            t('obsidianImport.unresolvedLinks', { count: tree.unresolved_links }),
+            t('obsidianImport.skippedFiles', { count: skipped.total }),
+          ].join(' · ')}
         </p>
-        {skipped.parts.length > 0 ? <p>Skipped: {skipped.parts.join(', ')}</p> : null}
+        {skipped.parts.length > 0 ? <p>{t('obsidianImport.skippedList', { list: skipped.parts.join(', ') })}</p> : null}
       </div>
       <ImportTreePicker
         tree={index}
         selected={selected}
         onSelectedChange={setSelected}
-        label="Obsidian notes"
-        empty="The vault has no notes to import."
+        label={t('obsidianImport.treeLabel')}
+        empty={t('obsidianImport.noNotes')}
         icon={(node: ObsidianImportNode) =>
-          node.kind === 'folder' ? <Folder className="size-[15px]" aria-label="Folder" /> : <FileText className="size-[15px]" />
+          node.kind === 'folder' ? <Folder className="size-[15px]" aria-label={t('obsidianImport.folder')} /> : <FileText className="size-[15px]" />
         }
       />
       <div className="flex flex-wrap items-end gap-3 border-t border-border px-3 py-3">
@@ -65,7 +69,7 @@ export function ObsidianImportChooser({ workspaceId, item, tree, teamspaces, pag
             </p>
           ) : null}
           <Button type="button" className="tabular-nums" disabled={count === 0 || start.isPending} onClick={submit}>
-            Import {count} {count === 1 ? 'page' : 'pages'}
+            {t('notionImport.importCount', { count })}
           </Button>
         </div>
       </div>

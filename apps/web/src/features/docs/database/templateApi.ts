@@ -1,6 +1,7 @@
 import { createDatabaseTemplate, deleteDatabaseTemplate, updateDatabaseTemplate } from '@orbit/api/generated/sdk.gen'
 import type { CreateDatabaseTemplateBody, DatabaseDetail, DatabaseTemplate, UpdateDatabaseTemplateBody } from '@orbit/api/generated/types.gen'
 import { apiClient } from '@/api/client'
+import { i18n } from '@/i18n'
 import { useDatabaseMutation } from './api'
 
 function withTemplates(detail: DatabaseDetail, change: (templates: DatabaseTemplate[]) => DatabaseTemplate[]): DatabaseDetail {
@@ -16,7 +17,7 @@ export function useCreateTemplate(workspaceId: string, databaseId: string) {
       return data
     },
     reconcile: (detail, template) => withTemplates(detail, (templates) => [...templates, template]),
-    error: 'Could not add the template.',
+    error: i18n.t('database:template.addFailed'),
   })
 }
 
@@ -32,7 +33,7 @@ export function useUpdateTemplate(workspaceId: string, databaseId: string) {
     optimistic: (detail, { templateId, body }) =>
       withTemplates(detail, (templates) => templates.map((template) => (template.id === templateId && body.name ? { ...template, name: body.name } : template))),
     refetch: true,
-    error: 'Could not change the template.',
+    error: i18n.t('database:template.changeFailed'),
   })
 }
 
@@ -44,6 +45,6 @@ export function useDeleteTemplate(workspaceId: string, databaseId: string) {
     },
     optimistic: (detail, templateId) => withTemplates(detail, (templates) => templates.filter((template) => template.id !== templateId)),
     refetch: true,
-    error: 'Could not delete the template.',
+    error: i18n.t('database:template.deleteFailed'),
   })
 }

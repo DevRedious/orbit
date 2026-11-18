@@ -21,32 +21,42 @@ import {
   UserCircle,
   type IconComponent,
 } from 'reicon-react'
-import { PROPERTY_TYPE_LABELS } from '@orbit/database/meta'
 import type { DatabasePropertyType } from '@orbit/database/types'
+import { propertyTypeLabel } from './labels'
+
+/** A type's icon, and its name in the UI language (read when shown, so it follows a language change). */
+function entry(type: DatabasePropertyType, icon: IconComponent): { label: string; icon: IconComponent } {
+  return {
+    icon,
+    get label() {
+      return propertyTypeLabel(type)
+    },
+  }
+}
 
 export const PROPERTY_TYPES: Record<DatabasePropertyType, { label: string; icon: IconComponent }> = {
-  title: { label: PROPERTY_TYPE_LABELS.title, icon: Text },
-  text: { label: PROPERTY_TYPE_LABELS.text, icon: TextalignJustifyleft },
-  number: { label: PROPERTY_TYPE_LABELS.number, icon: Hashtag },
-  select: { label: PROPERTY_TYPE_LABELS.select, icon: ArrowCircleDown },
-  multi_select: { label: PROPERTY_TYPE_LABELS.multi_select, icon: List },
-  status: { label: PROPERTY_TYPE_LABELS.status, icon: RecordCircle },
-  date: { label: PROPERTY_TYPE_LABELS.date, icon: Calendar },
-  person: { label: PROPERTY_TYPE_LABELS.person, icon: User },
-  checkbox: { label: PROPERTY_TYPE_LABELS.checkbox, icon: CheckSquare },
-  url: { label: PROPERTY_TYPE_LABELS.url, icon: Link },
-  email: { label: PROPERTY_TYPE_LABELS.email, icon: Sms },
-  phone: { label: PROPERTY_TYPE_LABELS.phone, icon: Call },
-  files: { label: PROPERTY_TYPE_LABELS.files, icon: Paperclip },
-  unique_id: { label: PROPERTY_TYPE_LABELS.unique_id, icon: Barcode },
-  created_time: { label: PROPERTY_TYPE_LABELS.created_time, icon: Clock },
-  created_by: { label: PROPERTY_TYPE_LABELS.created_by, icon: UserCircle },
-  last_edited_time: { label: PROPERTY_TYPE_LABELS.last_edited_time, icon: Clock },
-  last_edited_by: { label: PROPERTY_TYPE_LABELS.last_edited_by, icon: UserCircle },
-  button: { label: PROPERTY_TYPE_LABELS.button, icon: Flash },
-  formula: { label: PROPERTY_TYPE_LABELS.formula, icon: Calculator },
-  relation: { label: PROPERTY_TYPE_LABELS.relation, icon: ArrowRightUp },
-  rollup: { label: PROPERTY_TYPE_LABELS.rollup, icon: Search },
+  title: entry('title', Text),
+  text: entry('text', TextalignJustifyleft),
+  number: entry('number', Hashtag),
+  select: entry('select', ArrowCircleDown),
+  multi_select: entry('multi_select', List),
+  status: entry('status', RecordCircle),
+  date: entry('date', Calendar),
+  person: entry('person', User),
+  checkbox: entry('checkbox', CheckSquare),
+  url: entry('url', Link),
+  email: entry('email', Sms),
+  phone: entry('phone', Call),
+  files: entry('files', Paperclip),
+  unique_id: entry('unique_id', Barcode),
+  created_time: entry('created_time', Clock),
+  created_by: entry('created_by', UserCircle),
+  last_edited_time: entry('last_edited_time', Clock),
+  last_edited_by: entry('last_edited_by', UserCircle),
+  button: entry('button', Flash),
+  formula: entry('formula', Calculator),
+  relation: entry('relation', ArrowRightUp),
+  rollup: entry('rollup', Search),
 }
 
 /** The types a user can give a property, in menu order (a database has exactly one title). */

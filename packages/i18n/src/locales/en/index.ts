@@ -2,6 +2,7 @@ import admin from './admin'
 import auth from './auth'
 import chat from './chat'
 import common from './common'
+import database from './database'
 import docs from './docs'
 import errors from './errors'
 import mail from './mail'
@@ -12,4 +13,4 @@ import tasks from './tasks'
 import views from './views'
 import workspaces from './workspaces'
 
-export const en = { common, errors, shell, auth, profile, admin, tasks, views, settings, docs, chat, workspaces, mail } as const
+export const en = { common, errors, shell, auth, profile, admin, tasks, views, settings, docs, database, chat, workspaces, mail } as const

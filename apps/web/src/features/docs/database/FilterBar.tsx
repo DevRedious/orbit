@@ -1,4 +1,5 @@
 import { useState, type ComponentProps, type ReactElement } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Add, Filter, Xmark } from 'reicon-react'
 import { cn } from 'cn'
 import { Button } from '@/components/ui/button'
@@ -13,10 +14,11 @@ import type { DatabaseFilterOperator, DatabaseFilterRule, Property, ViewConfig }
 import { Pill } from './cells/Pill'
 import { useDatabaseEnv } from './context'
 import { AdvancedFilter } from './AdvancedFilter'
-import { OPERATOR_LABELS, RELATIVE_DATES, allOf, newRule, operatorsOf, ruleNeedsValue, ruleSummary, simpleRules } from '@orbit/database/meta'
+import { RELATIVE_DATES, allOf, newRule, operatorsOf, ruleNeedsValue, ruleSummary, simpleRules } from '@orbit/database/meta'
 import { filterTypeOf } from '@orbit/database/formula/values'
 import { filterProperty } from '@orbit/database/formula/values'
 import { PROPERTY_TYPES } from './propertyMeta'
+import { operatorLabel, relativeDateLabel } from './labels'
 
 interface FilterBarProps {
   properties: Property[]
@@ -35,6 +37,7 @@ interface FilterBarProps {
  * with an `or` or a nested group shows one "N rules" chip that opens the advanced filter. Shows only with rules.
  */
 export function FilterBar({ properties, config, onConfig, openRule, onOpenRule, advanced, onAdvanced }: FilterBarProps) {
+  const { t } = useTranslation('database')
   const count = filterRules(config.filter).length
   const rules = simpleRules(config.filter)
   if (count === 0 && !advanced) return null
@@ -42,16 +45,16 @@ export function FilterBar({ properties, config, onConfig, openRule, onOpenRule, 
   const setRules = (next: DatabaseFilterRule[]) => onConfig({ ...config, filter: allOf(next) })
   if (rules === null || advanced) {
     return (
-      <div role="toolbar" aria-label="Filters" className="flex flex-wrap items-center gap-1.5 py-1.5">
+      <div role="toolbar" aria-label={t('filter.filters')} className="flex flex-wrap items-center gap-1.5 py-1.5">
         <FilterChip>
           <Popover open={advanced} onOpenChange={onAdvanced}>
             <PopoverTrigger
               render={
-                <Button type="button" variant="ghost" className="h-auto gap-1.5 rounded-none border-0 px-2 text-xs font-normal text-primary" aria-label={`Advanced filter: ${count === 1 ? '1 rule' : `${count} rules`}`} />
+                <Button type="button" variant="ghost" className="h-auto gap-1.5 rounded-none border-0 px-2 text-xs font-normal text-primary" aria-label={t('filter.advancedLabel', { rules: t('filter.ruleCount', { count }) })} />
               }
             >
               <Filter className="size-3.5" aria-hidden="true" />
-              {count === 1 ? '1 rule' : `${count} rules`}
+              {t('filter.ruleCount', { count })}
             </PopoverTrigger>
             {advanced ? (
               <PopoverContent align="start" className="w-max max-w-[92vw] min-w-96 gap-2 overflow-x-auto p-2">
@@ -62,7 +65,7 @@ export function FilterBar({ properties, config, onConfig, openRule, onOpenRule, 
           <Button
             type="button"
             variant="ghost"
-            aria-label="Remove all filters"
+            aria-label={t('filter.removeAll')}
             className="h-auto w-6 rounded-none border-0 border-l border-l-border px-0 text-muted-foreground"
             onClick={() => {
               onAdvanced(false)
@@ -76,7 +79,7 @@ export function FilterBar({ properties, config, onConfig, openRule, onOpenRule, 
     )
   }
   return (
-    <div role="toolbar" aria-label="Filters" className="flex flex-wrap items-center gap-1.5 py-1.5">
+    <div role="toolbar" aria-label={t('filter.filters')} className="flex flex-wrap items-center gap-1.5 py-1.5">
       {rules.map((rule, index) => {
         const property = byId.get(rule.property_id)
         if (!property) return null
@@ -98,7 +101,7 @@ export function FilterBar({ properties, config, onConfig, openRule, onOpenRule, 
       {rules.length < MAX_RULES ? (
         <PropertyPicker
           properties={properties}
-          label="Add filter"
+          label={t('filter.add')}
           onPick={(property) => {
             setRules([...rules, newRule(property)])
             onOpenRule(rules.length)
@@ -107,7 +110,7 @@ export function FilterBar({ properties, config, onConfig, openRule, onOpenRule, 
           trigger={
             <Button type="button" variant="ghost" size="sm" className="text-muted-foreground">
               <Add />
-              Add filter
+              {t('filter.add')}
             </Button>
           }
         />
@@ -126,6 +129,7 @@ export function PropertyPicker({ properties, label, onPick, onAdvanced, trigger,
   open?: boolean
   onOpenChange?: (open: boolean) => void
 }) {
+  const { t } = useTranslation('database')
   const [ownOpen, setOwnOpen] = useState(false)
   const open = controlledOpen ?? ownOpen
   const setOpen = onOpenChange ?? setOwnOpen
@@ -134,9 +138,9 @@ export function PropertyPicker({ properties, label, onPick, onAdvanced, trigger,
       <PopoverTrigger render={trigger} />
       <PopoverContent align="start" className="w-60 gap-0 p-0">
         <Command label={label} loop>
-          <CommandInput autoFocus aria-label={label} placeholder="Property…" />
+          <CommandInput autoFocus aria-label={label} placeholder={t('filter.propertyPlaceholder')} />
           <CommandList>
-            <CommandEmpty className="py-3 text-center text-xs text-muted-foreground">No properties</CommandEmpty>
+            <CommandEmpty className="py-3 text-center text-xs text-muted-foreground">{t('filter.noProperties')}</CommandEmpty>
             <CommandGroup>
               {properties.map((property) => {
                 const Icon = PROPERTY_TYPES[property.type].icon
@@ -162,14 +166,14 @@ export function PropertyPicker({ properties, label, onPick, onAdvanced, trigger,
                 <CommandGroup>
                   <CommandItem
                     value="advanced-filter"
-                    keywords={['Advanced filter']}
+                    keywords={[t('filter.advanced')]}
                     onSelect={() => {
                       setOpen(false)
                       onAdvanced()
                     }}
                   >
                     <Add className="text-muted-foreground" />
-                    Add advanced filter
+                    {t('filter.addAdvanced')}
                   </CommandItem>
                 </CommandGroup>
               </>
@@ -193,6 +197,7 @@ function RuleChip({ rule, property, open, onOpenChange, onChange, onRemove }: {
   onChange: (rule: DatabaseFilterRule) => void
   onRemove: () => void
 }) {
+  const { t } = useTranslation('database')
   const { ctx } = useDatabaseEnv()
   const Icon = PROPERTY_TYPES[property.type].icon
   const summary = ruleSummary(rule, property, ctx)
@@ -206,7 +211,7 @@ function RuleChip({ rule, property, open, onOpenChange, onChange, onRemove }: {
               variant="ghost"
               className="h-auto min-w-0 gap-1.5 rounded-none border-0 px-2 text-xs font-normal data-active:text-primary"
               data-active={summary !== 'All' || undefined}
-              aria-label={`${property.name} filter: ${summary}`}
+              aria-label={t('filter.chipLabel', { name: property.name, summary })}
             />
           }
         >
@@ -221,7 +226,7 @@ function RuleChip({ rule, property, open, onOpenChange, onChange, onRemove }: {
       <Button
         type="button"
         variant="ghost"
-        aria-label={`Remove ${property.name} filter`}
+        aria-label={t('filter.removeRule', { name: property.name })}
         className="h-auto w-6 rounded-none border-0 border-l border-l-border px-0 text-muted-foreground"
         onClick={onRemove}
       >
@@ -233,9 +238,10 @@ function RuleChip({ rule, property, open, onOpenChange, onChange, onRemove }: {
 
 /** The operator select and the value editor of the property's type. */
 function RuleEditor({ rule, property: source, onChange }: { rule: DatabaseFilterRule; property: Property; onChange: (rule: DatabaseFilterRule) => void }) {
+  const { t } = useTranslation('database')
   const property = filterProperty(source)
   const operators = operatorsOf(filterTypeOf(property))
-  const items = operators.map((operator) => ({ value: operator, label: OPERATOR_LABELS[operator] }))
+  const items = operators.map((operator) => ({ value: operator, label: operatorLabel(operator) }))
   const needsValue = ruleNeedsValue(rule.operator)
   const setOperator = (operator: DatabaseFilterOperator) =>
     onChange({ ...rule, operator, value: ruleNeedsValue(operator) ? rule.value : null })
@@ -245,7 +251,7 @@ function RuleEditor({ rule, property: source, onChange }: { rule: DatabaseFilter
         <span className="min-w-0 flex-1 truncate text-sm text-muted-foreground">{property.name}</span>
         {operators.length > 1 ? (
           <Select items={items} value={rule.operator} onValueChange={(value) => value && setOperator(value as DatabaseFilterOperator)}>
-            <SelectTrigger size="sm" aria-label="Operator" className="w-auto shrink-0">
+            <SelectTrigger size="sm" aria-label={t('filter.operator')} className="w-auto shrink-0">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -264,6 +270,7 @@ function RuleEditor({ rule, property: source, onChange }: { rule: DatabaseFilter
 }
 
 export function RuleValue({ rule, property, onChange }: { rule: DatabaseFilterRule; property: Property; onChange: (value: unknown) => void }) {
+  const { t } = useTranslation('database')
   const { users } = useDatabaseEnv()
   const value = rule.value
   switch (property.type) {
@@ -276,7 +283,7 @@ export function RuleValue({ rule, property, onChange }: { rule: DatabaseFilterRu
     // A list rollup (number and date rollups edit as their result, `filterProperty`).
     case 'rollup':
       return (
-        <Input autoFocus aria-label="Value" placeholder="Value" value={typeof value === 'string' ? value : ''} onChange={(event) => onChange(event.target.value)} />
+        <Input autoFocus aria-label={t('filter.value')} placeholder={t('filter.value')} value={typeof value === 'string' ? value : ''} onChange={(event) => onChange(event.target.value)} />
       )
     case 'number':
     case 'unique_id':
@@ -284,8 +291,8 @@ export function RuleValue({ rule, property, onChange }: { rule: DatabaseFilterRu
         <Input
           autoFocus
           type="number"
-          aria-label="Value"
-          placeholder="Value"
+          aria-label={t('filter.value')}
+          placeholder={t('filter.value')}
           value={typeof value === 'number' ? String(value) : ''}
           onChange={(event) => onChange(event.target.value === '' ? null : Number(event.target.value))}
         />
@@ -295,7 +302,7 @@ export function RuleValue({ rule, property, onChange }: { rule: DatabaseFilterRu
         <div className="flex gap-1">
           {[true, false].map((checked) => (
             <Button key={String(checked)} type="button" variant={value === checked ? 'secondary' : 'ghost'} size="sm" onClick={() => onChange(checked)}>
-              {checked ? 'Checked' : 'Unchecked'}
+              {checked ? t('filter.checked') : t('filter.unchecked')}
             </Button>
           ))}
         </div>
@@ -322,7 +329,7 @@ export function RuleValue({ rule, property, onChange }: { rule: DatabaseFilterRu
           ids={Array.isArray(value) ? (value as string[]) : []}
           onChange={onChange}
           items={[
-            { id: 'me', keywords: ['Me'], label: <span>Me</span> },
+            { id: 'me', keywords: [t('filter.me')], label: <span>{t('filter.me')}</span> },
             ...[...users.values()].map((user) => ({
               id: user.id,
               keywords: [user.name, user.email],
@@ -340,11 +347,11 @@ export function RuleValue({ rule, property, onChange }: { rule: DatabaseFilterRu
     case 'created_time':
     case 'last_edited_time': {
       const relative = typeof value === 'string' && RELATIVE_DATES.some((date) => date.value === value)
-      const items = [...RELATIVE_DATES, { value: 'exact', label: 'Exact date' }]
+      const items = [...RELATIVE_DATES.map((date) => ({ value: date.value, label: relativeDateLabel(date.value) ?? date.label })), { value: 'exact', label: t('filter.exactDate') }]
       return (
         <div className="flex flex-col gap-2">
           <Select items={items} value={relative ? (value as string) : 'exact'} onValueChange={(next) => next && onChange(next === 'exact' ? null : next)}>
-            <SelectTrigger size="sm" aria-label="Date" className="w-full">
+            <SelectTrigger size="sm" aria-label={t('filter.date')} className="w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -358,7 +365,7 @@ export function RuleValue({ rule, property, onChange }: { rule: DatabaseFilterRu
           {relative ? null : (
             <Input
               type="date"
-              aria-label="Exact date"
+              aria-label={t('filter.exactDate')}
               value={typeof value === 'string' ? value.slice(0, 10) : ''}
               onChange={(event) => onChange(event.target.value || null)}
             />
@@ -370,11 +377,12 @@ export function RuleValue({ rule, property, onChange }: { rule: DatabaseFilterRu
 }
 
 function IdList({ ids, items, onChange }: { ids: string[]; items: { id: string; keywords: string[]; label: ReactElement }[]; onChange: (ids: string[]) => void }) {
+  const { t } = useTranslation('database')
   return (
-    <Command label="Values" loop className="rounded-md! border border-border p-0">
-      <CommandInput autoFocus aria-label="Search values" placeholder="Search…" />
+    <Command label={t('filter.values')} loop className="rounded-md! border border-border p-0">
+      <CommandInput autoFocus aria-label={t('filter.searchValues')} placeholder={t('toolbar.searchPlaceholder')} />
       <CommandList className="max-h-56">
-        <CommandEmpty className="py-3 text-center text-xs text-muted-foreground">Nothing found</CommandEmpty>
+        <CommandEmpty className="py-3 text-center text-xs text-muted-foreground">{t('filter.nothingFound')}</CommandEmpty>
         <CommandGroup>
           {items.map((item) => (
             <CommandItem

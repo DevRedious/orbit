@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef, useState, type ComponentProps } from 'react'
+import { useTranslation } from 'react-i18next'
 import { DocumentText } from 'reicon-react'
 import { cn } from 'cn'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -27,6 +28,7 @@ interface CellViewProps {
 
 /** What a cell shows when it is not being edited (spec 7.3). */
 export function CellView({ property, row, width, wrap, onToggle }: CellViewProps) {
+  const { t } = useTranslation(['database', 'docs'])
   const { ctx } = useDatabaseEnv()
   const value = cellOf(row, property)
   switch (property.type) {
@@ -34,8 +36,8 @@ export function CellView({ property, row, width, wrap, onToggle }: CellViewProps
       return (
         <span className={cn('flex min-w-0 items-center gap-1.5 font-medium', wrap ? 'items-start' : '')}>
           {row.icon ? <Emoji value={row.icon} className="shrink-0" /> : null}
-          <Text wrap={wrap} muted={!row.title}>{row.title || 'Untitled'}</Text>
-          {row.has_content ? <DocumentText className="size-3.5 shrink-0 text-muted-foreground" aria-label="Has text" /> : null}
+          <Text wrap={wrap} muted={!row.title}>{row.title || t('docs:untitled')}</Text>
+          {row.has_content ? <DocumentText className="size-3.5 shrink-0 text-muted-foreground" aria-label={t('cells.hasText')} /> : null}
         </span>
       )
     case 'number':
@@ -163,6 +165,7 @@ function OptionPills({ property, ids, width, wrap }: { property: Property; ids: 
 }
 
 function People({ ids, width, wrap, muted }: { ids: string[]; width: number; wrap: boolean; muted: boolean }) {
+  const { t } = useTranslation('docs')
   const { users } = useDatabaseEnv()
   const fitKey = ids.map((id) => users.get(id)?.name ?? '').join('\n')
   const { ref, shown } = useFit(ids.length, fitKey, width, wrap)
@@ -178,7 +181,7 @@ function People({ ids, width, wrap, muted }: { ids: string[]; width: number; wra
             className={cn('flex min-w-0 items-center gap-1.5', fitItem(index))}
           >
             <UserAvatar user={user} name={user ? undefined : '?'} size={18} />
-            <span className="truncate">{user?.name ?? 'Former member'}</span>
+            <span className="truncate">{user?.name ?? t('formerMember')}</span>
           </span>
         )
       })}

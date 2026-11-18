@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useRef, useState, type DragEvent } from 'react'
 import { Add, ChevronLeft, ChevronRight } from 'reicon-react'
 import { cn } from 'cn'
@@ -27,6 +28,7 @@ import { useCreateProperty, useUpdateValues } from './api'
 import { CellView } from './cells/CellView'
 import { useDatabaseEnv } from './context'
 import { useWeekStart } from './weekStart'
+import { propertyTypeLabel } from './labels'
 
 const DAY_HEADER = 26
 const MONTH_LANE = 24
@@ -57,6 +59,7 @@ type CalendarDrag = { rowId: string; mode: 'move'; grabDay: string } | { rowId: 
  * a row with that date; rows with no date are under "No date (N)".
  */
 export function DatabaseCalendar({ database, config, rows, onConfig, onAddRow, onOpenRow }: DatabaseCalendarProps) {
+  const { t } = useTranslation('database')
   const { workspaceId, databaseId, canEditValues, canEditSchema, canEditViews, ctx } = useDatabaseEnv()
   const updateValues = useUpdateValues(workspaceId, databaseId)
   const createProperty = useCreateProperty(workspaceId, databaseId)
@@ -72,8 +75,8 @@ export function DatabaseCalendar({ database, config, rows, onConfig, onAddRow, o
     const choices = database.properties.filter(datable)
     return (
       <div className="flex h-40 flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
-        Choose a date property
-        <span className="text-xs">A calendar places its rows by a Date, Created time or Last edited time property.</span>
+        {t('calendar.chooseDate')}
+        <span className="text-xs">{t('calendar.chooseDateHint')}</span>
         {canEditViews && choices.length > 0 ? (
           <div className="flex flex-wrap justify-center gap-1.5">
             {choices.map((property) => (
@@ -83,9 +86,9 @@ export function DatabaseCalendar({ database, config, rows, onConfig, onAddRow, o
             ))}
           </div>
         ) : canEditSchema ? (
-          <Button type="button" variant="outline" size="sm" disabled={createProperty.isPending} onClick={() => createProperty.mutate({ name: 'Date', type: 'date' })}>
+          <Button type="button" variant="outline" size="sm" disabled={createProperty.isPending} onClick={() => createProperty.mutate({ name: propertyTypeLabel('date'), type: 'date' })}>
             <Add />
-            Add a Date property
+            {t('calendar.addDate')}
           </Button>
         ) : null}
       </div>
@@ -103,7 +106,7 @@ export function DatabaseCalendar({ database, config, rows, onConfig, onAddRow, o
 
   const beginDrag = (event: DragEvent<HTMLElement>, row: Row, next: CalendarDrag) => {
     event.dataTransfer.effectAllowed = 'move'
-    event.dataTransfer.setData('text/plain', row.title || 'Untitled')
+    event.dataTransfer.setData('text/plain', row.title || t('untitled', { ns: 'docs' }))
     // Chrome cancels a drag whose source stops taking pointer events during `dragstart`, so the cards let the drag
     // through to the day cells only from the next task on.
     dragTimer.current = window.setTimeout(() => setDrag(next))
@@ -141,18 +144,18 @@ export function DatabaseCalendar({ database, config, rows, onConfig, onAddRow, o
     <div className="flex flex-col gap-2 pb-4 text-sm [contain:inline-size]">
       <div className="flex flex-wrap items-center gap-1">
         <h3 className="mr-2 text-base font-semibold">{monthTitle(week ? weeks[0]![0]! : anchor, ctx.locale)}</h3>
-        <Button type="button" variant="ghost" size="icon-sm" aria-label={week ? 'Previous week' : 'Previous month'} onClick={() => step(-1)}>
+        <Button type="button" variant="ghost" size="icon-sm" aria-label={week ? t('calendar.previousWeek') : t('calendar.previousMonth')} onClick={() => step(-1)}>
           <ChevronLeft />
         </Button>
         <Button type="button" variant="ghost" size="sm" onClick={() => setAnchor(today)}>
-          Today
+          {t('today', { ns: 'common' })}
         </Button>
-        <Button type="button" variant="ghost" size="icon-sm" aria-label={week ? 'Next week' : 'Next month'} onClick={() => step(1)}>
+        <Button type="button" variant="ghost" size="icon-sm" aria-label={week ? t('calendar.nextWeek') : t('calendar.nextMonth')} onClick={() => step(1)}>
           <ChevronRight />
         </Button>
         <span className="flex-1" />
-        {undated.length > 0 ? <RowListPopover label={`No date (${undated.length})`} rows={undated} title={database.properties.find((other) => other.type === 'title')} onOpenRow={onOpenRow} /> : null}
-        <div role="radiogroup" aria-label="Calendar range" className="flex rounded-md border border-border p-0.5">
+        {undated.length > 0 ? <RowListPopover label={t('calendar.noDate', { count: undated.length })} rows={undated} title={database.properties.find((other) => other.type === 'title')} onOpenRow={onOpenRow} /> : null}
+        <div role="radiogroup" aria-label={t('calendar.range')} className="flex rounded-md border border-border p-0.5">
           {(['month', 'week'] as const).map((mode) => (
             <button
               key={mode}
@@ -165,7 +168,7 @@ export function DatabaseCalendar({ database, config, rows, onConfig, onAddRow, o
                 onConfig(mode === 'week' ? { ...rest, calendar_mode: 'week' } : rest)
               }}
             >
-              {mode === 'month' ? 'Month' : 'Week'}
+              {mode === 'month' ? t('calendar.month') : t('calendar.week')}
             </button>
           ))}
         </div>
@@ -201,7 +204,7 @@ export function DatabaseCalendar({ database, config, rows, onConfig, onAddRow, o
                       {canEditValues && property.type === 'date' ? (
                         <button
                           type="button"
-                          aria-label={`New row on ${day}`}
+                          aria-label={t('calendar.newRowOn', { day })}
                           className="flex size-5 items-center justify-center rounded text-muted-foreground opacity-0 group-hover/day:opacity-100 hover:bg-muted focus-visible:opacity-100"
                           onClick={() => onAddRow({ [property.id]: apiValue({ kind: 'date', date: dayDate(day) }) })}
                         >
@@ -217,7 +220,7 @@ export function DatabaseCalendar({ database, config, rows, onConfig, onAddRow, o
                     {hidden.length > 0 ? (
                       <div className="absolute inset-x-1 bottom-0.5">
                         <RowListPopover
-                          label={`+${hidden.length} more`}
+                          label={t('calendar.more', { count: hidden.length })}
                           rows={barsOn(bars, column).map((bar) => bar.row)}
                           title={database.properties.find((other) => other.type === 'title')}
                           onOpenRow={onOpenRow}
@@ -280,6 +283,7 @@ interface CalendarCardProps {
 
 /** A row on the grid: its title (with the start time) across its days of the week, and in a week its card properties. */
 function CalendarCard({ bar, property, cardProperties, top, height, draggable, dragging, passThrough, onOpen, onMoveStart, onEndStart, onDragEnd }: CalendarCardProps) {
+  const { t } = useTranslation('database')
   const { ctx } = useDatabaseEnv()
   const { row } = bar
   const time = startTime(row, property, ctx)
@@ -305,7 +309,7 @@ function CalendarCard({ bar, property, cardProperties, top, height, draggable, d
     >
       <div className="flex h-[22px] min-w-0 shrink-0 items-center gap-1">
         {time ? <span className="shrink-0 text-muted-foreground tabular-nums">{time}</span> : null}
-        <span className="min-w-0 flex-1 truncate font-medium">{row.title || <span className="text-muted-foreground">Untitled</span>}</span>
+        <span className="min-w-0 flex-1 truncate font-medium">{row.title || <span className="text-muted-foreground">{t('untitled', { ns: 'docs' })}</span>}</span>
       </div>
       {filled.map((other) => (
         <div key={other.id} className="flex h-[18px] min-w-0 items-center">
@@ -316,7 +320,7 @@ function CalendarCard({ bar, property, cardProperties, top, height, draggable, d
         <span
           draggable
           role="separator"
-          aria-label="Drag to change the end date"
+          aria-label={t('calendar.dragEnd')}
           className="absolute inset-y-0 right-0 w-1.5 cursor-ew-resize"
           onClick={(event) => event.stopPropagation()}
           onDragStart={onEndStart}
@@ -329,6 +333,7 @@ function CalendarCard({ bar, property, cardProperties, top, height, draggable, d
 
 /** A button that lists rows in a popover (a day's "+N more", "No date (N)"); a row opens its peek. */
 function RowListPopover({ label, rows, title, onOpenRow, compact = false }: { label: string; rows: Row[]; title: Property | undefined; onOpenRow: (rowId: string) => void; compact?: boolean }) {
+  const { t } = useTranslation('database')
   const [open, setOpen] = useState(false)
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -355,7 +360,7 @@ function RowListPopover({ label, rows, title, onOpenRow, compact = false }: { la
                   onOpenRow(row.id)
                 }}
               >
-                {title ? <CellView property={title} row={row} width={220} wrap={false} /> : row.title || 'Untitled'}
+                {title ? <CellView property={title} row={row} width={220} wrap={false} /> : row.title || t('untitled', { ns: 'docs' })}
               </button>
             </li>
           ))}

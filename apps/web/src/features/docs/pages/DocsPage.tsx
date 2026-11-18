@@ -108,7 +108,7 @@ export function DocsPage({ view = 'page' }: { view?: 'page' | 'trash' | 'import'
     if (!target) return
     const descendants = await subPagesOf(queryClient, workspace.id, pages, targetId).catch(() => null)
     if (!descendants) {
-      toast.error('Could not move the page to the trash.')
+      toast.error(t('trashConfirm.failed'))
       return
     }
     const confirmed = await confirmAction({

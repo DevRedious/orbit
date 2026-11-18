@@ -1,4 +1,5 @@
 import { useMemo, useState, type ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ChevronRight, Search4 as Search } from 'reicon-react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -38,6 +39,7 @@ export function ImportTreePicker<T extends ImportNode & { child_count: number }>
   empty,
   icon,
 }: Props<T>) {
+  const { t } = useTranslation('docs')
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(() => new Set())
   const [query, setQuery] = useState('')
   const states = useMemo(() => checkStates(tree, selected), [tree, selected])
@@ -62,28 +64,28 @@ export function ImportTreePicker<T extends ImportNode & { child_count: number }>
           <InputGroupInput
             type="search"
             className="text-xs"
-            placeholder="Filter pages"
-            aria-label="Filter pages"
+            placeholder={t('notionImport.filter')}
+            aria-label={t('notionImport.filter')}
             value={query}
             onChange={(event) => setQuery(event.target.value)}
           />
         </InputGroup>
         <span className="flex-1" />
         <span className="text-xs text-muted-foreground tabular-nums" data-testid="selected-count">
-          {count} {count === 1 ? 'page' : 'pages'} selected
+          {t('notionImport.selectedCount', { count })}
         </span>
         <Button type="button" variant="ghost" size="sm" onClick={() => onSelectedChange(selectAll(tree))}>
-          Select all
+          {t('notionImport.selectAll')}
         </Button>
         <Button type="button" variant="ghost" size="sm" onClick={() => onSelectedChange(new Set())}>
-          Clear
+          {t('notionImport.clear')}
         </Button>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto p-2" role="tree" aria-label={label} aria-multiselectable="true">
         {tree.ids.length === 0 ? (
           <p className="p-4 text-sm text-muted-foreground">{empty}</p>
         ) : rows.length === 0 ? (
-          <p className="p-4 text-sm text-muted-foreground">No pages match “{query.trim()}”.</p>
+          <p className="p-4 text-sm text-muted-foreground">{t('notionImport.noMatch', { query: query.trim() })}</p>
         ) : (
           rows.slice(0, MAX_ROWS).map((row) => {
             const state = states.get(row.id) ?? 'unchecked'
@@ -105,7 +107,7 @@ export function ImportTreePicker<T extends ImportNode & { child_count: number }>
                     size="icon-xs"
                     className="size-5 shrink-0 text-muted-foreground/70 [&>svg]:transition-transform data-[expanded=true]:[&>svg]:rotate-90"
                     data-expanded={row.expanded}
-                    aria-label={`${row.expanded ? 'Collapse' : 'Expand'} ${title}`}
+                    aria-label={row.expanded ? t('notionImport.collapseRow', { title }) : t('notionImport.expandRow', { title })}
                     onClick={() => toggleExpanded(row.id)}
                   >
                     <ChevronRight className="size-3" />
@@ -114,7 +116,7 @@ export function ImportTreePicker<T extends ImportNode & { child_count: number }>
                   <span className="inline-flex size-5 shrink-0" aria-hidden="true" />
                 )}
                 <Checkbox
-                  aria-label={`Select ${title}`}
+                  aria-label={t('notionImport.selectRow', { title })}
                   checked={state === 'checked'}
                   indeterminate={state === 'indeterminate'}
                   onCheckedChange={() => toggle(row.id)}
@@ -130,7 +132,7 @@ export function ImportTreePicker<T extends ImportNode & { child_count: number }>
                   {title}
                 </button>
                 {row.node.child_count > 0 ? (
-                  <span className="shrink-0 text-xs text-muted-foreground/70" title={`${row.node.child_count} sub-pages`}>
+                  <span className="shrink-0 text-xs text-muted-foreground/70" title={t('notionImport.subpageCount', { count: row.node.child_count })}>
                     {row.node.child_count}
                   </span>
                 ) : null}
@@ -140,7 +142,7 @@ export function ImportTreePicker<T extends ImportNode & { child_count: number }>
         )}
         {rows.length > MAX_ROWS ? (
           <p className="p-3 text-xs text-muted-foreground">
-            Showing the first {MAX_ROWS} of {rows.length} rows. Filter to narrow the list.
+            {t('notionImport.rowLimit', { shown: MAX_ROWS, total: rows.length })}
           </p>
         ) : null}
       </div>

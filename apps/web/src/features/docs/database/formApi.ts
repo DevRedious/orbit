@@ -5,6 +5,7 @@ import { ApiProblem } from '@orbit/api/problem'
 import { databaseErrorMessage } from '@orbit/database/errors'
 import { apiClient } from '@/api/client'
 import { queryKeys } from '@/api/queryKeys'
+import { i18n } from '@/i18n'
 
 export type SubmitInput = { viewId: string; answers: Record<string, unknown> }
 
@@ -29,9 +30,9 @@ export function useSubmitForm(workspaceId: string, databaseId: string) {
 /** The words for a failed submission, shown under the form. */
 export function formErrorMessage(error: unknown): string {
   if (error instanceof ApiProblem) {
-    if (error.code === 'database_form_closed') return 'This form no longer takes answers.'
-    if (error.code === 'database_form_rate_limited') return 'You sent this form too often. Try again in an hour.'
-    if (error.code === 'database_view_not_found') return 'This form was deleted.'
+    if (error.code === 'database_form_closed') return i18n.t('database:form.errorClosed')
+    if (error.code === 'database_form_rate_limited') return i18n.t('database:form.errorRateLimited')
+    if (error.code === 'database_view_not_found') return i18n.t('database:form.errorDeleted')
   }
-  return databaseErrorMessage(error, 'Could not send the form. Try again.')
+  return databaseErrorMessage(error, i18n.t('database:form.errorSend'))
 }

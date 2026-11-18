@@ -658,11 +658,11 @@ export function DocEditor({ workspaceId, page, pages, teamspaces, onRequestTrash
           const linked = await createLink(workspaceId, databaseId, { host_page_id: pageId })
           return { databaseId, linkId: linked.link.id }
         } catch (error) {
-          if (!isPaymentRequired(error)) toast.error('Could not link the database. Try again.')
+          if (!isPaymentRequired(error)) toast.error(t('editor.linkDatabaseFailed'))
           return null
         }
       }),
-    [workspaceId, pageId],
+    [workspaceId, pageId, t],
   )
 
   const inPeek = peek !== undefined
@@ -671,18 +671,18 @@ export function DocEditor({ workspaceId, page, pages, teamspaces, onRequestTrash
   /** Deleting an inline database block keeps the database (spec 3.5); the toast offers to trash it too. */
   const onDatabaseBlockRemoved = useCallback(
     (databaseId: string) => {
-      toast('The database is still in the page tree', {
+      toast(t('editor.databaseStillInTree'), {
         action: {
-          label: 'Move to trash',
+          label: t('pageMenu.moveToTrash'),
           onClick: () =>
             void fetchPage(apiClient, workspaceId, databaseId).then(
               (database) => trashPage({ pageId: databaseId, version: database.version }),
-              () => toast.error('Could not move the database to the trash.'),
+              () => toast.error(t('editor.trashDatabaseFailed')),
             ),
         },
       })
     },
-    [workspaceId, trashPage],
+    [workspaceId, trashPage, t],
   )
 
   const closeLinkDialog = (picked: string | null) => {
@@ -715,7 +715,7 @@ export function DocEditor({ workspaceId, page, pages, teamspaces, onRequestTrash
       ? t('status.offlineHint')
       : undefined
   const displayTitle = title.trim() ? title : t('untitled')
-  const editedBy = lastEdited.edit.userId === selfId ? 'you' : lastEdited.edit.name.trim() || 'someone'
+  const editedByName = lastEdited.edit.name.trim()
   const editedAt = new Date(lastEdited.edit.at).toISOString()
   const favorite = isFavorite(favoritesQuery.data, pageId)
   const setFavorite = (next: boolean) =>
@@ -988,7 +988,7 @@ export function DocEditor({ workspaceId, page, pages, teamspaces, onRequestTrash
                         ))}
                         <DropdownMenuItem onClick={() => setMoveOpen(true)}>
                           <FolderMove className="size-[14px]" />
-                          Page or database…
+                          {t('pageMenu.moveToPage')}
                         </DropdownMenuItem>
                       </DropdownMenuGroup>
                       <DropdownMenuSeparator />
@@ -1020,7 +1020,7 @@ export function DocEditor({ workspaceId, page, pages, teamspaces, onRequestTrash
                   {isDatabase ? null : (
                     <DropdownMenuItem disabled={readOnly} onClick={() => void onCreateSubpage('database').then(onOpenPage, () => {})}>
                       <Grid className="size-[14px]" />
-                      New database
+                      {t('tree.newDatabase')}
                     </DropdownMenuItem>
                   )}
                   {pageActions ? (
@@ -1065,10 +1065,14 @@ export function DocEditor({ workspaceId, page, pages, teamspaces, onRequestTrash
                   <DropdownMenuSeparator />
                   <div className="px-1.5 py-1 text-xs leading-5 text-muted-foreground" title={new Date(lastEdited.edit.at).toLocaleString(i18n.language)}>
                     <p className="truncate" data-last-edited="">
-                      Last edited by {editedBy}
+                      {lastEdited.edit.userId === selfId
+                        ? t('pageMenu.lastEditedByYou')
+                        : editedByName
+                          ? t('pageMenu.lastEditedBy', { name: editedByName })
+                          : t('pageMenu.lastEditedBySomeone')}
                     </p>
                     <p>
-                      {dayLabel(editedAt)} at {timeOfDay(editedAt)}
+                      {t('pageMenu.lastEditedAt', { day: dayLabel(editedAt), time: timeOfDay(editedAt) })}
                     </p>
                   </div>
                 </DropdownMenuContent>

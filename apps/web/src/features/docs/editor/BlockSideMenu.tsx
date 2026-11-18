@@ -19,6 +19,7 @@ import {
 } from '@blocknote/react'
 import { offset } from '@floating-ui/react'
 import { useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { LampOn } from 'reicon-react'
 import { usePageEditorContext } from './pageEditorContext'
 import { applyTurnInto, canTurnBlock, choiceMatches, databaseTurn, turnIntoChoices, type TurnIntoChoice } from './turnInto'
@@ -93,6 +94,7 @@ function TurnIntoItem({ children }: { children: string }) {
 
 /** "Turn into" for a page block that links to a database, and for a database block: they become each other. */
 function TurnDatabaseItem() {
+  const { t } = useTranslation('docs')
   const Components = useComponentsContext()!
   const editor = useBlockNoteEditor()
   const { resolvePage } = usePageEditorContext()
@@ -110,17 +112,18 @@ function TurnDatabaseItem() {
         editor.updateBlock(block.id, { type: turn.type, props: turn.props } as never)
       }}
     >
-      Turn into {turn.label.toLowerCase()}
+      {turn.type === 'database' ? t('turnInto.toInlineDatabase') : t('turnInto.toPageLink')}
     </Components.Generic.Menu.Item>
   )
 }
 
 function BlockDragMenu() {
+  const { t } = useTranslation('docs')
   const Components = useComponentsContext()!
   const dict = useDictionary()
   return (
     <DragHandleMenu>
-      <TurnIntoItem>Turn into</TurnIntoItem>
+      <TurnIntoItem>{t('turnInto.title')}</TurnIntoItem>
       <TurnDatabaseItem />
       <BlockColorsItem>{dict.drag_handle.colors_menuitem}</BlockColorsItem>
       <TableRowHeaderItem>{dict.drag_handle.header_row_menuitem}</TableRowHeaderItem>

@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Add, ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Copy, EyeSlash, Filter, Settings, Trash } from 'reicon-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -46,6 +47,7 @@ interface ColumnHeaderMenuProps {
 
 /** The header cell menu (spec 7.2): name, type and format, sort, filter, hide, insert, duplicate, delete. */
 export function ColumnHeaderMenu({ property, config, onConfig, onFilter }: ColumnHeaderMenuProps) {
+  const { t } = useTranslation('database')
   const { workspaceId, databaseId, canEditSchema } = useDatabaseEnv()
   const updateProperty = useUpdateProperty(workspaceId, databaseId)
   const createProperty = useCreateProperty(workspaceId, databaseId)
@@ -74,15 +76,15 @@ export function ColumnHeaderMenu({ property, config, onConfig, onFilter }: Colum
     try {
       cleared = (await previewPropertyUpdate(workspaceId, databaseId, property.id, { type })).cleared
     } catch (error) {
-      if (!isPaymentRequired(error)) toast.error(databaseErrorMessage(error, 'Could not change the property.'))
+      if (!isPaymentRequired(error)) toast.error(databaseErrorMessage(error, t('property.changeFailed')))
       return
     }
     if (
       cleared > 0 &&
       !(await confirmAction({
-        title: `Change “${property.name}” to ${PROPERTY_TYPES[type].label}?`,
-        description: `${cleared.toLocaleString()} ${cleared === 1 ? 'value cannot' : 'values cannot'} be converted and will be cleared.`,
-        confirmLabel: 'Change type',
+        title: t('property.changeTypeTitle', { name: property.name, type: PROPERTY_TYPES[type].label }),
+        description: t('property.changeTypeDescription', { count: cleared }),
+        confirmLabel: t('property.changeType'),
         danger: true,
       }))
     ) {
@@ -114,9 +116,9 @@ export function ColumnHeaderMenu({ property, config, onConfig, onFilter }: Colum
   const remove = async () => {
     if (
       await confirmAction({
-        title: `Delete “${property.name}”?`,
-        description: 'Its values in every row are deleted too, and every view loses its column.',
-        confirmLabel: 'Delete property',
+        title: t('property.deleteTitle', { name: property.name }),
+        description: t('property.deleteDescription'),
+        confirmLabel: t('property.delete'),
         danger: true,
       })
     ) {
@@ -154,7 +156,7 @@ export function ColumnHeaderMenu({ property, config, onConfig, onFilter }: Colum
         <DropdownMenuContent align="start" className="w-60" finalFocus={() => !insertingRef.current}>
           <div className="p-1" onKeyDown={(event) => event.stopPropagation()}>
             <Input
-              aria-label="Property name"
+              aria-label={t('property.name')}
               value={name}
               readOnly={!canEditSchema}
               maxLength={200}
@@ -171,7 +173,7 @@ export function ColumnHeaderMenu({ property, config, onConfig, onFilter }: Colum
             <DropdownMenuSub>
               <DropdownMenuSubTrigger>
                 <Settings />
-                Edit property
+                {t('property.edit')}
               </DropdownMenuSubTrigger>
               <DropdownMenuSubContent className="w-56">
                 {property.type === 'select' || property.type === 'multi_select' || property.type === 'status' ? (
@@ -186,7 +188,7 @@ export function ColumnHeaderMenu({ property, config, onConfig, onFilter }: Colum
                   </>
                 ) : null}
                 <DropdownMenuGroup>
-                  <DropdownMenuLabel>Type</DropdownMenuLabel>
+                  <DropdownMenuLabel>{t('property.type')}</DropdownMenuLabel>
                   <DropdownMenuRadioGroup value={property.type} onValueChange={(type) => void changeType(type as DatabasePropertyType)}>
                     {CREATABLE_TYPES.map((type) => {
                       const Icon = PROPERTY_TYPES[type].icon
@@ -203,16 +205,16 @@ export function ColumnHeaderMenu({ property, config, onConfig, onFilter }: Colum
                   <>
                     <DropdownMenuSeparator />
                     <DropdownMenuGroup>
-                      <DropdownMenuLabel>Format</DropdownMenuLabel>
+                      <DropdownMenuLabel>{t('property.format')}</DropdownMenuLabel>
                       <DropdownMenuRadioGroup
                         value={property.config.format === 'currency' ? `currency:${property.config.currency ?? 'USD'}` : property.config.format}
                         onValueChange={(value: string) =>
                           value.startsWith('currency:') ? setConfig({ format: 'currency', currency: value.slice(9) }) : setConfig({ format: value })
                         }
                       >
-                        <DropdownMenuRadioItem value="number">Number</DropdownMenuRadioItem>
-                        <DropdownMenuRadioItem value="number_with_commas">Number with commas</DropdownMenuRadioItem>
-                        <DropdownMenuRadioItem value="percent">Percent</DropdownMenuRadioItem>
+                        <DropdownMenuRadioItem value="number">{t('property.formatNumber')}</DropdownMenuRadioItem>
+                        <DropdownMenuRadioItem value="number_with_commas">{t('property.formatNumberWithCommas')}</DropdownMenuRadioItem>
+                        <DropdownMenuRadioItem value="percent">{t('property.formatPercent')}</DropdownMenuRadioItem>
                         {CURRENCIES.map((currency) => (
                           <DropdownMenuRadioItem key={currency} value={`currency:${currency}`}>
                             {currency}
@@ -226,18 +228,18 @@ export function ColumnHeaderMenu({ property, config, onConfig, onFilter }: Colum
                   <>
                     <DropdownMenuSeparator />
                     <DropdownMenuGroup>
-                      <DropdownMenuLabel>Date format</DropdownMenuLabel>
+                      <DropdownMenuLabel>{t('property.dateFormat')}</DropdownMenuLabel>
                       <DropdownMenuRadioGroup value={property.config.date_format} onValueChange={(value: string) => setConfig({ date_format: value })}>
-                        <DropdownMenuRadioItem value="relative">Relative</DropdownMenuRadioItem>
-                        <DropdownMenuRadioItem value="short">Short (Nov 9, 2026)</DropdownMenuRadioItem>
-                        <DropdownMenuRadioItem value="iso">ISO (2026-11-09)</DropdownMenuRadioItem>
+                        <DropdownMenuRadioItem value="relative">{t('property.dateRelative')}</DropdownMenuRadioItem>
+                        <DropdownMenuRadioItem value="short">{t('property.dateShort')}</DropdownMenuRadioItem>
+                        <DropdownMenuRadioItem value="iso">{t('property.dateIso')}</DropdownMenuRadioItem>
                       </DropdownMenuRadioGroup>
                     </DropdownMenuGroup>
                     <DropdownMenuGroup>
-                      <DropdownMenuLabel>Time format</DropdownMenuLabel>
+                      <DropdownMenuLabel>{t('property.timeFormat')}</DropdownMenuLabel>
                       <DropdownMenuRadioGroup value={property.config.time_format} onValueChange={(value: string) => setConfig({ time_format: value })}>
-                        <DropdownMenuRadioItem value="12h">12 hour</DropdownMenuRadioItem>
-                        <DropdownMenuRadioItem value="24h">24 hour</DropdownMenuRadioItem>
+                        <DropdownMenuRadioItem value="12h">{t('property.time12h')}</DropdownMenuRadioItem>
+                        <DropdownMenuRadioItem value="24h">{t('property.time24h')}</DropdownMenuRadioItem>
                       </DropdownMenuRadioGroup>
                     </DropdownMenuGroup>
                   </>
@@ -245,13 +247,13 @@ export function ColumnHeaderMenu({ property, config, onConfig, onFilter }: Colum
                 {property.type === 'button' ? (
                   <>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => setConfiguringButton(true)}>Edit button…</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setConfiguringButton(true)}>{t('property.editButton')}</DropdownMenuItem>
                   </>
                 ) : null}
                 {property.type === 'formula' ? (
                   <>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => setEditingFormula(true)}>Edit formula…</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setEditingFormula(true)}>{t('property.editFormula')}</DropdownMenuItem>
                   </>
                 ) : null}
                 {property.type === 'unique_id' ? (
@@ -272,17 +274,17 @@ export function ColumnHeaderMenu({ property, config, onConfig, onFilter }: Colum
                 <>
                   <DropdownMenuItem onClick={() => sortBy('asc')}>
                     <ArrowUp />
-                    Sort ascending
+                    {t('property.sortAscending')}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => sortBy('desc')}>
                     <ArrowDown />
-                    Sort descending
+                    {t('property.sortDescending')}
                   </DropdownMenuItem>
                 </>
               ) : null}
               <DropdownMenuItem onClick={() => onFilter(property.id)}>
                 <Filter />
-                Filter
+                {t('property.filter')}
               </DropdownMenuItem>
             </>
           )}
@@ -293,7 +295,7 @@ export function ColumnHeaderMenu({ property, config, onConfig, onFilter }: Colum
               }
             >
               <EyeSlash />
-              Hide
+              {t('property.hide')}
             </DropdownMenuItem>
           )}
           {canEditSchema ? (
@@ -301,23 +303,23 @@ export function ColumnHeaderMenu({ property, config, onConfig, onFilter }: Colum
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => startInsert('left')}>
                 <ArrowLeft />
-                Insert left
+                {t('property.insertLeft')}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => startInsert('right')}>
                 <ArrowRight />
-                Insert right
+                {t('property.insertRight')}
               </DropdownMenuItem>
               {isTitle ? null : (
                 <>
                   {property.type === 'unique_id' ? null : (
                     <DropdownMenuItem onClick={() => createProperty.mutate({ duplicate_of: property.id })}>
                       <Copy />
-                      Duplicate
+                      {t('property.duplicate')}
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuItem variant="destructive" onClick={() => void remove()}>
                     <Trash />
-                    Delete property
+                    {t('property.delete')}
                   </DropdownMenuItem>
                 </>
               )}
@@ -356,14 +358,15 @@ function NewPropertySetup({ propertyId, onClose }: { propertyId: string; onClose
 /** The "+" header cell: a name and a type make a new property at the end of the views. */
 export function AddPropertyButton() {
   const { workspaceId, databaseId } = useDatabaseEnv()
+  const { t } = useTranslation('database')
   const createProperty = useCreateProperty(workspaceId, databaseId)
   const [open, setOpen] = useState(false)
   const [created, setCreated] = useState<string | null>(null)
   return (
     <>
       <Popover open={open} onOpenChange={setOpen}>
-        <Tip label="Add a property">
-          <PopoverTrigger render={<Button type="button" variant="ghost" size="icon-sm" className="m-0.5 text-muted-foreground" aria-label="Add a property" />}>
+        <Tip label={t('property.add')}>
+          <PopoverTrigger render={<Button type="button" variant="ghost" size="icon-sm" className="m-0.5 text-muted-foreground" aria-label={t('property.add')} />}>
             <Add />
           </PopoverTrigger>
         </Tip>
@@ -391,6 +394,7 @@ export type NewPropertyConfig = Record<string, unknown>
  * `relations`: also offers relation and rollup, which ask for their config first.
  */
 export function NewPropertyForm({ onCreate, relations = false }: { onCreate: (name: string, type: DatabasePropertyType, config?: NewPropertyConfig) => void; relations?: boolean }) {
+  const { t } = useTranslation('database')
   const [name, setName] = useState('')
   const [setup, setSetup] = useState<'relation' | 'rollup' | null>(null)
   const nameFor = (type: DatabasePropertyType) => (name.trim() || PROPERTY_TYPES[type].label).slice(0, 200)
@@ -398,13 +402,13 @@ export function NewPropertyForm({ onCreate, relations = false }: { onCreate: (na
   if (setup === 'rollup') return <RollupSetup onBack={() => setSetup(null)} onCreate={(config) => onCreate(nameFor('rollup'), 'rollup', config)} />
   const types = relations ? [...CREATABLE_TYPES, ...NEW_ONLY_TYPES] : CREATABLE_TYPES
   return (
-    <Command label="Property type" loop>
+    <Command label={t('property.typeLabel')} loop>
       <div className="p-1">
-        <Input autoFocus aria-label="Property name" placeholder="Property name" value={name} maxLength={200} onChange={(event) => setName(event.target.value)} />
+        <Input autoFocus aria-label={t('property.name')} placeholder={t('property.name')} value={name} maxLength={200} onChange={(event) => setName(event.target.value)} />
       </div>
-      <CommandInput aria-label="Search types" placeholder="Type…" />
+      <CommandInput aria-label={t('property.searchTypes')} placeholder={t('property.typePlaceholder')} />
       <CommandList>
-        <CommandEmpty className="py-3 text-center text-xs text-muted-foreground">No types</CommandEmpty>
+        <CommandEmpty className="py-3 text-center text-xs text-muted-foreground">{t('property.noTypes')}</CommandEmpty>
         <CommandGroup>
           {types.map((type) => {
             const Icon = PROPERTY_TYPES[type].icon
@@ -417,7 +421,7 @@ export function NewPropertyForm({ onCreate, relations = false }: { onCreate: (na
               >
                 <Icon className="text-muted-foreground" />
                 {PROPERTY_TYPES[type].label}
-                {isComputed(type) ? <span className="ml-auto text-xs text-muted-foreground">Automatic</span> : null}
+                {isComputed(type) ? <span className="ml-auto text-xs text-muted-foreground">{t('property.automatic')}</span> : null}
               </CommandItem>
             )
           })}

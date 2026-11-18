@@ -4,6 +4,7 @@ import type { Transaction } from '@tiptap/pm/state'
 import type { DefaultReactSuggestionItem } from '@blocknote/react'
 import { TaskStatusIcon } from '@/features/tasks/components/TaskStatusIcon'
 import type { TaskReference, TaskReferenceSearch } from '@/features/tasks/taskReferences'
+import { i18n } from '@/i18n'
 
 export const TASK_TRIGGER = '#'
 /** Typing pauses this long before the task search runs, so each key does not cost a request. */
@@ -56,7 +57,7 @@ export async function taskMenuItems(
     if (!isCurrent()) return []
   }
   const tasks = await search(text).catch(() => [])
-  return taskSuggestionItems(tasks, text ? 'Tasks' : 'Recently updated tasks', insert)
+  return taskSuggestionItems(tasks, text ? i18n.t('docs:taskMentions.tasks') : i18n.t('docs:taskMentions.recent'), insert)
 }
 
 /** Remembers the latest query of a menu, for `taskMenuItems`'s `isCurrent`. */

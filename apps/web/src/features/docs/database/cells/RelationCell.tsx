@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { DocumentText } from 'reicon-react'
@@ -35,6 +36,7 @@ function PageIcon({ icon }: { icon: string | null | undefined }) {
 
 /** A relation cell (spec P3 11.8): a pill per related page; links the viewer cannot read show as "+N without access". */
 export function RelationPills({ property, row, ids, wrap }: { property: RelationProperty; row: Row; ids: string[]; wrap: boolean }) {
+  const { t } = useTranslation(['database', 'docs'])
   const { ctx } = useDatabaseEnv()
   const open = useOpenRelated()
   const hidden = hiddenLinks(row, property.id)
@@ -53,18 +55,19 @@ export function RelationPills({ property, row, ids, wrap }: { property: Relation
           <Pill color="default" className="cursor-pointer hover:bg-foreground/[0.12]">
             <span className="flex min-w-0 items-center gap-1">
               <PageIcon icon={ctx.relatedPages?.[id]?.icon} />
-              <span className="truncate">{relatedTitle(ctx, id) ?? 'Untitled'}</span>
+              <span className="truncate">{relatedTitle(ctx, id) ?? t('docs:untitled')}</span>
             </span>
           </Pill>
         </button>
       ))}
-      {hidden > 0 ? <span className="shrink-0 text-xs whitespace-nowrap text-muted-foreground">+{hidden} without access</span> : null}
+      {hidden > 0 ? <span className="shrink-0 text-xs whitespace-nowrap text-muted-foreground">{t('cells.withoutAccess', { count: hidden })}</span> : null}
     </span>
   )
 }
 
 /** A rollup cell: a number or a date as text, a list as pills. Pages the viewer cannot read are left out (tooltip). */
 export function RollupView({ property, row, wrap }: { property: RollupProperty; row: Row; wrap: boolean }) {
+  const { t } = useTranslation('database')
   const { ctx } = useDatabaseEnv()
   const value = cellOf(row, property)
   const content =
@@ -86,7 +89,7 @@ export function RollupView({ property, row, wrap }: { property: RollupProperty; 
     )
   if (!rollupHidesPages(row, property)) return content
   return (
-    <Tip label="Some pages are hidden">
+    <Tip label={t('cells.pagesHidden')}>
       <span className="flex w-full min-w-0">{content}</span>
     </Tip>
   )
@@ -97,6 +100,7 @@ export function RollupView({ property, row, wrap }: { property: RollupProperty; 
  * Each pick saves the cell; a one-page relation replaces its page and closes.
  */
 export function RelationEditor({ property, row, anchor, onCommit, onClose }: CellEditorProps & { property: RelationProperty }) {
+  const { t } = useTranslation(['database', 'docs'])
   const { workspaceId, databaseId, ctx } = useDatabaseEnv()
   const queryClient = useQueryClient()
   const target = useDatabase(workspaceId, property.config.database_id)
@@ -109,7 +113,7 @@ export function RelationEditor({ property, row, anchor, onCommit, onClose }: Cel
   const byId = new Map(rows.map((candidate) => [candidate.id, candidate]))
   const titleOf = (id: string) => {
     const known = byId.get(id)
-    return known ? known.title || 'Untitled' : (relatedTitle(ctx, id) ?? 'Untitled')
+    return known ? known.title || t('docs:untitled') : (relatedTitle(ctx, id) ?? t('docs:untitled'))
   }
   const needle = query.trim().toLowerCase()
   const fits = (id: string) => needle === '' || titleOf(id).toLowerCase().includes(needle)
@@ -132,13 +136,13 @@ export function RelationEditor({ property, row, anchor, onCommit, onClose }: Cel
       commit(ids[0] === id ? [] : [id])
       onClose('stay')
     } else if (ids.includes(id)) commit(ids.filter((other) => other !== id))
-    else if (ids.length >= MAX_RELATION_LINKS) toast.error(`A relation links at most ${MAX_RELATION_LINKS} pages.`)
+    else if (ids.length >= MAX_RELATION_LINKS) toast.error(t('cells.tooManyLinks', { count: MAX_RELATION_LINKS }))
     else {
       commit([...ids, id])
       setQuery('')
     }
   }
-  const empty = target.isError ? 'You cannot open the related database.' : target.isPending ? 'Loading…' : 'No pages'
+  const empty = target.isError ? t('cells.relatedUnavailable') : target.isPending ? t('cells.loading') : t('cells.noPages')
 
   return (
     <Popover open onOpenChange={onOpenChange}>
@@ -146,8 +150,8 @@ export function RelationEditor({ property, row, anchor, onCommit, onClose }: Cel
         <Command label={property.name} shouldFilter={false} loop onKeyDown={(event) => event.stopPropagation()}>
           <CommandInput
             autoFocus
-            aria-label={`Search ${property.name}`}
-            placeholder={`Search ${target.data?.database.title || 'pages'}…`}
+            aria-label={t('cells.searchProperty', { name: property.name })}
+            placeholder={target.data?.database.title ? t('cells.searchDatabase', { title: target.data.database.title }) : t('cells.searchPages')}
             value={query}
             onValueChange={setQuery}
             onKeyDown={(event) => {
@@ -160,7 +164,7 @@ export function RelationEditor({ property, row, anchor, onCommit, onClose }: Cel
           <CommandList>
             <CommandEmpty className="py-3 text-center text-xs text-muted-foreground">{empty}</CommandEmpty>
             {linked.length > 0 ? (
-              <CommandGroup heading={one ? 'Linked page' : 'Linked'}>
+              <CommandGroup heading={one ? t('cells.linkedPage') : t('cells.linked')}>
                 {linked.map((id) => (
                   <CommandItem key={id} value={id} data-checked onSelect={() => toggle(id)}>
                     <PageIcon icon={byId.get(id)?.icon ?? ctx.relatedPages?.[id]?.icon} />
@@ -170,11 +174,11 @@ export function RelationEditor({ property, row, anchor, onCommit, onClose }: Cel
               </CommandGroup>
             ) : null}
             {candidates.length > 0 ? (
-              <CommandGroup heading="Add">
+              <CommandGroup heading={t('cells.add')}>
                 {candidates.map((candidate) => (
                   <CommandItem key={candidate.id} value={candidate.id} onSelect={() => toggle(candidate.id)}>
                     <PageIcon icon={candidate.icon} />
-                    <span className="min-w-0 flex-1 truncate">{candidate.title || 'Untitled'}</span>
+                    <span className="min-w-0 flex-1 truncate">{candidate.title || t('docs:untitled')}</span>
                   </CommandItem>
                 ))}
               </CommandGroup>
@@ -182,7 +186,7 @@ export function RelationEditor({ property, row, anchor, onCommit, onClose }: Cel
           </CommandList>
           {hidden > 0 ? (
             <p className="border-t border-border px-3 py-2 text-xs text-muted-foreground">
-              {hidden === 1 ? '1 linked page you cannot open stays linked.' : `${hidden} linked pages you cannot open stay linked.`}
+              {t('cells.hiddenLinks', { count: hidden })}
             </p>
           ) : null}
         </Command>

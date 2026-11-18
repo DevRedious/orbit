@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
+import { useTranslation } from 'react-i18next'
 import { useNavigate, useSearchParams } from 'react-router'
 import { Button } from '@/components/ui/button'
 import { applyView, repairConfig } from '@orbit/database/view'
@@ -72,6 +73,7 @@ function readStoredView(key: string): string | null {
  * rows added since the view last changed and the row peek (`?row=`).
  */
 export function DatabaseSurface({ database, views: unsorted, env: baseEnv, locked, viewKey, page, block, layout }: DatabaseSurfaceProps) {
+  const { t } = useTranslation('database')
   // Relation cells, filters and the CSV export show the related pages' titles.
   const env: DatabaseEnv = { ...baseEnv, ctx: withRelatedPages(baseEnv.ctx, database), openRow: (rowId) => setPeekRow(rowId) }
   const { ctx, canEditViews, canEditValues, workspaceId, databaseId, linkId } = env
@@ -231,8 +233,8 @@ export function DatabaseSurface({ database, views: unsorted, env: baseEnv, locke
         <ViewTabs views={views} activeId={view.id} onSelect={selectView} />
         {/* Checked rows replace the toolbar: a bar above the table would be clipped by a block's scroller. */}
         {selectedRows.length > 0 ? (
-          <div role="toolbar" aria-label="Selected rows" className="ml-auto flex h-7 shrink-0 items-center gap-1 text-sm">
-            <span className="px-1 text-primary tabular-nums">{selectedRows.length} selected</span>
+          <div role="toolbar" aria-label={t('table.selectedRows')} className="ml-auto flex h-7 shrink-0 items-center gap-1 text-sm">
+            <span className="px-1 text-primary tabular-nums">{t('table.selectedCount', { count: selectedRows.length })}</span>
             {canEditValues ? (
               <Button
                 type="button"
@@ -245,11 +247,11 @@ export function DatabaseSurface({ database, views: unsorted, env: baseEnv, locke
                   setSelected(new Set())
                 }}
               >
-                Delete
+                {t('delete', { ns: 'common' })}
               </Button>
             ) : null}
             <Button type="button" variant="ghost" size="sm" onClick={() => setSelected(new Set())}>
-              Clear
+              {t('clear', { ns: 'common' })}
             </Button>
           </div>
         ) : (
@@ -276,10 +278,10 @@ export function DatabaseSurface({ database, views: unsorted, env: baseEnv, locke
       </div>
       {draft && !canEditViews ? (
         <div role="status" className="flex items-center gap-1.5 py-1.5 text-xs text-muted-foreground">
-          Changes are only visible to you
+          {t('view.draftHint')}
           <span aria-hidden="true">·</span>
           <Button type="button" variant="link" size="xs" className="h-auto px-0 text-xs" onClick={() => setDrafts((current) => omit(current, view.id))}>
-            Reset
+            {t('reset', { ns: 'common' })}
           </Button>
         </div>
       ) : null}
@@ -297,7 +299,7 @@ export function DatabaseSurface({ database, views: unsorted, env: baseEnv, locke
   const loadMore =
     block && hiddenRows > 0 ? (
       <Button type="button" variant="ghost" size="sm" className="mt-1 text-muted-foreground" onClick={() => setRowLimit((limit) => limit + block.rowLimit)}>
-        Load more
+        {t('table.loadMore')}
       </Button>
     ) : null
   const content = view.type === 'gallery' ? (

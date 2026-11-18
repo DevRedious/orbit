@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useState, type DragEvent } from 'react'
 import { Add, Gallery as GalleryIcon, Image } from 'reicon-react'
 import { cn } from 'cn'
@@ -40,6 +41,7 @@ const PREVIEW_RATIO = 2 / 3
  * drags to another place.
  */
 export function DatabaseGallery({ database, config, rows, onAddRow, onOpenRow, filtered, onClearFilters }: DatabaseGalleryProps) {
+  const { t } = useTranslation('database')
   const { workspaceId, databaseId, canEditValues } = useDatabaseEnv()
   const moveRow = useMoveRow(workspaceId, databaseId)
   const [dragging, setDragging] = useState<string | null>(null)
@@ -69,17 +71,17 @@ export function DatabaseGallery({ database, config, rows, onAddRow, onOpenRow, f
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           {filtered && database.rows.length > 0 ? (
             <>
-              No results
+              {t('view.noResults')}
               <Button type="button" variant="outline" size="sm" onClick={onClearFilters}>
-                Clear filters
+                {t('view.clearFilters')}
               </Button>
             </>
           ) : (
-            'No rows yet'
+            t('view.noRows')
           )}
         </div>
       ) : null}
-      <div role="list" aria-label="Cards" aria-busy={moveRow.isPending} className="grid gap-3" style={{ gridTemplateColumns: `repeat(auto-fill, minmax(min(${width}px, 100%), 1fr))` }}>
+      <div role="list" aria-label={t('gallery.cards')} aria-busy={moveRow.isPending} className="grid gap-3" style={{ gridTemplateColumns: `repeat(auto-fill, minmax(min(${width}px, 100%), 1fr))` }}>
         {rows.map((row, index) => (
           <GalleryCard
             key={row.id}
@@ -111,7 +113,7 @@ export function DatabaseGallery({ database, config, rows, onAddRow, onOpenRow, f
             onClick={onAddRow}
           >
             <Add className="size-4" aria-hidden="true" />
-            New
+            {t('newRow.new')}
           </button>
         ) : null}
       </div>
@@ -206,23 +208,25 @@ function CardPreviewBox({ face, fitImage }: { face: CardFace; fitImage: boolean 
   )
 }
 
-const PREVIEW_LABELS = { none: 'None', cover: 'Page cover', content: 'Page content' } as const
-const SIZE_LABELS: Record<CardSize, string> = { small: 'Small', medium: 'Medium', large: 'Large' }
+/** Catalog keys (`database`) of the preview and size choices. */
+const PREVIEW_LABELS = { none: 'gallery.previewNone', cover: 'gallery.previewCover', content: 'gallery.previewContent' } as const
+const SIZE_LABELS = { small: 'gallery.sizeSmall', medium: 'gallery.sizeMedium', large: 'gallery.sizeLarge' } as const satisfies Record<CardSize, string>
 
 /** The gallery entries of the view options menu: card preview, card size and "Fit image". */
 export function GalleryMenus({ properties, config, onConfig }: { properties: Property[]; config: ViewConfig; onConfig: (config: ViewConfig) => void }) {
+  const { t } = useTranslation('database')
   const gallery = galleryOf(config)
   const files = properties.filter((property) => property.type === 'files')
   const previewKey = (preview: CardPreview) => (typeof preview === 'object' ? `files:${preview.files}` : preview)
   const current = previewKey(gallery.preview)
   const preview = gallery.preview
-  const currentLabel = typeof preview === 'object' ? (files.find((property) => property.id === preview.files)?.name ?? '') : PREVIEW_LABELS[preview]
+  const currentLabel = typeof preview === 'object' ? (files.find((property) => property.id === preview.files)?.name ?? '') : t(PREVIEW_LABELS[preview])
   return (
     <>
       <DropdownMenuSub>
         <DropdownMenuSubTrigger className="whitespace-nowrap">
           <Image />
-          Card preview
+          {t('gallery.cardPreview')}
           <span className="ml-auto max-w-20 min-w-0 truncate text-xs text-muted-foreground">{currentLabel}</span>
         </DropdownMenuSubTrigger>
         <DropdownMenuSubContent className="w-48">
@@ -235,7 +239,7 @@ export function GalleryMenus({ properties, config, onConfig }: { properties: Pro
           >
             {(['none', 'cover', 'content'] as const).map((preview) => (
               <DropdownMenuRadioItem key={preview} value={preview}>
-                {PREVIEW_LABELS[preview]}
+                {t(PREVIEW_LABELS[preview])}
               </DropdownMenuRadioItem>
             ))}
             {files.map((property) => {
@@ -253,14 +257,14 @@ export function GalleryMenus({ properties, config, onConfig }: { properties: Pro
       <DropdownMenuSub>
         <DropdownMenuSubTrigger className="whitespace-nowrap">
           <GalleryIcon />
-          Card size
-          <span className="ml-auto text-xs text-muted-foreground">{SIZE_LABELS[gallery.size]}</span>
+          {t('gallery.cardSize')}
+          <span className="ml-auto text-xs text-muted-foreground">{t(SIZE_LABELS[gallery.size])}</span>
         </DropdownMenuSubTrigger>
         <DropdownMenuSubContent className="w-40">
           <DropdownMenuRadioGroup value={gallery.size} onValueChange={(size: string) => onConfig({ ...config, card_size: size as CardSize })}>
             {CARD_SIZES.map((size) => (
               <DropdownMenuRadioItem key={size} value={size}>
-                {SIZE_LABELS[size]}
+                {t(SIZE_LABELS[size])}
               </DropdownMenuRadioItem>
             ))}
           </DropdownMenuRadioGroup>
@@ -268,7 +272,7 @@ export function GalleryMenus({ properties, config, onConfig }: { properties: Pro
       </DropdownMenuSub>
       <DropdownMenuCheckboxItem checked={gallery.fitImage} disabled={gallery.preview === 'none'} onCheckedChange={(checked) => onConfig({ ...config, fit_image: checked })}>
         <Image />
-        Fit image
+        {t('gallery.fitImage')}
       </DropdownMenuCheckboxItem>
     </>
   )

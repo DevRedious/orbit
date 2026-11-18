@@ -1,8 +1,10 @@
 import { useMemo, useRef, useState, type ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { DocumentUpload, Warning } from 'reicon-react'
 import { apiClient } from '@/api/client'
 import { queryKeys } from '@/api/queryKeys'
+import { i18n } from '@/i18n'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -27,6 +29,7 @@ import {
 import type { Property } from '@orbit/database/types'
 import { csvImportErrorMessage } from './csvImportText'
 import { PROPERTY_TYPES } from './propertyMeta'
+import { propertyTypeLabel } from './labels'
 
 const PREVIEW_ROWS = 5
 const IMPORT_TYPES: ImportType[] = ['text', 'number', 'select', 'multi_select', 'status', 'date', 'person', 'checkbox', 'url', 'email', 'phone']
@@ -56,7 +59,7 @@ function parseTarget(value: string): ColumnTarget {
 /** "3 values in “Price”" lines of a dry run that clears values. */
 function clearedLines(result: DatabaseImportResult, table: CsvTable): string[] {
   return result.columns.flatMap((column, index) =>
-    column.cleared > 0 ? [`${column.cleared.toLocaleString()} ${column.cleared === 1 ? 'value' : 'values'} in “${table.header[index]}”`] : [],
+    column.cleared > 0 ? [i18n.t('database:csv.clearedIn', { count: column.cleared, n: column.cleared.toLocaleString(i18n.language), column: table.header[index] })] : [],
   )
 }
 
@@ -78,6 +81,7 @@ export function CsvImportFlow({
   onImported: (result: DatabaseImportResult, database: Page | null) => void
   onCancel?: () => void
 }) {
+  const { t } = useTranslation('database')
   const queryClient = useQueryClient()
   const input = useRef<HTMLInputElement>(null)
   const [loaded, setLoaded] = useState<Loaded | null>(null)
@@ -95,12 +99,12 @@ export function CsvImportFlow({
     if (!file) return
     setError(null)
     if (file.size > MAX_CSV_BYTES) {
-      setError(`“${file.name}” is larger than 5 MB. Split it into smaller files.`)
+      setError(t('csv.fileTooLarge', { name: file.name }))
       return
     }
     const records = parseCsv(await file.text())
     if (records.length === 0) {
-      setError(`“${file.name}” has no rows.`)
+      setError(t('csv.fileEmpty', { name: file.name }))
       return
     }
     setLoaded({ fileName: file.name, records })
@@ -133,17 +137,17 @@ export function CsvImportFlow({
           }}
         >
           <DocumentUpload className="size-6 text-muted-foreground/70" />
-          <p className="text-sm text-muted-foreground">Drop a .csv file here (5 MB, 5,000 rows and 100 columns at most), or</p>
+          <p className="text-sm text-muted-foreground">{t('csv.dropHint')}</p>
           <input
             ref={input}
             type="file"
             accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values"
             className="hidden"
-            aria-label="CSV file"
+            aria-label={t('csv.file')}
             onChange={(event) => void read(event.target.files?.[0])}
           />
           <Button type="button" variant="outline" onClick={() => input.current?.click()}>
-            Choose file
+            {t('csv.chooseFile')}
           </Button>
         </div>
         {error ? <ErrorLine>{error}</ErrorLine> : null}
@@ -203,7 +207,7 @@ export function CsvImportFlow({
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
         <span className="min-w-0 truncate font-medium text-foreground">{loaded.fileName}</span>
         <span className="text-muted-foreground tabular-nums">
-          {rowCount.toLocaleString()} {rowCount === 1 ? 'row' : 'rows'} · {table.header.length} {table.header.length === 1 ? 'column' : 'columns'}
+          {t('csv.rowCount', { count: rowCount, n: rowCount.toLocaleString(i18n.language) })} · {t('csv.columnCount', { count: table.header.length })}
         </span>
         <Label className="ml-auto flex items-center gap-2 text-sm font-normal">
           <Checkbox
@@ -214,13 +218,13 @@ export function CsvImportFlow({
               setPending(null)
             }}
           />
-          First row is the header
+          {t('csv.hasHeader')}
         </Label>
         <Button type="button" variant="ghost" size="sm" onClick={() => setLoaded(null)}>
-          Choose another file
+          {t('csv.chooseAnother')}
         </Button>
       </div>
-      <ul aria-label="Columns" className="flex max-h-64 flex-col divide-y divide-border overflow-y-auto rounded-lg border border-border">
+      <ul aria-label={t('csv.columns')} className="flex max-h-64 flex-col divide-y divide-border overflow-y-auto rounded-lg border border-border">
         {table.header.map((name, index) => {
           const sample = table.rows.map((row) => row[index]?.trim() ?? '').find((cell) => cell !== '') ?? ''
           const target = targets[index] ?? { kind: 'skip' }
@@ -228,7 +232,7 @@ export function CsvImportFlow({
             <li key={index} className="flex items-center gap-3 px-3 py-1.5">
               <div className="flex min-w-0 flex-1 flex-col">
                 <span className="truncate text-sm text-foreground">{name}</span>
-                <span className="truncate text-xs text-muted-foreground">{sample || 'Empty'}</span>
+                <span className="truncate text-xs text-muted-foreground">{sample || t('csv.emptySample')}</span>
               </div>
               <span aria-hidden="true" className="text-muted-foreground">
                 →
@@ -242,7 +246,7 @@ export function CsvImportFlow({
                   setPending(null)
                 }}
               >
-                <SelectTrigger className="w-52" aria-label={`Import “${name}” as`}>
+                <SelectTrigger className="w-52" aria-label={t('csv.importAs', { name })}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>{choices.content}</SelectContent>
@@ -256,7 +260,7 @@ export function CsvImportFlow({
         <div role="alert" className="flex flex-col gap-2 rounded-lg border border-amber-500/40 bg-amber-500/5 p-3 text-sm">
           <span className="flex items-center gap-2 font-medium text-foreground">
             <Warning className="size-4 text-amber-600" aria-hidden="true" />
-            {pending.result.cleared.toLocaleString()} {pending.result.cleared === 1 ? 'value does not fit its property' : 'values do not fit their property'} and will be left empty
+            {t('csv.clearedWarning', { count: pending.result.cleared, n: pending.result.cleared.toLocaleString(i18n.language) })}
           </span>
           <ul className="list-disc pl-6 text-muted-foreground">
             {clearedLines(pending.result, table).map((line) => (
@@ -270,12 +274,12 @@ export function CsvImportFlow({
         {problem ? <span className="mr-auto text-sm text-muted-foreground">{problem}</span> : null}
         {onCancel ? (
           <Button type="button" variant="ghost" onClick={onCancel}>
-            Cancel
+            {t('csv.cancel')}
           </Button>
         ) : null}
         <Button type="button" disabled={problem !== null || busy} onClick={() => void (pending ? send(false) : start())}>
           {busy ? <Spinner className="size-4" /> : null}
-          {pending ? 'Import anyway' : `Import ${rowCount.toLocaleString()} ${rowCount === 1 ? 'row' : 'rows'}`}
+          {pending ? t('csv.importAnyway') : t('csv.importRows', { count: rowCount, n: rowCount.toLocaleString(i18n.language) })}
         </Button>
       </div>
     </div>
@@ -284,8 +288,8 @@ export function CsvImportFlow({
 
 /** "New number", "New URL". */
 function newLabel(type: ImportType): string {
-  const label = PROPERTY_TYPES[type].label
-  return `New ${label === label.toUpperCase() ? label : label.toLowerCase()}`
+  const label = propertyTypeLabel(type)
+  return i18n.t('database:csv.newType', { type: label === label.toUpperCase() ? label : label.toLocaleLowerCase(i18n.language) })
 }
 
 /** The target menu: the database's properties (a merge), new properties of each type, Skip. */
@@ -294,9 +298,9 @@ function targetChoices(destination: CsvDestination) {
   const existing = destination.kind === 'merge' ? destination.properties.filter((property) => property.type === 'title' || IMPORT_TYPES.includes(property.type as ImportType)) : []
   for (const property of existing) items.push({ value: `p:${property.id}`, label: property.name })
   const canAdd = destination.kind === 'new' || destination.canAddProperties
-  if (destination.kind === 'new') items.push({ value: 'n:title', label: 'Title' })
+  if (destination.kind === 'new') items.push({ value: 'n:title', label: propertyTypeLabel('title') })
   if (canAdd) for (const type of IMPORT_TYPES) items.push({ value: `n:${type}`, label: newLabel(type) })
-  items.push({ value: 'skip', label: 'Skip' })
+  items.push({ value: 'skip', label: i18n.t('database:csv.skip') })
   const item = (value: string, label: string, icon?: ReactNode) => (
     <SelectItem key={value} value={value}>
       {icon}
@@ -311,29 +315,30 @@ function targetChoices(destination: CsvDestination) {
     <>
       {existing.length > 0 ? (
         <SelectGroup>
-          <SelectLabel>Properties</SelectLabel>
+          <SelectLabel>{i18n.t('database:csv.properties')}</SelectLabel>
           {existing.map((property) => item(`p:${property.id}`, property.name, iconOf(property.type)))}
         </SelectGroup>
       ) : null}
       {canAdd ? (
         <SelectGroup>
-          <SelectLabel>{destination.kind === 'new' ? 'Property type' : 'New property'}</SelectLabel>
-          {destination.kind === 'new' ? item('n:title', 'Title', iconOf('title')) : null}
+          <SelectLabel>{destination.kind === 'new' ? i18n.t('database:csv.propertyType') : i18n.t('database:csv.newProperty')}</SelectLabel>
+          {destination.kind === 'new' ? item('n:title', propertyTypeLabel('title'), iconOf('title')) : null}
           {IMPORT_TYPES.map((type) => item(`n:${type}`, newLabel(type), iconOf(type)))}
         </SelectGroup>
       ) : null}
-      <SelectGroup>{item('skip', 'Skip')}</SelectGroup>
+      <SelectGroup>{item('skip', i18n.t('database:csv.skip'))}</SelectGroup>
     </>
   )
   return { items, content }
 }
 
 function Preview({ table, targets }: { table: CsvTable; targets: ColumnTarget[] }) {
+  const { t } = useTranslation('database')
   const rows = table.rows.slice(0, PREVIEW_ROWS)
   if (rows.length === 0) return null
   return (
     <div className="min-w-0 overflow-x-auto rounded-lg border border-border">
-      <table aria-label="Preview" className="w-max min-w-full border-collapse text-xs">
+      <table aria-label={t('csv.preview')} className="w-max min-w-full border-collapse text-xs">
         <thead>
           <tr>
             {table.header.map((name, index) => (
@@ -392,14 +397,15 @@ export function MergeCsvDialog({
   onClose: () => void
   onMerged: (result: DatabaseImportResult) => void
 }) {
+  const { t } = useTranslation('database')
   return (
     <Dialog open onOpenChange={(open) => (open ? undefined : onClose())}>
       <DialogContent className="flex flex-col sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Merge with CSV</DialogTitle>
+          <DialogTitle>{t('csv.mergeTitle')}</DialogTitle>
           <DialogDescription>
-            Adds each row of the file as a new row. Existing rows stay as they are.
-            {canAddProperties ? null : ' The database is locked, so columns can only go to existing properties.'}
+            {t('csv.mergeDescription')}
+            {canAddProperties ? null : ` ${t('csv.mergeLocked')}`}
           </DialogDescription>
         </DialogHeader>
         <CsvImportFlow

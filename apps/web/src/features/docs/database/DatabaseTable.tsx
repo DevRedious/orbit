@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useEffect, useLayoutEffect, useRef, useState, type ClipboardEvent, type DragEvent, type KeyboardEvent, type PointerEvent } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { Add, ArrowUpRight } from 'reicon-react'
@@ -54,6 +55,7 @@ interface DatabaseTableProps {
 /** The table view (spec 7.2–7.4): a virtualized grid with a sticky header, cell editing and keyboard moves. */
 export function DatabaseTable(props: DatabaseTableProps) {
   const { database, config, rows, viewRows, scrollElement, virtualize = true, onConfig, onFilter, onAddRow, onOpenRow, filtered, onClearFilters, editRowId, onEditRowShown, selected, onSelect } = props
+  const { t } = useTranslation('database')
   const { workspaceId, databaseId, ctx, canEditValues, canEditSchema } = useDatabaseEnv()
   const updateValues = useUpdateValues(workspaceId, databaseId)
   const updateTitle = useUpdateRowTitle(workspaceId, databaseId)
@@ -231,7 +233,7 @@ export function DatabaseTable(props: DatabaseTableProps) {
     if (property.type === 'title') return commitTitle(row, text.trim())
     const number = property.type === 'number' ? numberFromEditText(property, text) : null
     const value = property.type === 'number' ? (number === null ? null : { kind: 'number' as const, number }) : valueFromText(property, text, ctx)
-    if (value === null && text.trim() !== '') toast.error(`“${text.trim().slice(0, 40)}” does not fit ${property.name}.`)
+    if (value === null && text.trim() !== '') toast.error(t('table.pasteMismatch', { text: text.trim().slice(0, 40), name: property.name }))
     else commit(row, property, value)
   }
 
@@ -294,7 +296,7 @@ export function DatabaseTable(props: DatabaseTableProps) {
       <div
         ref={gridRef}
         role="grid"
-        aria-label={database.database.title || 'Database'}
+        aria-label={database.database.title || t('table.database')}
         aria-rowcount={rows.length + 1}
         aria-colcount={columns.length}
         aria-multiselectable="true"
@@ -308,7 +310,7 @@ export function DatabaseTable(props: DatabaseTableProps) {
             <div data-slot="row-gutter" className="absolute top-0 right-full flex h-full items-center pr-1.5">
               {rows.length > 0 ? (
                 <Checkbox
-                  aria-label="Select all rows"
+                  aria-label={t('table.selectAll')}
                   checked={allSelected}
                   indeterminate={selectedCount > 0 && !allSelected}
                   className={cn(selectedCount === 0 && 'hover-fine:opacity-0 hover-fine:group-hover/header:opacity-100')}
@@ -352,7 +354,7 @@ export function DatabaseTable(props: DatabaseTableProps) {
                   <div
                     role="separator"
                     aria-orientation="vertical"
-                    aria-label={`Resize ${property.name}`}
+                    aria-label={t('table.resize', { name: property.name })}
                     className="absolute top-0 -right-[3px] z-10 h-full w-[5px] cursor-col-resize hover:bg-primary/50 data-[active=true]:bg-primary"
                     data-active={resizing?.id === property.id}
                     onPointerDown={(event) => startResize(event, column)}
@@ -393,11 +395,11 @@ export function DatabaseTable(props: DatabaseTableProps) {
               >
                 <div data-slot="row-gutter" className="absolute top-0 right-full flex h-[33px] items-center gap-0.5 pr-1.5">
                   {canEditValues ? (
-                    <Tip label={sorted ? 'Remove sorts to reorder rows' : 'Drag to move'}>
+                    <Tip label={sorted ? t('table.sortedNoReorder') : t('table.drag')}>
                       <span
                         role="button"
                         tabIndex={-1}
-                        aria-label="Drag to move"
+                        aria-label={t('table.drag')}
                         aria-disabled={sorted}
                         draggable={!sorted}
                         className="relative z-1 flex h-6 w-4 cursor-grab items-center justify-center rounded-sm text-muted-foreground hover:bg-muted aria-disabled:cursor-default hover-fine:opacity-0 hover-fine:group-hover/row:opacity-100"
@@ -416,7 +418,7 @@ export function DatabaseTable(props: DatabaseTableProps) {
                     </Tip>
                   ) : null}
                   <Checkbox
-                    aria-label={`Select ${row.title || 'Untitled'}`}
+                    aria-label={t('table.selectRow', { title: row.title || t('untitled', { ns: 'docs' }) })}
                     checked={selected.has(row.id)}
                     className={cn(selectedCount === 0 && 'hover-fine:opacity-0 hover-fine:group-hover/row:opacity-100')}
                     onCheckedChange={() => toggleSelected(row.id)}
@@ -488,7 +490,7 @@ export function DatabaseTable(props: DatabaseTableProps) {
                           onClick={() => onOpenRow(row.id)}
                         >
                           <ArrowUpRight className="size-3" />
-                          Open
+                          {t('table.open')}
                         </Button>
                       ) : null}
                     </div>
@@ -502,13 +504,13 @@ export function DatabaseTable(props: DatabaseTableProps) {
           <div className="flex h-24 flex-col items-center justify-center gap-2 border-b border-border text-sm text-muted-foreground" style={{ width: width - ADD_COLUMN_WIDTH }}>
             {filtered && database.rows.length > 0 ? (
               <>
-                No results
+                {t('view.noResults')}
                 <Button type="button" variant="outline" size="sm" onClick={onClearFilters}>
-                  Clear filters
+                  {t('view.clearFilters')}
                 </Button>
               </>
             ) : (
-              'No rows yet'
+              t('view.noRows')
             )}
           </div>
         ) : null}
@@ -519,7 +521,7 @@ export function DatabaseTable(props: DatabaseTableProps) {
             onClick={onAddRow}
           >
             <Add className="size-4" />
-            New
+            {t('newRow.new')}
           </button>
         ) : null}
         <CalculationFooter columns={columns} rows={viewRows} config={config} onConfig={onConfig} />

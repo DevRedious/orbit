@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useState, type DragEvent, type ReactNode } from 'react'
 import { Add, ChevronDown, ChevronRight, Eye, EyeSlash, MoreH } from 'reicon-react'
 import { cn } from 'cn'
@@ -15,6 +16,7 @@ import { useCreateProperty, useMoveRow, useUpdateRowTitle, useUpdateValues } fro
 import { CellView, OptionPill } from './cells/CellView'
 import { useDatabaseEnv } from './context'
 import { PROPERTY_TYPES } from './propertyMeta'
+import { propertyTypeLabel } from './labels'
 
 const COLUMN_WIDTH = 260
 /** Cards each column renders before "Show more"; a column can hold all 5,000 rows. */
@@ -62,6 +64,7 @@ const cellKey = (cell: Cell) => JSON.stringify([cell.group, cell.lane])
  */
 export function DatabaseBoard(props: DatabaseBoardProps) {
   const { database, config, rows, onConfig, onAddCard, onOpenRow, filtered, onClearFilters, editRowId, onEditRowShown, pageSize = PAGE, viewId = '' } = props
+  const { t } = useTranslation('database')
   const { workspaceId, databaseId, canEditValues, canEditSchema, ctx } = useDatabaseEnv()
   const moveRow = useMoveRow(workspaceId, databaseId)
   const updateValues = useUpdateValues(workspaceId, databaseId)
@@ -79,8 +82,8 @@ export function DatabaseBoard(props: DatabaseBoardProps) {
     const choices = database.properties.filter(groupable)
     return (
       <div className="flex min-h-40 flex-col items-center justify-center gap-2 py-6 text-sm text-muted-foreground">
-        Choose a property to group by
-        <span className="text-xs">A board groups its cards by a Status, Select, Multi-select or Person property.</span>
+        {t('board.chooseGroupBy')}
+        <span className="text-xs">{t('board.chooseGroupByHint')}</span>
         <div className="flex max-w-xl flex-wrap justify-center gap-1.5">
           {choices.map((choice) => {
             const Icon = PROPERTY_TYPES[choice.type].icon
@@ -92,9 +95,9 @@ export function DatabaseBoard(props: DatabaseBoardProps) {
             )
           })}
           {canEditSchema ? (
-            <Button type="button" variant="outline" size="sm" disabled={createProperty.isPending} onClick={() => createProperty.mutate({ name: 'Status', type: 'status' })}>
+            <Button type="button" variant="outline" size="sm" disabled={createProperty.isPending} onClick={() => createProperty.mutate({ name: propertyTypeLabel('status'), type: 'status' })}>
               <Add />
-              Add a Status property
+              {t('board.addStatus')}
             </Button>
           ) : null}
         </div>
@@ -112,7 +115,13 @@ export function DatabaseBoard(props: DatabaseBoardProps) {
   const cardProperties = config.card_properties.flatMap((id) => database.properties.find((other) => other.id === id) ?? [])
   const title = database.properties.find((other) => other.type === 'title')
   const ordered = [...database.rows].sort((a, b) => a.position - b.position || a.id.localeCompare(b.id))
-  const name = (owner: LaneProperty, group: BoardGroup) => groupName(owner, group, ctx.members)
+  // The package's `groupName` is English; the special groups are named here in the UI language.
+  const name = (owner: LaneProperty, group: BoardGroup) => {
+    if (group.id === null) return t('board.noValue', { name: owner.name })
+    if (owner.type === 'checkbox') return group.id === 'true' ? t('board.checked') : t('board.unchecked')
+    if (owner.type === 'person') return ctx.members.get(group.id) ?? t('formerMember', { ns: 'docs' })
+    return groupName(owner, group, ctx.members)
+  }
   const cellName = (group: BoardGroup, lane: BoardGroup | null) => (lane && laneProperty ? `${name(property, group)}, ${name(laneProperty, lane)}` : name(property, group))
   const newCardValues = (cell: Cell) => ({ ...groupValues(property, cell.group), ...(laneProperty ? groupValues(laneProperty, cell.lane) : {}) })
 
@@ -216,7 +225,7 @@ export function DatabaseBoard(props: DatabaseBoardProps) {
               type="button"
               variant="ghost"
               size="icon-xs"
-              aria-label={`${name(property, group)} group options`}
+              aria-label={t('board.groupOptions', { name: name(property, group) })}
               className="text-muted-foreground hover-fine:opacity-0 hover-fine:group-hover/header:opacity-100 aria-expanded:opacity-100"
             />
           }
@@ -226,17 +235,17 @@ export function DatabaseBoard(props: DatabaseBoardProps) {
         <DropdownMenuContent align="end" className="w-40">
           <DropdownMenuItem onClick={() => setHidden(group, true)}>
             <EyeSlash />
-            Hide group
+            {t('board.hideGroup')}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
       {canEditValues && !laneProperty ? (
-        <Tip label="Add a card">
+        <Tip label={t('board.addCard')}>
           <Button
             type="button"
             variant="ghost"
             size="icon-xs"
-            aria-label={`Add a card to ${name(property, group)}`}
+            aria-label={t('board.addCardTo', { name: name(property, group) })}
             className="text-muted-foreground hover-fine:opacity-0 hover-fine:group-hover/header:opacity-100"
             onClick={() => onAddCard({ values: newCardValues({ group: group.id, lane: null }), after: cardAfter(ordered, group.rows, 0, ''), at: 'top' })}
           >
@@ -258,7 +267,7 @@ export function DatabaseBoard(props: DatabaseBoardProps) {
     const placeholder = <div data-board-placeholder className="min-h-10 rounded-md border border-dashed border-primary/40 bg-primary/10" style={{ height: cardHeight }} />
     return (
       <>
-        {sorted && cardDrag && sameCell(cardDrag.from, cell) ? <p className="px-1 pb-1 text-xs text-muted-foreground">Remove sorts to reorder cards</p> : null}
+        {sorted && cardDrag && sameCell(cardDrag.from, cell) ? <p className="px-1 pb-1 text-xs text-muted-foreground">{t('board.sortedNoReorder')}</p> : null}
         <div className="flex min-h-10 flex-col gap-1.5 px-0.5 pb-1">
           {list.map((row) => (
             <div key={row.id} className="contents">
@@ -286,7 +295,7 @@ export function DatabaseBoard(props: DatabaseBoardProps) {
           {placeholderIndex !== null && placeholderIndex >= others.length ? placeholder : null}
           {cellRows.length > limit ? (
             <Button type="button" variant="ghost" size="sm" className="justify-start text-muted-foreground" onClick={() => setShown((current) => ({ ...current, [key]: limit + page }))}>
-              Show {Math.min(page, cellRows.length - limit)} more
+              {t('board.showMore', { count: Math.min(page, cellRows.length - limit) })}
             </Button>
           ) : null}
           {canEditValues ? (
@@ -301,7 +310,7 @@ export function DatabaseBoard(props: DatabaseBoardProps) {
               }}
             >
               <Add />
-              New
+              {t('newRow.new')}
             </Button>
           ) : null}
         </div>
@@ -334,8 +343,8 @@ export function DatabaseBoard(props: DatabaseBoardProps) {
           <GroupLabel property={owner} group={group} />
           <span className="text-xs text-muted-foreground tabular-nums">{group.rows.length}</span>
           <span className="flex-1" />
-          <Tip label="Show group">
-            <Button type="button" variant="ghost" size="icon-xs" aria-label={`Show ${name(owner, group)}`} className="text-muted-foreground" onClick={() => onShow(group)}>
+          <Tip label={t('board.showGroup')}>
+            <Button type="button" variant="ghost" size="icon-xs" aria-label={t('board.show', { name: name(owner, group) })} className="text-muted-foreground" onClick={() => onShow(group)}>
               <Eye />
             </Button>
           </Tip>
@@ -348,9 +357,9 @@ export function DatabaseBoard(props: DatabaseBoardProps) {
     <div className="flex flex-col gap-2 pb-4">
       {rows.length === 0 && filtered ? (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          No results
+          {t('view.noResults')}
           <Button type="button" variant="outline" size="sm" onClick={onClearFilters}>
-            Clear filters
+            {t('view.clearFilters')}
           </Button>
         </div>
       ) : null}
@@ -370,7 +379,7 @@ export function DatabaseBoard(props: DatabaseBoardProps) {
                 {header(group)}
               </div>
             ))}
-            {hidden.length > 0 ? hiddenList('Hidden groups', property, hidden, (group) => setHidden(group, false)) : null}
+            {hidden.length > 0 ? hiddenList(t('board.hiddenGroups'), property, hidden, (group) => setHidden(group, false)) : null}
           </div>
           {lanes
             .filter((lane) => !lane.hidden)
@@ -383,7 +392,7 @@ export function DatabaseBoard(props: DatabaseBoardProps) {
                       type="button"
                       variant="ghost"
                       size="icon-xs"
-                      aria-label={`${closed ? 'Expand' : 'Collapse'} ${name(laneProperty, lane)}`}
+                      aria-label={closed ? t('board.expand', { name: name(laneProperty, lane) }) : t('board.collapse', { name: name(laneProperty, lane) })}
                       aria-expanded={!closed}
                       className="text-muted-foreground"
                       onClick={() => setCollapsed(closed ? collapsed.filter((id) => id !== lane.id) : [...collapsed, lane.id])}
@@ -392,12 +401,12 @@ export function DatabaseBoard(props: DatabaseBoardProps) {
                     </Button>
                     <GroupLabel property={laneProperty} group={lane} />
                     <span className="text-xs text-muted-foreground tabular-nums">{lane.rows.length}</span>
-                    <Tip label="Hide group">
+                    <Tip label={t('board.hideGroup')}>
                       <Button
                         type="button"
                         variant="ghost"
                         size="icon-xs"
-                        aria-label={`Hide ${name(laneProperty, lane)}`}
+                        aria-label={t('board.hide', { name: name(laneProperty, lane) })}
                         className="text-muted-foreground hover-fine:opacity-0 hover-fine:group-hover/lane:opacity-100"
                         onClick={() => setLaneHidden(lane, true)}
                       >
@@ -429,7 +438,7 @@ export function DatabaseBoard(props: DatabaseBoardProps) {
                 </section>
               )
             })}
-          {hiddenLanes.length > 0 ? <div className="pt-2">{hiddenList('Hidden sub-groups', laneProperty, hiddenLanes, (lane) => setLaneHidden(lane, false))}</div> : null}
+          {hiddenLanes.length > 0 ? <div className="pt-2">{hiddenList(t('board.hiddenSubGroups'), laneProperty, hiddenLanes, (lane) => setLaneHidden(lane, false))}</div> : null}
         </div>
       ) : (
         <div className="flex items-start gap-3" aria-busy={moveRow.isPending || updateValues.isPending} {...columnZone}>
@@ -450,7 +459,7 @@ export function DatabaseBoard(props: DatabaseBoardProps) {
               </section>
             )
           })}
-          {hidden.length > 0 ? hiddenList('Hidden groups', property, hidden, (group) => setHidden(group, false)) : null}
+          {hidden.length > 0 ? hiddenList(t('board.hiddenGroups'), property, hidden, (group) => setHidden(group, false)) : null}
         </div>
       )}
     </div>
@@ -481,15 +490,16 @@ function useCollapsedLanes(key: string): [(string | null)[], (ids: (string | nul
 
 /** A group's label: its option pill, its member, a checkbox, or "No <property>". */
 function GroupLabel({ property, group }: { property: LaneProperty; group: BoardGroup }) {
+  const { t } = useTranslation('database')
   const { users } = useDatabaseEnv()
-  if (group.id === null) return <span className="truncate text-sm text-muted-foreground">No {property.name}</span>
+  if (group.id === null) return <span className="truncate text-sm text-muted-foreground">{t('board.noValue', { name: property.name })}</span>
   switch (property.type) {
     case 'person': {
       const user = users.get(group.id)
       return (
         <span className="flex min-w-0 items-center gap-1.5 text-sm">
           <UserAvatar user={user} name={user ? undefined : '?'} size={18} />
-          <span className="truncate">{user?.name ?? 'Former member'}</span>
+          <span className="truncate">{user?.name ?? t('formerMember', { ns: 'docs' })}</span>
         </span>
       )
     }
@@ -497,7 +507,7 @@ function GroupLabel({ property, group }: { property: LaneProperty; group: BoardG
       return (
         <span className="flex min-w-0 items-center gap-1.5 text-sm">
           <Checkbox checked={group.id === 'true'} disabled tabIndex={-1} aria-hidden="true" />
-          <span className="truncate">{group.id === 'true' ? 'Checked' : 'Unchecked'}</span>
+          <span className="truncate">{group.id === 'true' ? t('board.checked') : t('board.unchecked')}</span>
         </span>
       )
     default:
@@ -549,6 +559,7 @@ function Card({ row, title, properties, dragging, draggable, editing, onEditShow
 
 /** The title field of a new card: Enter or leaving saves, Esc keeps "Untitled". */
 function CardTitleInput({ row, onDone }: { row: Row; onDone: () => void }) {
+  const { t } = useTranslation('database')
   const { workspaceId, databaseId } = useDatabaseEnv()
   const updateTitle = useUpdateRowTitle(workspaceId, databaseId)
   const [title, setTitle] = useState(row.title)
@@ -560,8 +571,8 @@ function CardTitleInput({ row, onDone }: { row: Row; onDone: () => void }) {
   return (
     <input
       autoFocus
-      aria-label="Card title"
-      placeholder="Untitled"
+      aria-label={t('board.cardTitle')}
+      placeholder={t('untitled', { ns: 'docs' })}
       className="w-full bg-transparent font-medium outline-none placeholder:text-muted-foreground"
       value={title}
       onClick={(event) => event.stopPropagation()}

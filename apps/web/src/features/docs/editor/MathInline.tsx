@@ -1,9 +1,11 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { EditorViews } from '@orbit/editor/schema'
 import { formulaHtml } from '@/components/common/formulaHtml'
 
 /** A formula inside a sentence. A click opens the LaTeX source. */
 export const MathInlineView: EditorViews['math']['render'] = ({ inlineContent, updateInlineContent }) => {
+  const { t } = useTranslation('docs')
   const latex = inlineContent.props.latex
   const [editing, setEditing] = useState(latex.length === 0)
   const [draft, setDraft] = useState(latex)
@@ -24,7 +26,7 @@ export const MathInlineView: EditorViews['math']['render'] = ({ inlineContent, u
       <span contentEditable={false} data-slot="inline-math">
         <input
           autoFocus
-          aria-label="Formula"
+          aria-label={t('editor.formula')}
           value={draft}
           size={Math.max(draft.length, 8)}
           className="rounded border border-border bg-background px-1 align-middle font-mono text-[0.9em] outline-none"

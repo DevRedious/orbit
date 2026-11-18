@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Add, Copy, MoreH, Trash } from 'reicon-react'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
@@ -7,17 +8,19 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { filterRules, isGroup, MAX_GROUP_CHILDREN, MAX_RULES } from '@orbit/database/filter'
 import { appendChild, canNestGroup, duplicateNode, updateNode, wrapInGroup, type NodePath } from '@orbit/database/filterTree'
-import { newRule, OPERATOR_LABELS, operatorsOf, ruleNeedsValue, ruleValueText } from '@orbit/database/meta'
+import { newRule, operatorsOf, ruleNeedsValue, ruleValueText } from '@orbit/database/meta'
 import { filterTypeOf } from '@orbit/database/formula/values'
 import { filterProperty } from '@orbit/database/formula/values'
 import type { DatabaseFilterGroup, DatabaseFilterNode, DatabaseFilterOperator, DatabaseFilterRule, Property } from '@orbit/database/types'
 import { useDatabaseEnv } from './context'
 import { RuleValue } from './FilterBar'
+import { operatorLabel } from './labels'
 
+/** Labels are `database` catalog keys. */
 const OPS = [
-  { value: 'and', label: 'And' },
-  { value: 'or', label: 'Or' },
-]
+  { value: 'and', label: 'filter.and' },
+  { value: 'or', label: 'filter.or' },
+] as const
 
 interface AdvancedFilterProps {
   properties: Property[]
@@ -30,10 +33,11 @@ interface AdvancedFilterProps {
  * group's `And`/`Or` (the second line sets it), property, operator, value and "⋯". Groups nest 3 levels.
  */
 export function AdvancedFilter({ properties, filter, onChange }: AdvancedFilterProps) {
+  const { t } = useTranslation('database')
   const rulesLeft = MAX_RULES - filterRules(filter).length
   return (
     <div className="flex flex-col gap-2">
-      {filter.children.length === 0 ? <p className="px-1 text-sm text-muted-foreground">No filter rules. The view shows every row.</p> : null}
+      {filter.children.length === 0 ? <p className="px-1 text-sm text-muted-foreground">{t('filter.noRules')}</p> : null}
       <GroupLines group={filter} path={[]} root={filter} properties={properties} rulesLeft={rulesLeft} onChange={onChange} />
     </div>
   )
@@ -49,6 +53,8 @@ interface LineProps {
 }
 
 function GroupLines({ group, path, root, properties, rulesLeft, onChange }: LineProps & { group: DatabaseFilterGroup }) {
+  const { t } = useTranslation('database')
+  const ops = OPS.map((item) => ({ value: item.value, label: t(item.label) }))
   const roomy = group.children.length < MAX_GROUP_CHILDREN && rulesLeft > 0
   const first = properties[0]
   return (
@@ -57,14 +63,14 @@ function GroupLines({ group, path, root, properties, rulesLeft, onChange }: Line
         <div key={index} className="flex items-start gap-1.5">
           <div className="flex h-7 w-16 shrink-0 items-center text-sm text-muted-foreground">
             {index === 0 ? (
-              <span className="px-1">Where</span>
+              <span className="px-1">{t('filter.where')}</span>
             ) : index === 1 ? (
-              <Select items={OPS} value={group.op} onValueChange={(op) => op && onChange(updateNode(root, path, (node) => (isGroup(node) ? { ...node, op: op as DatabaseFilterGroup['op'] } : node)))}>
-                <SelectTrigger size="sm" aria-label="Match" className="w-16 px-1.5">
+              <Select items={ops} value={group.op} onValueChange={(op) => op && onChange(updateNode(root, path, (node) => (isGroup(node) ? { ...node, op: op as DatabaseFilterGroup['op'] } : node)))}>
+                <SelectTrigger size="sm" aria-label={t('filter.match')} className="w-16 px-1.5">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {OPS.map((item) => (
+                  {ops.map((item) => (
                     <SelectItem key={item.value} value={item.value}>
                       {item.label}
                     </SelectItem>
@@ -72,7 +78,7 @@ function GroupLines({ group, path, root, properties, rulesLeft, onChange }: Line
                 </SelectContent>
               </Select>
             ) : (
-              <span className="px-1">{group.op === 'and' ? 'And' : 'Or'}</span>
+              <span className="px-1">{group.op === 'and' ? t('filter.and') : t('filter.or')}</span>
             )}
           </div>
           <NodeLine node={child} path={[...path, index]} root={root} properties={properties} rulesLeft={rulesLeft} roomy={roomy} onChange={onChange} />
@@ -82,7 +88,7 @@ function GroupLines({ group, path, root, properties, rulesLeft, onChange }: Line
         <div className="flex gap-1">
           <Button type="button" variant="ghost" size="sm" className="text-muted-foreground" disabled={!roomy} onClick={() => onChange(appendChild(root, path, newRule(first)))}>
             <Add />
-            Add filter rule
+            {t('filter.addRule')}
           </Button>
           {canNestGroup(path) ? (
             <Button
@@ -94,7 +100,7 @@ function GroupLines({ group, path, root, properties, rulesLeft, onChange }: Line
               onClick={() => onChange(appendChild(root, path, { op: group.op === 'and' ? 'or' : 'and', children: [newRule(first)] }))}
             >
               <Add />
-              Add filter group
+              {t('filter.addGroup')}
             </Button>
           ) : null}
         </div>
@@ -104,11 +110,12 @@ function GroupLines({ group, path, root, properties, rulesLeft, onChange }: Line
 }
 
 function NodeLine({ node, path, root, properties, rulesLeft, roomy, onChange }: LineProps & { node: DatabaseFilterNode; roomy: boolean }) {
+  const { t } = useTranslation('database')
   const parent = path.slice(0, -1)
   const copies = isGroup(node) ? filterRules(node).length : 1
   const menu = (
     <LineMenu
-      label={isGroup(node) ? 'Group' : 'Rule'}
+      label={isGroup(node) ? t('filter.groupActions') : t('filter.ruleActions')}
       onRemove={() => onChange(updateNode(root, path, () => null))}
       onDuplicate={roomy && copies <= rulesLeft ? () => onChange(duplicateNode(root, path)) : undefined}
       onGroup={!isGroup(node) && canNestGroup(parent) ? () => onChange(wrapInGroup(root, path)) : undefined}
@@ -116,7 +123,7 @@ function NodeLine({ node, path, root, properties, rulesLeft, roomy, onChange }: 
   )
   if (isGroup(node)) {
     return (
-      <div role="group" aria-label="Filter group" className="flex min-w-0 flex-1 items-start gap-1 rounded-md border border-border bg-muted/30 p-1.5">
+      <div role="group" aria-label={t('filter.group')} className="flex min-w-0 flex-1 items-start gap-1 rounded-md border border-border bg-muted/30 p-1.5">
         <div className="min-w-0 flex-1">
           <GroupLines group={node} path={path} root={root} properties={properties} rulesLeft={rulesLeft} onChange={onChange} />
         </div>
@@ -125,7 +132,7 @@ function NodeLine({ node, path, root, properties, rulesLeft, roomy, onChange }: 
     )
   }
   return (
-    <div role="group" aria-label="Filter rule" className="flex min-w-0 flex-1 items-center gap-1.5">
+    <div role="group" aria-label={t('filter.rule')} className="flex min-w-0 flex-1 items-center gap-1.5">
       <RuleFields rule={node} properties={properties} onChange={(rule) => onChange(updateNode(root, path, () => rule))} />
       {menu}
     </div>
@@ -133,11 +140,12 @@ function NodeLine({ node, path, root, properties, rulesLeft, roomy, onChange }: 
 }
 
 function RuleFields({ rule, properties, onChange }: { rule: DatabaseFilterRule; properties: Property[]; onChange: (rule: DatabaseFilterRule) => void }) {
+  const { t } = useTranslation('database')
   const found = properties.find((candidate) => candidate.id === rule.property_id)
   if (!found) return null
   const property = filterProperty(found)
   const propertyItems = properties.map((candidate) => ({ value: candidate.id, label: candidate.name }))
-  const operatorItems = operatorsOf(filterTypeOf(property)).map((operator) => ({ value: operator, label: OPERATOR_LABELS[operator] }))
+  const operatorItems = operatorsOf(filterTypeOf(property)).map((operator) => ({ value: operator, label: operatorLabel(operator) }))
   const setOperator = (operator: DatabaseFilterOperator) => onChange({ ...rule, operator, value: ruleNeedsValue(operator) ? rule.value : null })
   return (
     <>
@@ -149,7 +157,7 @@ function RuleFields({ rule, properties, onChange }: { rule: DatabaseFilterRule; 
           if (next && next.id !== property.id) onChange(newRule(next))
         }}
       >
-        <SelectTrigger size="sm" aria-label="Property" className="w-36">
+        <SelectTrigger size="sm" aria-label={t('filter.property')} className="w-36">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -161,7 +169,7 @@ function RuleFields({ rule, properties, onChange }: { rule: DatabaseFilterRule; 
         </SelectContent>
       </Select>
       <Select items={operatorItems} value={rule.operator} onValueChange={(value) => value && setOperator(value as DatabaseFilterOperator)}>
-        <SelectTrigger size="sm" aria-label="Operator" className="w-36">
+        <SelectTrigger size="sm" aria-label={t('filter.operator')} className="w-36">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -179,16 +187,17 @@ function RuleFields({ rule, properties, onChange }: { rule: DatabaseFilterRule; 
 
 /** Text and numbers edit in the line; the other values in a popover, as the chips' rule editor. */
 function ValueField({ rule, property, onChange }: { rule: DatabaseFilterRule; property: Property; onChange: (value: unknown) => void }) {
+  const { t } = useTranslation('database')
   const { ctx } = useDatabaseEnv()
   if (property.type === 'title' || property.type === 'text' || property.type === 'url' || property.type === 'email' || property.type === 'phone') {
-    return <Input aria-label="Value" placeholder="Value" className="h-7 w-40" value={typeof rule.value === 'string' ? rule.value : ''} onChange={(event) => onChange(event.target.value)} />
+    return <Input aria-label={t('filter.value')} placeholder={t('filter.value')} className="h-7 w-40" value={typeof rule.value === 'string' ? rule.value : ''} onChange={(event) => onChange(event.target.value)} />
   }
   if (property.type === 'number' || property.type === 'unique_id') {
     return (
       <Input
         type="number"
-        aria-label="Value"
-        placeholder="Value"
+        aria-label={t('filter.value')}
+        placeholder={t('filter.value')}
         className="h-7 w-28"
         value={typeof rule.value === 'number' ? String(rule.value) : ''}
         onChange={(event) => onChange(event.target.value === '' ? null : Number(event.target.value))}
@@ -197,19 +206,20 @@ function ValueField({ rule, property, onChange }: { rule: DatabaseFilterRule; pr
   }
   const text = ruleValueText(rule, property, ctx)
   return (
-    <ValuePopover label={text ?? 'Value'} empty={text === null}>
+    <ValuePopover label={text ?? t('filter.value')} empty={text === null}>
       <RuleValue rule={rule} property={property} onChange={onChange} />
     </ValuePopover>
   )
 }
 
 function ValuePopover({ label, empty, children }: { label: string; empty: boolean; children: ReactNode }) {
+  const { t } = useTranslation('database')
   const [open, setOpen] = useState(false)
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger
         render={
-          <Button type="button" variant="outline" size="sm" aria-label={`Value: ${label}`} data-empty={empty || undefined} className="h-7 w-40 justify-start truncate font-normal data-empty:text-muted-foreground" />
+          <Button type="button" variant="outline" size="sm" aria-label={t('filter.valueLabel', { value: label })} data-empty={empty || undefined} className="h-7 w-40 justify-start truncate font-normal data-empty:text-muted-foreground" />
         }
       >
         <span className="truncate">{label}</span>
@@ -224,28 +234,29 @@ function ValuePopover({ label, empty, children }: { label: string; empty: boolea
 }
 
 function LineMenu({ label, onRemove, onDuplicate, onGroup }: { label: string; onRemove: () => void; onDuplicate?: () => void; onGroup?: () => void }) {
+  const { t } = useTranslation('database')
   const [open, setOpen] = useState(false)
   return (
     <DropdownMenu open={open} onOpenChange={setOpen} modal={false}>
-      <DropdownMenuTrigger render={<Button type="button" variant="ghost" size="icon-sm" aria-label={`${label} actions`} className="size-7 shrink-0 text-muted-foreground" />}>
+      <DropdownMenuTrigger render={<Button type="button" variant="ghost" size="icon-sm" aria-label={label} className="size-7 shrink-0 text-muted-foreground" />}>
         <MoreH />
       </DropdownMenuTrigger>
       {open ? (
         <DropdownMenuContent align="end" className="w-44">
           <DropdownMenuItem onClick={onRemove}>
             <Trash />
-            Remove
+            {t('remove', { ns: 'common' })}
           </DropdownMenuItem>
           {onDuplicate ? (
             <DropdownMenuItem onClick={onDuplicate}>
               <Copy />
-              Duplicate
+              {t('filter.duplicate')}
             </DropdownMenuItem>
           ) : null}
           {onGroup ? (
             <DropdownMenuItem onClick={onGroup}>
               <Add />
-              Turn into group
+              {t('filter.turnIntoGroup')}
             </DropdownMenuItem>
           ) : null}
         </DropdownMenuContent>

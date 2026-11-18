@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useState, type DragEvent } from 'react'
 import { Add } from 'reicon-react'
 import { cn } from 'cn'
@@ -29,6 +30,7 @@ type RowDrop = { id: string; side: 'before' | 'after' }
  * value, right-aligned. A click opens the peek; without sorts, rows drag to a new place in the manual order.
  */
 export function DatabaseList({ database, config, rows, onAddRow, onOpenRow, filtered, onClearFilters }: DatabaseListProps) {
+  const { t } = useTranslation('database')
   const { workspaceId, databaseId, canEditValues } = useDatabaseEnv()
   const moveRow = useMoveRow(workspaceId, databaseId)
   const [dragId, setDragId] = useState<string | null>(null)
@@ -56,7 +58,7 @@ export function DatabaseList({ database, config, rows, onAddRow, onOpenRow, filt
 
   return (
     <div className="flex flex-col pb-2 text-sm" aria-busy={moveRow.isPending}>
-      <ul aria-label={database.database.title || 'Database'} className="flex flex-col">
+      <ul aria-label={database.database.title || t('table.database')} className="flex flex-col">
         {rows.map((row) => (
           <ListLine
             key={row.id}
@@ -70,7 +72,7 @@ export function DatabaseList({ database, config, rows, onAddRow, onOpenRow, filt
             onDragStart={(event) => {
               setDragId(row.id)
               event.dataTransfer.effectAllowed = 'move'
-              event.dataTransfer.setData('text/plain', row.title || 'Untitled')
+              event.dataTransfer.setData('text/plain', row.title || t('untitled', { ns: 'docs' }))
             }}
             onDragEnd={endDrag}
             onDragOver={(event) => {
@@ -89,13 +91,13 @@ export function DatabaseList({ database, config, rows, onAddRow, onOpenRow, filt
         <div className="flex h-24 flex-col items-center justify-center gap-2 border-b border-border text-muted-foreground">
           {filtered && database.rows.length > 0 ? (
             <>
-              No results
+              {t('view.noResults')}
               <Button type="button" variant="outline" size="sm" onClick={onClearFilters}>
-                Clear filters
+                {t('view.clearFilters')}
               </Button>
             </>
           ) : (
-            'No rows yet'
+            t('view.noRows')
           )}
         </div>
       ) : null}
@@ -106,7 +108,7 @@ export function DatabaseList({ database, config, rows, onAddRow, onOpenRow, filt
           onClick={onAddRow}
         >
           <Add className="size-4" />
-          New
+          {t('newRow.new')}
         </button>
       ) : null}
     </div>

@@ -1,4 +1,5 @@
 import { lazy, Suspense, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router'
 import { toast } from 'sonner'
 import { ArrowLeft, DocumentText as FileText, Refresh as RotateCcw, Trash as Trash2 } from 'reicon-react'
@@ -42,6 +43,7 @@ function nested(pages: readonly PageSummary[], parentId: string, depth = 0): { p
  * socket: the server closes it for trashed pages.
  */
 export function PageTrashPreview({ workspaceId, pageId }: { workspaceId: string; pageId: string }) {
+  const { t } = useTranslation('docs')
   const navigate = useNavigate()
   const detail = useTrashedPage(workspaceId, pageId)
   const members = useMembers(workspaceId)
@@ -65,10 +67,10 @@ export function PageTrashPreview({ workspaceId, pageId }: { workspaceId: string;
 
   const back = (
     <PaneHeader>
-      <Link to="/docs/trash" aria-label="Back to the trash" className={buttonVariants({ variant: 'ghost', size: 'icon-sm', className: 'text-muted-foreground/70' })}>
+      <Link to="/docs/trash" aria-label={t('trashPreview.back')} className={buttonVariants({ variant: 'ghost', size: 'icon-sm', className: 'text-muted-foreground/70' })}>
         <ArrowLeft className="size-4" />
       </Link>
-      <PaneTitle className="min-w-0 flex-1">Trash</PaneTitle>
+      <PaneTitle className="min-w-0 flex-1">{t('trash.title')}</PaneTitle>
     </PaneHeader>
   )
 
@@ -80,16 +82,14 @@ export function PageTrashPreview({ workspaceId, pageId }: { workspaceId: string;
           <div className="flex flex-1 flex-col p-6">
             <EmptyState
               icon={Trash2}
-              title={isPageNotFound(detail.error) ? 'Page not in the trash' : 'Page unavailable'}
+              title={isPageNotFound(detail.error) ? t('trashPreview.notInTrash') : t('pageError.unavailable')}
               description={
-                isPageNotFound(detail.error)
-                  ? 'It was restored or deleted forever, or its 30 days in the trash are over.'
-                  : 'The server could not load this page.'
+                isPageNotFound(detail.error) ? t('trashPreview.notInTrashHint') : t('pageError.unavailableHint')
               }
               action={
                 isPageNotFound(detail.error) ? undefined : (
                   <Button type="button" variant="outline" onClick={() => void detail.refetch()}>
-                    Retry
+                    {t('retry')}
                   </Button>
                 )
               }
@@ -105,9 +105,8 @@ export function PageTrashPreview({ workspaceId, pageId }: { workspaceId: string;
   }
 
   const { page, can_purge: canPurge, deleted_by: deletedBy } = detail.data
-  const who = members.data?.find((member) => member.id === deletedBy)?.name ?? 'Someone'
+  const who = members.data?.find((member) => member.id === deletedBy)?.name ?? t('presence.someone')
   const days = daysLeft(page.deleted_at ?? page.updated_at)
-  const when = page.deleted_at ? ` ${shortDate(page.deleted_at)}` : ''
   const children = nested(detail.data.sub_pages, page.id)
 
   const requestRestore = () =>
@@ -115,20 +114,20 @@ export function PageTrashPreview({ workspaceId, pageId }: { workspaceId: string;
       { pageId: page.id, version: page.version },
       {
         onSuccess: (restored) => {
-          toast.success(`Restored “${pageTitle(restored)}”`)
+          toast.success(t('trash.restored', { title: pageTitle(restored) }))
           navigate(`/docs/${restored.id}`, { replace: true })
         },
         onError: (error) => {
-          if (!isPageVersionConflict(error)) toast.error('Could not restore the page.')
+          if (!isPageVersionConflict(error)) toast.error(t('trash.restoreFailed'))
         },
       },
     )
 
   const requestPurge = async () => {
     const confirmed = await confirmAction({
-      title: `Delete “${pageTitle(page)}” forever?`,
-      description: 'The page, the sub-pages trashed with it and their files are deleted permanently. This can’t be undone.',
-      confirmLabel: 'Delete forever',
+      title: t('trash.purgeTitle', { title: pageTitle(page) }),
+      description: t('trash.purgeDescription'),
+      confirmLabel: t('trash.deleteForever'),
       danger: true,
     })
     if (!confirmed) return
@@ -136,11 +135,11 @@ export function PageTrashPreview({ workspaceId, pageId }: { workspaceId: string;
       { pageId: page.id, version: page.version },
       {
         onSuccess: () => {
-          toast.success(`Deleted “${pageTitle(page)}” forever`)
+          toast.success(t('trash.purged', { title: pageTitle(page) }))
           navigate('/docs/trash', { replace: true })
         },
         onError: (error) => {
-          if (!isPageVersionConflict(error)) toast.error('Could not delete the page.')
+          if (!isPageVersionConflict(error)) toast.error(t('trash.purgeFailed'))
         },
       },
     )
@@ -151,7 +150,8 @@ export function PageTrashPreview({ workspaceId, pageId }: { workspaceId: string;
       {back}
       <div role="alert" className="flex shrink-0 flex-wrap items-center justify-center gap-x-4 gap-y-2 bg-destructive px-4 py-2 text-[0.8125rem] text-white">
         <span className="min-w-0 text-center">
-          {who} moved this page to Trash{when}. It will be permanently deleted {days === 0 ? 'today' : `in ${days} day${days === 1 ? '' : 's'}`}.
+          {page.deleted_at ? t('trashPreview.movedByOn', { name: who, date: shortDate(page.deleted_at) }) : t('trashPreview.movedBy', { name: who })}{' '}
+          {days === 0 ? t('trashPreview.deletedToday') : t('trashPreview.deletedIn', { count: days })}
         </span>
         <div className="flex shrink-0 gap-2">
           <Button
@@ -163,7 +163,7 @@ export function PageTrashPreview({ workspaceId, pageId }: { workspaceId: string;
             onClick={requestRestore}
           >
             {restore.isPending ? <Spinner /> : <RotateCcw className="size-3.5" />}
-            Restore page
+            {t('trashPreview.restore')}
           </Button>
           {canPurge ? (
             <Button
@@ -175,12 +175,12 @@ export function PageTrashPreview({ workspaceId, pageId }: { workspaceId: string;
               onClick={() => void requestPurge()}
             >
               {purge.isPending ? <Spinner /> : <Trash2 className="size-3.5" />}
-              Delete forever
+              {t('trash.deleteForever')}
             </Button>
           ) : null}
         </div>
       </div>
-      <div className="min-h-0 flex-1 overflow-y-auto pb-16" aria-label="Page preview" role="region">
+      <div className="min-h-0 flex-1 overflow-y-auto pb-16" aria-label={t('trashPreview.preview')} role="region">
         {page.cover_url ? <CoverBanner url={page.cover_url} position={page.cover_position} onChange={noop} readOnly /> : null}
         <div className="mx-auto max-w-[708px] px-6 pt-10 max-[899px]:px-3 max-[899px]:pt-6">
           {page.icon ? (
@@ -210,8 +210,8 @@ export function PageTrashPreview({ workspaceId, pageId }: { workspaceId: string;
             />
           </Suspense>
           {children.length > 0 ? (
-            <section aria-label="Sub-pages in the trash" className="mt-8 border-t border-border pt-4">
-              <h2 className="mb-1 text-xs font-medium text-muted-foreground">Sub-pages trashed with it</h2>
+            <section aria-label={t('trashPreview.subpages')} className="mt-8 border-t border-border pt-4">
+              <h2 className="mb-1 text-xs font-medium text-muted-foreground">{t('trashPreview.subpagesTitle')}</h2>
               {children.map(({ page: child, depth }) => (
                 <Link
                   key={child.id}

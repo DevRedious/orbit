@@ -2,12 +2,12 @@ import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { movePage } from '@orbit/api/generated/sdk.gen'
 import type { PageSummary, Teamspace } from '@orbit/api/generated/types.gen'
-import { droppedValuesText } from '@orbit/database/moves'
 import { apiClient } from '@/api/client'
 import { queryKeys } from '@/api/queryKeys'
 import { confirmAction } from '@/components/common/confirmAction'
 import { isPageVersionConflict, movePageErrorMessage, useMovePage } from '@/features/docs/api/pages'
 import { childrenOf, pageTitle, rootsOf, spaceLabel, spaceRequest, type MoveTarget, type SpaceKey } from '@/features/docs/pageTree'
+import { i18n } from '@/i18n'
 
 /** Where "Move to" sends a page: the last root page of a space, or the last sub-page (or row) of a page or database. */
 export type MoveDestination = { kind: 'space'; space: SpaceKey } | { kind: 'page'; page: PageSummary }
@@ -56,17 +56,23 @@ export function useMovePageTo(workspaceId: string, pages: readonly PageSummary[]
       }
       if (
         dropped > 0 &&
-        !(await confirmAction({ title: 'Move this row out of its database?', description: droppedValuesText(dropped), confirmLabel: 'Move', danger: true }))
+        !(await confirmAction({
+          title: i18n.t('docs:moveDialog.rowOutTitle'),
+          description: i18n.t('docs:moveDialog.droppedValues', { count: dropped }),
+          confirmLabel: i18n.t('docs:moveDialog.move'),
+          danger: true,
+        }))
       ) {
         return false
       }
     }
-    const label = destination.kind === 'space' ? spaceLabel(destination.space, teamspaces) : `“${pageTitle(destination.page)}”`
+    const label =
+      destination.kind === 'space' ? spaceLabel(destination.space, teamspaces) : i18n.t('docs:moveDialog.quoted', { title: pageTitle(destination.page) })
     move.mutate(
       { pageId: moving.id, version, ...target },
       {
         onSuccess: () => {
-          toast.success(`Moved to ${label}`)
+          toast.success(i18n.t('docs:movedTo', { space: label }))
           if (from !== null) void queryClient.invalidateQueries({ queryKey: queryKeys.database(workspaceId, from) })
         },
         onError: (error) => {

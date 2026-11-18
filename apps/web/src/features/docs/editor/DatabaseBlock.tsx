@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router'
 import { ArrowUpRight } from 'reicon-react'
 import { ApiProblem } from '@orbit/api/problem'
@@ -27,6 +28,7 @@ const ISOLATED = { [ISOLATED_ATTR]: '' }
  * its margin or with the arrow keys, and Backspace deletes it then.
  */
 export function DatabaseBlockView({ block, editor }: DatabaseBlockViewProps) {
+  const { t } = useTranslation('database')
   const { databaseHost } = usePageEditorContext()
   const { databaseId, linkId } = block.props
   return (
@@ -39,7 +41,7 @@ export function DatabaseBlockView({ block, editor }: DatabaseBlockViewProps) {
       className="flex w-full min-w-0 flex-col py-1 font-sans text-sm wrap-normal [font-feature-settings:normal] [font-variant-ligatures:normal]"
     >
       {!databaseId ? (
-        <Notice>Database not found</Notice>
+        <Notice>{t('block.notFound')}</Notice>
       ) : !databaseHost ? (
         <DatabaseTitle databaseId={databaseId} linked={!!linkId} />
       ) : (
@@ -57,8 +59,9 @@ export function DatabaseBlockView({ block, editor }: DatabaseBlockViewProps) {
 
 /** `toExternalHTML`: a link to the database, as a Markdown export writes it. */
 export function DatabaseBlockExternalView({ block }: { block: { props: DatabaseBlockProps } }) {
+  const { t } = useTranslation('database')
   const { resolvePage } = usePageEditorContext()
-  const title = resolvePage(block.props.databaseId)?.title.trim() || 'Untitled'
+  const title = resolvePage(block.props.databaseId)?.title.trim() || t('block.untitled')
   return (
     <p>
       <a href={`/docs/${block.props.databaseId}`}>{title}</a>
@@ -67,6 +70,7 @@ export function DatabaseBlockExternalView({ block }: { block: { props: DatabaseB
 }
 
 function DatabaseBlockBody({ host, blockId, databaseId, linkId, onShowOwnViews }: { host: DatabaseBlockHost; blockId: string; databaseId: string; linkId: string; onShowOwnViews: () => void }) {
+  const { t } = useTranslation('database')
   const query = useDatabase(host.workspaceId, databaseId)
   // Without a link this is the same query (one request, one cache entry).
   const viewsQuery = useDatabase(host.workspaceId, databaseId, linkId || null)
@@ -81,9 +85,9 @@ function DatabaseBlockBody({ host, blockId, databaseId, linkId, onShowOwnViews }
       <MissingDatabase workspaceId={host.workspaceId} databaseId={databaseId} />
     ) : (
       <Notice>
-        The database could not load.
+        {t('block.loadFailed')}
         <Button type="button" variant="outline" size="xs" onClick={() => void query.refetch()}>
-          Retry
+          {t('block.retry')}
         </Button>
       </Notice>
     )
@@ -94,9 +98,9 @@ function DatabaseBlockBody({ host, blockId, databaseId, linkId, onShowOwnViews }
       <>
         <DatabaseTitle databaseId={databaseId} linked />
         <Notice>
-          {gone ? 'View not found' : 'The views could not load.'}
+          {gone ? t('block.viewNotFound') : t('block.viewsLoadFailed')}
           <Button type="button" variant="outline" size="xs" onClick={gone ? onShowOwnViews : () => void viewsQuery.refetch()}>
-            {gone ? "Show the database's own views" : 'Retry'}
+            {gone ? t('block.showOwnViews') : t('block.retry')}
           </Button>
         </Notice>
       </>
@@ -134,9 +138,10 @@ function DatabaseBlockBody({ host, blockId, databaseId, linkId, onShowOwnViews }
 
 /** The database's own icon (only when set, as in Notion) and title; a click opens its full page; "↗" marks a linked view. */
 function DatabaseTitle({ databaseId, linked, title, icon }: { databaseId: string; linked: boolean; title?: string; icon?: string | null }) {
+  const { t } = useTranslation('database')
   const { resolvePage, onOpenPage } = usePageEditorContext()
   const page = resolvePage(databaseId)
-  const name = (title ?? page?.title ?? '').trim() || 'Untitled'
+  const name = (title ?? page?.title ?? '').trim() || t('block.untitled')
   const emoji = icon !== undefined ? icon : page?.icon
   return (
     // The pill hangs 4 px into the margin, so the icon starts at the text edge.
@@ -152,16 +157,17 @@ function DatabaseTitle({ databaseId, linked, title, icon }: { databaseId: string
         </span>
       ) : null}
       <span className="truncate">{name}</span>
-      {linked ? <ArrowUpRight className="size-3.5 shrink-0 text-muted-foreground" aria-label="Linked view" /> : null}
+      {linked ? <ArrowUpRight className="size-3.5 shrink-0 text-muted-foreground" aria-label={t('block.linkedView')} /> : null}
     </button>
   )
 }
 
 /** A 404: the database is in the trash, or the viewer cannot read it (then its title stays hidden). */
 function MissingDatabase({ workspaceId, databaseId }: { workspaceId: string; databaseId: string }) {
+  const { t } = useTranslation('database')
   const trash = usePageTrash(workspaceId)
   const trashed = trash.data?.some((item) => item.id === databaseId)
-  return <Notice>{trashed ? 'Database in trash' : 'No access to this database'}</Notice>
+  return <Notice>{trashed ? t('block.trashed') : t('block.noAccess')}</Notice>
 }
 
 function Notice({ children }: { children: ReactNode }) {

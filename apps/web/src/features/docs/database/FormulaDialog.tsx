@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { cn } from 'cn'
 import { previewDatabaseFormula } from '@orbit/api/generated/sdk.gen'
 import { FORMULA_FUNCTIONS } from '@orbit/database/formula/functions'
@@ -38,6 +39,7 @@ const TOKEN_CLASSES: Record<FormulaToken['kind'], string> = {
  * the server's error under the field, and a preview of the first rows. Formulas run only on the server (D-P3-3).
  */
 export function FormulaDialog({ property, onClose }: { property: FormulaProperty; onClose: () => void }) {
+  const { t } = useTranslation(['database', 'docs', 'common'])
   const { workspaceId, databaseId } = useDatabaseEnv()
   const { data: database } = useDatabase(workspaceId, databaseId)
   const properties = useMemo(() => database?.properties ?? [], [database])
@@ -108,7 +110,7 @@ export function FormulaDialog({ property, onClose }: { property: FormulaProperty
 
   const rows = (database?.rows ?? []).slice(0, 10)
   return (
-    <Modal title={`Formula “${property.name}”`} description={'Use prop("Name") to read a property. The result is computed each time the database loads.'} onClose={onClose}>
+    <Modal title={t('formula.title', { name: property.name })} description={t('formula.description')} onClose={onClose}>
       <div className="flex max-h-[70vh] flex-col gap-3 overflow-y-auto">
         <div className="relative rounded-md border bg-background font-mono text-sm focus-within:ring-2 focus-within:ring-ring/50">
           <pre
@@ -128,7 +130,7 @@ export function FormulaDialog({ property, onClose }: { property: FormulaProperty
                 {token.text}
                 {/* Over the id (which stays the stored text): a mono id is always wider than the label. */}
                 {isDeletedProperty(token) ? (
-                  <span className="absolute top-0 left-0 rounded-sm bg-destructive/10 px-0.5 whitespace-nowrap text-destructive">Deleted property</span>
+                  <span className="absolute top-0 left-0 rounded-sm bg-destructive/10 px-0.5 whitespace-nowrap text-destructive">{t('formula.deletedProperty')}</span>
                 ) : null}
               </span>
             ))}
@@ -137,7 +139,7 @@ export function FormulaDialog({ property, onClose }: { property: FormulaProperty
           </pre>
           <textarea
             ref={field}
-            aria-label="Formula"
+            aria-label={t('propertyType.formula')}
             aria-invalid={error ? true : undefined}
             spellCheck={false}
             autoFocus
@@ -155,7 +157,7 @@ export function FormulaDialog({ property, onClose }: { property: FormulaProperty
           />
         </div>
         {suggestions.length > 0 ? (
-          <ul role="listbox" aria-label="Suggestions" className="flex flex-col rounded-md border p-1 text-sm">
+          <ul role="listbox" aria-label={t('formula.suggestions')} className="flex flex-col rounded-md border p-1 text-sm">
             {suggestions.map((suggestion, index) => (
               <li
                 key={suggestion.label}
@@ -178,17 +180,17 @@ export function FormulaDialog({ property, onClose }: { property: FormulaProperty
             <FormulaMessage message={error.message} />
           </p>
         ) : result?.result_type ? (
-          <p className="text-xs text-muted-foreground">Result: {result.result_type}</p>
+          <p className="text-xs text-muted-foreground">{t('formula.result', { type: result.result_type })}</p>
         ) : null}
         {result && !result.error && rows.length > 0 ? (
           <div className="flex flex-col gap-1">
-            <span className="text-sm font-medium">Preview</span>
+            <span className="text-sm font-medium">{t('formula.preview')}</span>
             <ul className="flex flex-col divide-y rounded-md border text-sm">
               {rows.map((row) => {
                 const sample = result.samples.find((candidate) => candidate.row_id === row.id)
                 return (
                   <li key={row.id} className="flex h-8 items-center gap-3 px-2">
-                    <span className="w-1/3 truncate text-muted-foreground">{row.title || 'Untitled'}</span>
+                    <span className="w-1/3 truncate text-muted-foreground">{row.title || t('docs:untitled')}</span>
                     <span className="flex min-w-0 flex-1 items-center">
                       <FormulaCell
                         property={previewProperty(property, result.result_type ?? 'text')}
@@ -206,10 +208,10 @@ export function FormulaDialog({ property, onClose }: { property: FormulaProperty
       </div>
       <div className="flex justify-end gap-2">
         <Button type="button" variant="outline" onClick={onClose}>
-          Cancel
+          {t('common:cancel')}
         </Button>
         <Button type="button" disabled={updateProperty.isPending} onClick={save}>
-          Save
+          {t('formula.save')}
         </Button>
       </div>
     </Modal>

@@ -139,6 +139,18 @@ export default {
       session_mismatch: 'Different session',
     },
   },
+  appSignIn: {
+    expiredTitle: 'Sign-in expired',
+    expired: 'This sign-in has expired or was already used. Go back to the Orbit app and start again.',
+    unsupportedTitle: 'Passkeys are not available',
+    unsupported: 'This browser does not support passkeys. Go back to the Orbit app and sign in another way.',
+    doneTitle: 'Go back to the Orbit app',
+    done: 'Your passkey is confirmed. If the app does not open, use the button.',
+    openApp: 'Open the Orbit app',
+    title: 'Sign in to the Orbit app',
+    description: 'Use your passkey to sign in to the Orbit app on this device. Continue only if you started this sign-in in the Orbit app.',
+    submit: 'Sign in with a passkey',
+  },
   oauthConsent: {
     resources: {
       tasks: { name: 'Tasks', hint: 'In the selected projects' },

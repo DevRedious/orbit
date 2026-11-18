@@ -1,5 +1,5 @@
-import { useId, useState } from 'react'
-import { useTranslation } from 'react-i18next'
+import { Fragment, useId, useState } from 'react'
+import { Trans, useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Copy } from 'reicon-react'
 import type { Provider, SignInProviderView } from '@orbit/api/generated/types.gen'
@@ -117,31 +117,32 @@ function ProviderCard({ provider, description, saved, lockedBy }: { provider: Sa
  * values without letting Admin change them.
  */
 function OidcCard({ configured, saved }: { configured: boolean; saved: SignInProviderView | null }) {
+  const { t } = useTranslation('admin')
   const displayName = useAuthOptions().data?.oidc_name ?? ''
   const id = useId()
+  // "A, B, C and D" in the UI language, each variable in code.
+  const variables = new Intl.ListFormat(i18n.language, { type: 'conjunction' }).formatToParts(OIDC_VARIABLES)
+    .map((part, index) => part.type === 'element' ? <code key={index} className="font-mono">{part.value}</code> : <Fragment key={index}>{part.value}</Fragment>)
   return (
-    <SettingsCard
-      title="OpenID Connect"
-      description="Sign in with your own identity provider (Authentik, Keycloak, Authelia, Zitadel, Pocket ID…). Register Orbit as a confidential client with the callback URL as its redirect URI, and the scopes openid, email and profile."
-    >
+    <SettingsCard title={t('signInProviders.oidc.title')} description={t('signInProviders.oidc.description')}>
       <FieldGrid>
         <CallbackUrlField id={`${id}-callback`} url={callbackUrlOf('oidc', saved)} />
         {configured ? (
           <>
             <Field className="min-[900px]:col-span-2">
-              <FieldLabel htmlFor={`${id}-issuer`}>Issuer</FieldLabel>
+              <FieldLabel htmlFor={`${id}-issuer`}>{t('signInProviders.oidc.issuer')}</FieldLabel>
               <Input id={`${id}-issuer`} disabled className="font-mono" value={saved?.issuer ?? ''} />
             </Field>
             <Field>
-              <FieldLabel htmlFor={`${id}-client-id`}>Client ID</FieldLabel>
+              <FieldLabel htmlFor={`${id}-client-id`}>{t('signInProviders.clientId')}</FieldLabel>
               <Input id={`${id}-client-id`} disabled value={saved?.client_id ?? ''} />
             </Field>
             <Field>
-              <FieldLabel htmlFor={`${id}-secret`}>Client secret</FieldLabel>
-              <Input id={`${id}-secret`} disabled value={saved?.secret_set ? 'Set' : 'Not set'} />
+              <FieldLabel htmlFor={`${id}-secret`}>{t('signInProviders.clientSecret')}</FieldLabel>
+              <Input id={`${id}-secret`} disabled value={saved?.secret_set ? t('signInProviders.oidc.secretSet') : t('signInProviders.oidc.secretNotSet')} />
             </Field>
             <Field>
-              <FieldLabel htmlFor={`${id}-name`}>Display name <InfoTip text={'The sign-in button reads "Continue with" and this name.'} /></FieldLabel>
+              <FieldLabel htmlFor={`${id}-name`}>{t('signInProviders.oidc.displayName')} <InfoTip text={t('signInProviders.oidc.displayNameHint')} /></FieldLabel>
               <Input id={`${id}-name`} disabled value={displayName} />
             </Field>
           </>
@@ -150,9 +151,7 @@ function OidcCard({ configured, saved }: { configured: boolean; saved: SignInPro
       <div className="mt-4">
         {configured ? <SetByEnvironment variable="ORBIT_OIDC_*" /> : (
           <p data-slot="oidc-off" className="text-xs text-muted-foreground">
-            Off. To turn it on, set {OIDC_VARIABLES.map((variable, index) => (
-              <span key={variable}>{index === 0 ? '' : index === OIDC_VARIABLES.length - 1 ? ' and ' : ', '}<code className="font-mono">{variable}</code></span>
-            ))} on the server, then restart Orbit.
+            <Trans t={t} i18nKey="signInProviders.oidc.off" components={{ variables: <span>{variables}</span> }} />
           </p>
         )}
       </div>

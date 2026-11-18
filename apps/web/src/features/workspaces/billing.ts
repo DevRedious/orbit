@@ -47,13 +47,13 @@ export function newWorkspaceTrialNote(trial: AccountTrial | undefined, now = Dat
   if (!trial) return null
   if (!trial.ends_at) {
     return trial.days > 0
-      ? `This workspace starts your ${trial.days}-day free trial. Later workspaces share it.`
-      : 'This workspace needs a plan before you can add to it.'
+      ? i18n.t('workspaces:trial.starts', { days: trial.days })
+      : i18n.t('workspaces:trial.needsPlan')
   }
   const date = fullDate(trial.ends_at)
   return Date.parse(trial.ends_at) > now
-    ? `This workspace shares your free trial, which ends on ${date}.`
-    : `Your free trial ended on ${date}. This workspace stays read-only until it has a plan.`
+    ? i18n.t('workspaces:trial.shares', { date })
+    : i18n.t('workspaces:trial.ended', { date })
 }
 
 /** The workspace has no subscription that grants access: it can be read but not changed. */

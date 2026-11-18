@@ -26,6 +26,7 @@ export default {
     change: 'Change picture',
     upload: 'Upload picture',
     remove: 'Remove',
+    hint: 'Cropped to a square. People in your workspaces see it.',
     label: 'Profile picture',
     readFailed: 'This image could not be read. Use a PNG, JPEG or WebP file.',
     saveFailed: 'The picture could not be saved.',
@@ -100,6 +101,8 @@ export default {
       custom: 'Custom',
       customNamed: 'Custom · {{name}}',
       customDescription: 'Your own colors for the whole app. Pick a preset or your own.',
+      perApp: 'Per app',
+      perAppDescription: 'Different colors for docs, chat and tasks. Starts as Notion, Slack and Linear.',
     },
     navStyle: {
       title: 'Navigation style',
@@ -107,11 +110,37 @@ export default {
       default: { label: 'Default', description: 'The sidebar and the content run edge to edge.' },
       floating: { label: 'Floating', description: 'Framed panels float on a dotted backdrop. Only on wide screens.' },
     },
+    sections: {
+      docs: 'Docs',
+      chat: 'Chat',
+      tasks: 'Tasks',
+    },
+    perApp: {
+      title: 'Per app colors',
+      description: 'Pick the colors of each part of Orbit. Orbit uses your Light, System or Dark theme, as set above.',
+      dialogTitle: '{{section}} colours',
+      // {{section}} is the lowercase name of the app part: docs, chat or tasks.
+      dialogDescription: 'Colours of {{section}} pages. Orbit uses your Light, System or Dark theme. Only you see them.',
+    },
     style: {
       title: 'Style',
       description: 'Choose how buttons and sidebar items look.',
       '3d': { label: '3D', description: 'Buttons and sidebar icons sit on a raised edge that lifts on hover.' },
       flat: { label: 'Flat', description: 'No raised edges. Sidebar items are plain rows with a highlight for the current page.' },
+    },
+    font: {
+      title: 'Font',
+      description: 'The typeface for the whole interface.',
+      system: 'System',
+    },
+    textSize: {
+      title: 'Text size',
+      description: 'Scales the whole interface, text and spacing together.',
+      small: 'Small',
+      compact: 'Compact',
+      default: 'Default',
+      large: 'Large',
+      'extra-large': 'Extra large',
     },
   },
   customTheme: {

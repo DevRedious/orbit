@@ -9,5 +9,6 @@ import settings from './settings'
 import shell from './shell'
 import tasks from './tasks'
 import views from './views'
+import workspaces from './workspaces'
 
-export const en = { common, errors, shell, auth, profile, admin, tasks, views, settings, docs, chat } as const
+export const en = { common, errors, shell, auth, profile, admin, tasks, views, settings, docs, chat, workspaces } as const

@@ -62,12 +62,12 @@ function SummaryCard() {
           ]}
         />
       </SettingsCard>
-      <SettingsCard title="Active users" description="Accounts that used Orbit while signed in during the last 24 hours, 7 days and 30 days. API tokens do not count." flush>
+      <SettingsCard title={t('users.active.title')} description={t('users.active.description')} flush>
         <StatGrid
           stats={[
-            { label: 'Daily', value: summary?.active.daily },
-            { label: 'Weekly', value: summary?.active.weekly },
-            { label: 'Monthly', value: summary?.active.monthly },
+            { label: t('users.active.daily'), value: summary?.active.daily },
+            { label: t('users.active.weekly'), value: summary?.active.weekly },
+            { label: t('users.active.monthly'), value: summary?.active.monthly },
           ]}
         />
       </SettingsCard>

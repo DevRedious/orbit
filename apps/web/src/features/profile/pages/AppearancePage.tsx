@@ -25,13 +25,12 @@ const THEMES: { value: Appearance['theme']; preview: string }[] = [
   { value: 'dark', preview: 'bg-[#181818]' },
 ]
 
-const SECTION_LABELS: Record<AppSection, string> = { docs: 'Docs', chat: 'Chat', tasks: 'Tasks' }
-
 const NAV_STYLES: Appearance['navStyle'][] = ['default', 'floating']
 
 const STYLES: Appearance['style'][] = ['3d', 'flat']
 
 // each tile draws its sample in its own font: `data-font` sets `--font-ui` there (index.css)
+// Fonts go by their own names; only "System" is a `profile:appearance.font.system` key.
 const FONT_OPTIONS: { value: Appearance['font']; label: string }[] = [
   { value: 'noto-sans', label: 'Noto Sans' },
   { value: 'geist', label: 'Geist' },
@@ -42,12 +41,13 @@ const FONT_OPTIONS: { value: Appearance['font']; label: string }[] = [
   { value: 'mono', label: 'Mono' },
 ]
 
-const TEXT_SIZE_OPTIONS: { value: Appearance['textSize']; label: string; sample: string }[] = [
-  { value: 'small', label: 'Small', sample: 'text-sm' },
-  { value: 'compact', label: 'Compact', sample: 'text-[0.9375rem]' },
-  { value: 'default', label: 'Default', sample: 'text-base' },
-  { value: 'large', label: 'Large', sample: 'text-lg' },
-  { value: 'extra-large', label: 'Extra large', sample: 'text-xl' },
+// Their labels are `profile:appearance.textSize.<value>` keys.
+const TEXT_SIZE_OPTIONS: { value: Appearance['textSize']; sample: string }[] = [
+  { value: 'small', sample: 'text-sm' },
+  { value: 'compact', sample: 'text-[0.9375rem]' },
+  { value: 'default', sample: 'text-base' },
+  { value: 'large', sample: 'text-lg' },
+  { value: 'extra-large', sample: 'text-xl' },
 ]
 
 /** Coolify's Profile → Appearance: how Orbit looks in this browser. */
@@ -92,8 +92,8 @@ export function AppearancePage() {
             <CustomThemeSwatch theme={customTheme} className="h-12 w-24" />
           </AppearanceOption>
           <AppearanceOption
-            label="Per app"
-            description="Different colors for docs, chat and tasks. Starts as Notion, Slack and Linear."
+            label={t('appearance.colorTheme.perApp')}
+            description={t('appearance.colorTheme.perAppDescription')}
             selected={Boolean(appLooks)}
             onClick={() => {
               if (!appLooks) setCustomTheme({ apps: DEFAULT_APP_LOOKS })
@@ -108,12 +108,12 @@ export function AppearancePage() {
       </SettingsCard>
 
       {appLooks ? (
-        <SettingsCard title="Per app colors" description="Pick the colors of each part of Orbit. Orbit uses your Light, System or Dark theme, as set above.">
+        <SettingsCard title={t('appearance.perApp.title')} description={t('appearance.perApp.description')}>
           <div className="grid gap-3 sm:grid-cols-3">
             {APP_SECTIONS.map((section) => (
               <AppearanceOption
                 key={section}
-                label={SECTION_LABELS[section]}
+                label={t(`appearance.sections.${section}`)}
                 description={themeName(appLooks[section])}
                 aria-haspopup="dialog"
                 onClick={() => setEditing(section)}
@@ -179,12 +179,12 @@ export function AppearancePage() {
         </div>
       </SettingsCard>
 
-      <SettingsCard title="Font" description="The typeface for the whole interface.">
+      <SettingsCard title={t('appearance.font.title')} description={t('appearance.font.description')}>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {FONT_OPTIONS.map((option) => (
             <AppearanceOption
               key={option.value}
-              label={option.label}
+              label={option.value === 'system' ? t('appearance.font.system') : option.label}
               selected={appearance.font === option.value}
               onClick={() => setAppearance({ font: option.value })}
             >
@@ -194,9 +194,9 @@ export function AppearancePage() {
         </div>
       </SettingsCard>
 
-      <SettingsCard title="Text size" description="Scales the whole interface, text and spacing together.">
+      <SettingsCard title={t('appearance.textSize.title')} description={t('appearance.textSize.description')}>
         <ToggleGroup
-          aria-label="Text size"
+          aria-label={t('appearance.textSize.title')}
           spacing={1}
           className="w-full rounded-[10px] border bg-card p-1"
           value={[appearance.textSize]}
@@ -213,7 +213,7 @@ export function AppearancePage() {
               className="h-auto min-w-0 flex-1 shrink flex-col gap-0.5 px-1 py-2 font-normal whitespace-normal text-muted-foreground aria-pressed:text-foreground"
             >
               <span aria-hidden="true" className={cn('leading-none', option.sample)}>Aa</span>
-              <span className="text-xs max-sm:text-[0.6875rem]">{option.label}</span>
+              <span className="text-xs max-sm:text-[0.6875rem]">{t(`appearance.textSize.${option.value}`)}</span>
             </ToggleGroupItem>
           ))}
         </ToggleGroup>
@@ -223,8 +223,8 @@ export function AppearancePage() {
         <CustomThemeDialog
           open
           onOpenChange={(open) => !open && setEditing(null)}
-          title="Custom theme"
-          description="Colours of the whole app, in place of Light, System or Dark. Only you see them, and text stays readable on every colour."
+          title={t('customTheme.title')}
+          description={t('customTheme.description')}
           value={customTheme}
           onSave={setCustomTheme}
         />
@@ -232,8 +232,8 @@ export function AppearancePage() {
         <CustomThemeDialog
           open
           onOpenChange={(open) => !open && setEditing(null)}
-          title={`${SECTION_LABELS[editing]} colours`}
-          description={`Colours of ${SECTION_LABELS[editing].toLowerCase()} pages. Orbit uses your Light, System or Dark theme. Only you see them.`}
+          title={t('appearance.perApp.dialogTitle', { section: t(`appearance.sections.${editing}`) })}
+          description={t('appearance.perApp.dialogDescription', { section: t(`appearance.sections.${editing}`).toLowerCase() })}
           value={appLooks?.[editing] ?? null}
           onSave={(theme) => setAppLook(editing, theme)}
         />

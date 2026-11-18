@@ -87,7 +87,7 @@ function AvatarField() {
               {t('avatar.remove')}
             </Button>
           ) : null}
-          <InfoTip text="Cropped to a square. People in your workspaces see it." />
+          <InfoTip text={t('avatar.hint')} />
         </div>
         {error ? <p className="text-xs text-destructive" role="alert">{error}</p> : null}
       </div>

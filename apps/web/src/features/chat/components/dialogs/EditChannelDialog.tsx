@@ -39,10 +39,10 @@ export function EditChannelDialog({ conversationId, open, onOpenChange }: EditCh
           <Tabs defaultValue="settings" className="gap-4">
             <TabsList variant="line" className="w-full justify-start gap-1.5 border-b">
               <TabsTrigger value="settings" className="flex-none px-2.5">
-                Settings
+                {t('dialogs.edit.tabs.settings')}
               </TabsTrigger>
               <TabsTrigger value="integrations" className="flex-none px-2.5">
-                Integrations
+                {t('dialogs.edit.tabs.integrations')}
               </TabsTrigger>
             </TabsList>
             <TabsContent value="settings">

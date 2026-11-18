@@ -1,4 +1,5 @@
 import { useContext, useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Cpu } from 'reicon-react'
 import { Emoji } from '@/components/common/Emoji'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -37,9 +38,10 @@ export function BotAvatar({ bot, size = 24 }: { bot: Pick<MessageBot, 'name' | '
 
 /** "APP" after an integration's name, as Slack marks bots. */
 export function BotBadge() {
+  const { t } = useTranslation('chat')
   return (
     <span data-slot="bot-badge" className="shrink-0 rounded-sm bg-muted px-1 py-px text-[0.625rem] leading-4 font-semibold tracking-wide text-muted-foreground uppercase">
-      App
+      {t('messages.bot.badge')}
     </span>
   )
 }

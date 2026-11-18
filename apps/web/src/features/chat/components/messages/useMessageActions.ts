@@ -179,15 +179,15 @@ export function useMessageActions({ inThread, onReply, onForward, onAddReaction,
     )
     if (canEdit(message, currentUserId)) actions.push({ key: 'edit', label: t('messages.actions.edit'), icon: Edit, run: () => onEdit(message) })
     if (!own) {
-      actions.push({ key: 'report', label: 'Report', icon: Flag, run: () => onReport(message) })
+      actions.push({ key: 'report', label: t('messages.actions.report'), icon: Flag, run: () => onReport(message) })
     }
     // An integration's message is not from the member who set it up: blocking them is not offered there.
     if (!own && !message.bot) {
-      const name = people.byId.get(message.authorId)?.name ?? 'this person'
+      const name = people.byId.get(message.authorId)?.name ?? t('messages.block.thisPerson')
       actions.push(
         blocking.isBlocked(message.authorId)
-          ? { key: 'block', label: 'Unblock', icon: UserBlock, run: () => blocking.unblock(message.authorId, name) }
-          : { key: 'block', label: 'Block', icon: UserBlock, run: () => void blocking.block(message.authorId, name) },
+          ? { key: 'block', label: t('messages.actions.unblock'), icon: UserBlock, run: () => blocking.unblock(message.authorId, name) }
+          : { key: 'block', label: t('messages.actions.block'), icon: UserBlock, run: () => void blocking.block(message.authorId, name) },
       )
     }
     if (canDelete) {

@@ -7,5 +7,6 @@ import panes from './chat/panes'
 import sidebar from './chat/sidebar'
 import thread from './chat/thread'
 import views from './chat/views'
+import webhooks from './chat/webhooks'
 
-export default { composer, conversation, dialogs, messages, panes, sidebar, thread, views } as const
+export default { composer, conversation, dialogs, messages, panes, sidebar, thread, views, webhooks } as const

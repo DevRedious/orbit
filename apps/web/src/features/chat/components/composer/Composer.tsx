@@ -270,7 +270,7 @@ export function Composer({ ref, conversation, threadRootId = null, replyTo = nul
             activeIndex={mention.activeIndex}
             onSelect={mention.insert}
             onHover={mention.setActiveIndex}
-            hint={mention.emptyTaskQuery ? 'Type a task title or ID, like ENG-12' : undefined}
+            hint={mention.emptyTaskQuery ? t('composer.taskHint') : undefined}
             loading={mention.searchingTasks}
           />
         ) : emoji.open ? (
@@ -388,8 +388,8 @@ export function Composer({ ref, conversation, threadRootId = null, replyTo = nul
                 <At className="size-5" />
               </Button>
             </Tip>
-            <Tip label="Mention a channel or task">
-              <Button variant="ghost" size="icon" aria-label="Mention a channel or task" onClick={() => startMention('#')}>
+            <Tip label={t('composer.mentionChannelOrTask')}>
+              <Button variant="ghost" size="icon" aria-label={t('composer.mentionChannelOrTask')} onClick={() => startMention('#')}>
                 <Hashtag className="size-5" />
               </Button>
             </Tip>

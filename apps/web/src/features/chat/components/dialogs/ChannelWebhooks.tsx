@@ -1,4 +1,5 @@
 import { useId, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Add, Copy, Danger, Edit, Flash, Key, MoreH, Trash } from 'reicon-react'
 import { toast } from 'sonner'
 import { confirmAction } from '@/components/common/confirmAction'
@@ -23,6 +24,7 @@ import type { ChannelWebhook, Conversation } from '@/features/chat/api/types'
 import { BotAvatar } from '@/features/chat/components/messages/BotAvatar'
 import { authorName, useChatPeople } from '@/features/chat/components/messages/people'
 import { relativeAgo } from '@/features/chat/lib/time'
+import { i18n } from '@/i18n'
 import { chatErrorMessage } from './channelLib'
 
 const NAME_MAX = 80
@@ -30,7 +32,7 @@ const NAME_MAX = 80
 function copy(text: string, done: string) {
   navigator.clipboard.writeText(text).then(
     () => toast.success(done),
-    () => toast.error('Could not copy. Select the text and copy it.'),
+    () => toast.error(i18n.t('chat:webhooks.copyFailed')),
   )
 }
 
@@ -44,6 +46,7 @@ function curlExample(url: string): string {
  * channel as that tool. The URL holds the secret, so it shows only right after it is made or rotated.
  */
 export function ChannelWebhooks({ conversation }: { conversation: Conversation }) {
+  const { t } = useTranslation('chat')
   const webhooks = useWebhooks(conversation.id)
   const [creating, setCreating] = useState(false)
   const [editing, setEditing] = useState<string | null>(null)
@@ -54,52 +57,51 @@ export function ChannelWebhooks({ conversation }: { conversation: Conversation }
 
   const rotateUrl = async (webhook: ChannelWebhook) => {
     const confirmed = await confirmAction({
-      title: `Make a new URL for ${webhook.name}?`,
-      description: 'The old URL stops working now. Tools that use it must get the new one.',
-      confirmLabel: 'Make new URL',
+      title: t('webhooks.rotate.title', { name: webhook.name }),
+      description: t('webhooks.rotate.description'),
+      confirmLabel: t('webhooks.rotate.confirm'),
       danger: true,
     })
     if (!confirmed) return
     rotate.mutate(
       { conversationId: conversation.id, webhookId: webhook.id },
-      { onSuccess: setShown, onError: (error) => toast.error(chatErrorMessage(error, 'Could not make a new URL. Try again.')) },
+      { onSuccess: setShown, onError: (error) => toast.error(chatErrorMessage(error, t('webhooks.rotate.failed'))) },
     )
   }
 
   const deleteWebhook = async (webhook: ChannelWebhook) => {
     const confirmed = await confirmAction({
-      title: `Delete ${webhook.name}?`,
-      description: 'Its URL stops working. The messages it posted stay.',
-      confirmLabel: 'Delete',
+      title: t('webhooks.delete.title', { name: webhook.name }),
+      description: t('webhooks.delete.description'),
+      confirmLabel: t('webhooks.delete.confirm'),
       danger: true,
     })
     if (!confirmed) return
     if (shown?.webhook.id === webhook.id) setShown(null)
     remove.mutate(
       { conversationId: conversation.id, webhookId: webhook.id },
-      { onError: (error) => toast.error(chatErrorMessage(error, 'Could not delete the webhook. Try again.')) },
+      { onError: (error) => toast.error(chatErrorMessage(error, t('webhooks.delete.failed'))) },
     )
   }
 
   return (
     <div data-slot="channel-webhooks" className="grid gap-4">
       <p className="text-sm text-muted-foreground">
-        Incoming webhooks let tools such as CI, monitoring or ticketing post messages to #{conversation.name}. Each one has a secret URL that takes a
-        JSON message.
+        {t('webhooks.intro', { name: conversation.name })}
       </p>
 
       {shown ? <WebhookUrl created={shown} onDone={() => setShown(null)} /> : null}
 
       {webhooks.isError ? (
         <p role="alert" className="text-sm text-destructive">
-          {chatErrorMessage(webhooks.error, 'Could not load the webhooks. Try again.')}
+          {chatErrorMessage(webhooks.error, t('webhooks.loadFailed'))}
         </p>
       ) : webhooks.isPending ? null : list.length === 0 && !creating ? (
         <div className="grid justify-items-start gap-3 rounded-lg border border-dashed p-4">
-          <p className="text-sm text-muted-foreground">No incoming webhooks yet.</p>
+          <p className="text-sm text-muted-foreground">{t('webhooks.empty')}</p>
           <Button type="button" size="sm" onClick={() => setCreating(true)}>
             <Add data-icon="inline-start" />
-            New webhook
+            {t('webhooks.new')}
           </Button>
         </div>
       ) : (
@@ -134,7 +136,7 @@ export function ChannelWebhooks({ conversation }: { conversation: Conversation }
       ) : list.length > 0 ? (
         <Button type="button" variant="outline" size="sm" className="justify-self-start" onClick={() => setCreating(true)}>
           <Add data-icon="inline-start" />
-          New webhook
+          {t('webhooks.new')}
         </Button>
       ) : null}
     </div>
@@ -154,10 +156,11 @@ function WebhookRow({
   onRotate: () => void
   onDelete: () => void
 }) {
+  const { t } = useTranslation('chat')
   const [interactivityOpen, setInteractivityOpen] = useState(false)
   const people = useChatPeople()
-  const creator = authorName(people, webhook.createdBy, null, 'a former member')
-  const used = webhook.lastUsedAt === null ? 'never used' : `last used ${relativeAgo(webhook.lastUsedAt)}`
+  const creator = authorName(people, webhook.createdBy, null, t('webhooks.row.formerMember'))
+  const used = webhook.lastUsedAt === null ? t('webhooks.row.neverUsed') : t('webhooks.row.lastUsed', { time: relativeAgo(webhook.lastUsedAt) })
   return (
     <li data-slot="channel-webhook" className="grid gap-2">
       <div className="flex items-center gap-3 rounded-md px-2 py-1.5 hover:bg-muted/50">
@@ -165,15 +168,15 @@ function WebhookRow({
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-medium">{webhook.name}</p>
           <p className="truncate text-xs text-muted-foreground">
-            Made by {creator} · {used}
-            {webhook.requestUrl ? ' · buttons on' : ''}
-            {webhook.events ? ' · events on' : ''}
+            {t('webhooks.row.madeBy', { name: creator })} · {used}
+            {webhook.requestUrl ? ` · ${t('webhooks.row.buttonsOn')}` : ''}
+            {webhook.events ? ` · ${t('webhooks.row.eventsOn')}` : ''}
           </p>
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger
             render={
-              <Button type="button" variant="ghost" size="icon-sm" className="text-muted-foreground" aria-label={`Options for ${webhook.name}`} />
+              <Button type="button" variant="ghost" size="icon-sm" className="text-muted-foreground" aria-label={t('webhooks.row.options', { name: webhook.name })} />
             }
           >
             <MoreH />
@@ -181,20 +184,20 @@ function WebhookRow({
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={onRename}>
               <Edit />
-              Edit
+              {t('webhooks.row.edit')}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={onRotate}>
               <Key />
-              Make new URL
+              {t('webhooks.rotate.confirm')}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setInteractivityOpen((open) => !open)}>
               <Flash />
-              Interactivity
+              {t('webhooks.row.interactivity')}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem variant="destructive" onClick={onDelete}>
               <Trash />
-              Delete
+              {t('webhooks.delete.confirm')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -212,6 +215,7 @@ function WebhookRow({
  * click's `response_url` or the webhook URL.
  */
 function WebhookInteractivity({ webhook, conversationId, onClose }: { webhook: ChannelWebhook; conversationId: string; onClose: () => void }) {
+  const { t } = useTranslation('chat')
   const [requestUrl, setRequestUrl] = useState(webhook.requestUrl ?? '')
   const [secret, setSecret] = useState<string | null>(null)
   const save = useSetWebhookInteractivity()
@@ -230,10 +234,10 @@ function WebhookInteractivity({ webhook, conversationId, onClose }: { webhook: C
           setRequestUrl(next.requestUrl ?? '')
           toast.success(
             next.events
-              ? 'Clicks and messages go to the request URL.'
+              ? t('webhooks.interactivity.savedEvents')
               : next.requestUrl
-                ? 'Buttons send clicks to the request URL.'
-                : 'Buttons and events are off.',
+                ? t('webhooks.interactivity.savedButtons')
+                : t('webhooks.interactivity.savedOff'),
           )
         },
       },
@@ -241,16 +245,16 @@ function WebhookInteractivity({ webhook, conversationId, onClose }: { webhook: C
   const loadSecret = async (rotate: boolean) => {
     if (rotate) {
       const confirmed = await confirmAction({
-        title: 'Make a new signing secret?',
-        description: 'Clicks are signed with the new secret at once. The receiver must check them with it.',
-        confirmLabel: 'Make new secret',
+        title: t('webhooks.secret.rotateTitle'),
+        description: t('webhooks.secret.rotateDescription'),
+        confirmLabel: t('webhooks.secret.rotateConfirm'),
         danger: true,
       })
       if (!confirmed) return
     }
     signingSecret.mutate(
       { conversationId, webhookId: webhook.id, rotate },
-      { onSuccess: setSecret, onError: (error) => toast.error(chatErrorMessage(error, 'Could not read the signing secret.')) },
+      { onSuccess: setSecret, onError: (error) => toast.error(chatErrorMessage(error, t('webhooks.secret.loadFailed'))) },
     )
   }
 
@@ -265,8 +269,8 @@ function WebhookInteractivity({ webhook, conversationId, onClose }: { webhook: C
       >
         <Field data-invalid={save.isError || undefined}>
           <FieldLabel htmlFor={urlId}>
-            Request URL
-            <InfoTip text="A click on a button without a link sends a signed block_actions payload here, as Slack does. Answer through its response_url to replace the message, delete it, or reply." />
+            {t('webhooks.interactivity.requestUrl')}
+            <InfoTip text={t('webhooks.interactivity.requestUrlHint')} />
           </FieldLabel>
           <div className="flex gap-2">
             <Input
@@ -278,11 +282,11 @@ function WebhookInteractivity({ webhook, conversationId, onClose }: { webhook: C
               onChange={(event) => setRequestUrl(event.target.value)}
             />
             <Button type="submit" disabled={!requestUrl.trim() || !changed || save.isPending}>
-              {save.isPending ? 'Saving…' : 'Save'}
+              {save.isPending ? t('webhooks.saving') : t('webhooks.save')}
             </Button>
           </div>
           {save.isError ? (
-            <FieldError>{chatErrorMessage(save.error, 'The request URL was not saved.', { conflict: 'Use a public https URL.' })}</FieldError>
+            <FieldError>{chatErrorMessage(save.error, t('webhooks.interactivity.saveFailed'), { conflict: t('webhooks.interactivity.publicUrl') })}</FieldError>
           ) : null}
         </Field>
       </form>
@@ -292,10 +296,10 @@ function WebhookInteractivity({ webhook, conversationId, onClose }: { webhook: C
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-1.5">
               <label htmlFor={eventsId} className="text-sm font-medium">
-                Send messages as events
+                {t('webhooks.interactivity.events')}
               </label>
               <InfoTip
-                text={`Each member's message in this channel goes to the request URL as a signed event_callback (app_mention when it names @${webhook.name}). The webhook URL's secret can then also read the channel and its threads.`}
+                text={t('webhooks.interactivity.eventsHint', { name: webhook.name })}
               />
             </div>
             <Switch
@@ -307,31 +311,31 @@ function WebhookInteractivity({ webhook, conversationId, onClose }: { webhook: C
           </div>
 
           <Field>
-            <FieldLabel htmlFor={secretId}>Signing secret</FieldLabel>
+            <FieldLabel htmlFor={secretId}>{t('webhooks.secret.label')}</FieldLabel>
             <div className="flex gap-2">
               <InputGroup>
                 <InputGroupInput id={secretId} readOnly value={secret ?? '••••••••••••••••••••••••••••••••'} className="font-mono text-xs" />
                 <InputGroupAddon align="inline-end">
                   {secret ? (
-                    <InputGroupButton aria-label="Copy signing secret" size="icon-xs" onClick={() => copy(secret, 'Signing secret copied')}>
+                    <InputGroupButton aria-label={t('webhooks.secret.copy')} size="icon-xs" onClick={() => copy(secret, t('webhooks.secret.copied'))}>
                       <Copy />
                     </InputGroupButton>
                   ) : (
                     <InputGroupButton size="xs" disabled={signingSecret.isPending} onClick={() => void loadSecret(false)}>
-                      Reveal
+                      {t('webhooks.secret.reveal')}
                     </InputGroupButton>
                   )}
                 </InputGroupAddon>
               </InputGroup>
               <Button type="button" variant="outline" disabled={signingSecret.isPending} onClick={() => void loadSecret(true)}>
                 <Key data-icon="inline-start" />
-                Make new
+                {t('webhooks.secret.makeNew')}
               </Button>
             </div>
           </Field>
 
           <div className="grid gap-2">
-            <p className="text-sm font-medium">Last deliveries</p>
+            <p className="text-sm font-medium">{t('webhooks.deliveries.title')}</p>
             {deliveries.data && deliveries.data.length > 0 ? (
               <ul className="grid gap-1 text-xs">
                 {deliveries.data.map((delivery) => {
@@ -341,14 +345,14 @@ function WebhookInteractivity({ webhook, conversationId, onClose }: { webhook: C
                       <span className={good ? 'text-emerald-500' : 'text-destructive'}>{delivery.status ?? delivery.error}</span>
                       <span className="truncate font-mono">{delivery.actionId}</span>
                       <span className="ml-auto shrink-0 text-muted-foreground">
-                        {delivery.durationMs} ms · {relativeAgo(delivery.createdAt)}
+                        {t('webhooks.deliveries.duration', { ms: delivery.durationMs })} · {relativeAgo(delivery.createdAt)}
                       </span>
                     </li>
                   )
                 })}
               </ul>
             ) : (
-              <p className="text-xs text-muted-foreground">Nothing sent yet.</p>
+              <p className="text-xs text-muted-foreground">{t('webhooks.deliveries.empty')}</p>
             )}
           </div>
         </>
@@ -357,13 +361,13 @@ function WebhookInteractivity({ webhook, conversationId, onClose }: { webhook: C
       <div className="flex items-center justify-between gap-2 border-t pt-4">
         {webhook.requestUrl ? (
           <Button type="button" variant="ghost" size="sm" className="text-destructive" disabled={save.isPending} onClick={() => submit(null, false)}>
-            Remove request URL
+            {t('webhooks.interactivity.remove')}
           </Button>
         ) : (
           <span />
         )}
         <Button type="button" variant="ghost" size="sm" onClick={onClose}>
-          Close
+          {t('close', { ns: 'common' })}
         </Button>
       </div>
     </div>
@@ -380,6 +384,7 @@ function WebhookForm({
   webhook?: ChannelWebhook
   onDone: (created?: CreatedWebhook) => void
 }) {
+  const { t } = useTranslation('chat')
   const create = useCreateWebhook()
   const update = useUpdateWebhook()
   const [name, setName] = useState(webhook?.name ?? '')
@@ -416,11 +421,11 @@ function WebhookForm({
       }}
     >
       <Field>
-        <FieldLabel htmlFor={nameId}>Name</FieldLabel>
+        <FieldLabel htmlFor={nameId}>{t('webhooks.form.name')}</FieldLabel>
         <Input id={nameId} autoFocus required maxLength={NAME_MAX} placeholder="CI" value={name} onChange={(event) => setName(event.target.value)} />
       </Field>
       <Field data-invalid={iconInvalid || undefined}>
-        <FieldLabel htmlFor={iconId}>Icon URL (optional)</FieldLabel>
+        <FieldLabel htmlFor={iconId}>{t('webhooks.form.iconUrl')}</FieldLabel>
         <Input
           id={iconId}
           type="url"
@@ -430,22 +435,22 @@ function WebhookForm({
           aria-invalid={iconInvalid || undefined}
           onChange={(event) => setIconUrl(event.target.value)}
         />
-        {iconInvalid ? <FieldError>Use an https:// image URL.</FieldError> : null}
+        {iconInvalid ? <FieldError>{t('webhooks.form.iconInvalid')}</FieldError> : null}
       </Field>
       {error ? (
         <p role="alert" className="text-sm text-destructive">
-          {chatErrorMessage(error, 'The webhook was not saved. Try again.', {
-            conflict: 'A channel can have at most 10 incoming webhooks.',
-            forbidden: 'Only the channel creator and workspace owners and admins can manage webhooks.',
+          {chatErrorMessage(error, t('webhooks.form.saveFailed'), {
+            conflict: t('webhooks.form.limit', { count: 10 }),
+            forbidden: t('webhooks.form.forbidden'),
           })}
         </p>
       ) : null}
       <div className="flex justify-end gap-2">
         <Button type="button" variant="outline" size="sm" onClick={() => onDone()}>
-          Cancel
+          {t('dialogs.cancel')}
         </Button>
         <Button type="submit" size="sm" disabled={!name.trim() || iconInvalid || pending}>
-          {pending ? 'Saving…' : webhook ? 'Save' : 'Create webhook'}
+          {pending ? t('webhooks.saving') : webhook ? t('webhooks.save') : t('webhooks.form.create')}
         </Button>
       </div>
     </form>
@@ -454,16 +459,17 @@ function WebhookForm({
 
 /** The URL of a webhook that was just made or rotated, with a curl example. It does not show again. */
 function WebhookUrl({ created, onDone }: { created: CreatedWebhook; onDone: () => void }) {
+  const { t } = useTranslation('chat')
   const urlId = useId()
   const example = curlExample(created.url)
   return (
     <div data-slot="webhook-url" className="grid gap-3 rounded-lg border p-3">
       <Field>
-        <FieldLabel htmlFor={urlId}>URL of {created.webhook.name}</FieldLabel>
+        <FieldLabel htmlFor={urlId}>{t('webhooks.url.label', { name: created.webhook.name })}</FieldLabel>
         <InputGroup>
           <InputGroupInput id={urlId} readOnly value={created.url} className="font-mono text-xs" onFocus={(event) => event.target.select()} />
           <InputGroupAddon align="inline-end">
-            <InputGroupButton aria-label="Copy URL" size="icon-xs" onClick={() => copy(created.url, 'URL copied')}>
+            <InputGroupButton aria-label={t('webhooks.url.copy')} size="icon-xs" onClick={() => copy(created.url, t('webhooks.url.copied'))}>
               <Copy />
             </InputGroupButton>
           </InputGroupAddon>
@@ -471,20 +477,20 @@ function WebhookUrl({ created, onDone }: { created: CreatedWebhook; onDone: () =
       </Field>
       <p className="flex items-start gap-2 text-xs text-muted-foreground">
         <Danger aria-hidden="true" className="mt-px size-4 shrink-0 text-amber-500" />
-        Copy it now: Orbit shows this URL only once. Anyone who has it can post to this channel.
+        {t('webhooks.url.once')}
       </p>
       <div className="grid gap-1.5">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-medium">Try it</span>
-          <Button type="button" variant="ghost" size="xs" onClick={() => copy(example, 'Command copied')}>
+          <span className="text-xs font-medium">{t('webhooks.url.tryIt')}</span>
+          <Button type="button" variant="ghost" size="xs" onClick={() => copy(example, t('webhooks.url.commandCopied'))}>
             <Copy data-icon="inline-start" />
-            Copy
+            {t('webhooks.url.copyCommand')}
           </Button>
         </div>
         <pre className="overflow-x-auto rounded-md bg-muted px-3 py-2 font-mono text-xs leading-relaxed whitespace-pre">{example}</pre>
       </div>
       <Button type="button" size="sm" variant="outline" className="justify-self-end" onClick={onDone}>
-        Done
+        {t('done', { ns: 'common' })}
       </Button>
     </div>
   )

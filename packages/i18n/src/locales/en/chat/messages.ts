@@ -13,6 +13,8 @@ export default {
   },
   rows: {
     newMessages: 'New messages',
+    blocked: 'Message from a person you blocked',
+    showBlocked: 'Show',
     new: 'New',
     replyCount_one: '{{count}} reply',
     replyCount_other: '{{count}} replies',
@@ -77,6 +79,9 @@ export default {
     pin: 'Pin',
     unpin: 'Unpin',
     markUnread: 'Mark as unread',
+    report: 'Report',
+    block: 'Block',
+    unblock: 'Unblock',
     edit: 'Edit',
     delete: 'Delete',
     linkCopied: 'Link copied',
@@ -91,6 +96,28 @@ export default {
     deleteWithReplies: 'The replies stay in the thread. This cannot be undone.',
     deleteDescription: 'This cannot be undone.',
     deleteConfirm: 'Delete',
+  },
+  block: {
+    thisPerson: 'this person',
+    title: 'Block {{name}}?',
+    description: 'Chat hides their messages from you. They cannot send you direct messages. You can unblock them in Account settings.',
+    confirm: 'Block',
+    blocked: 'You blocked {{name}}.',
+    blockFailed: 'Could not block {{name}}. Try again.',
+    unblocked: 'You unblocked {{name}}.',
+    unblockFailed: 'Could not unblock {{name}}. Try again.',
+  },
+  /** An integration's messages. */
+  bot: {
+    /** After its name; it shows in capitals. */
+    badge: 'App',
+  },
+  ephemeral: {
+    onlyYou: 'Only visible to you',
+    dismiss: 'Dismiss',
+  },
+  blocks: {
+    clickFailed: 'The integration did not take the click.',
   },
   editor: {
     label: 'Edit message',

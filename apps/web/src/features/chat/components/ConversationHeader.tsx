@@ -78,9 +78,9 @@ export function ConversationHeader({ conversation }: { conversation: Conversatio
           </ProfileTrigger>
         </PaneTitle>
         {hasGuests ? (
-          <Tip label="This channel has guests: people from outside the workspace" side="bottom">
+          <Tip label={t('conversation.header.hasGuestsHint')} side="bottom">
             <Badge data-slot="conversation-guests" variant="outline" tabIndex={0} className="text-muted-foreground">
-              Has guests
+              {t('conversation.header.hasGuests')}
             </Badge>
           </Tip>
         ) : null}

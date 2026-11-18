@@ -108,6 +108,7 @@ function ThreadGroup({
   channel: ConversationState | null
   people: readonly User[]
 }) {
+  const { t } = useTranslation('chat')
   const { currentUserId } = useChatContext()
   const navigation = useChatNavigation()
   const href = useHref(threadPath(thread.conversationId, thread.root.id))
@@ -131,7 +132,7 @@ function ThreadGroup({
   }
 
   return (
-    <section ref={sectionRef} data-slot="unread-thread-group" aria-label={`Thread in ${title}`} className="flex flex-col gap-3 border-b px-4 py-3 max-[899px]:px-3">
+    <section ref={sectionRef} data-slot="unread-thread-group" aria-label={t('views.unreads.thread.label', { title })} className="flex flex-col gap-3 border-b px-4 py-3 max-[899px]:px-3">
       <div className="flex min-w-0 items-center gap-2">
         <a
           href={href}
@@ -139,10 +140,10 @@ function ThreadGroup({
           className="flex min-w-0 items-center gap-2 rounded-sm text-[0.8125rem] font-semibold text-foreground outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring/50"
         >
           <ConversationIcon conversation={conversation} people={people} currentUserId={currentUserId} />
-          <span className="truncate">Thread in {title}</span>
+          <span className="truncate">{t('views.unreads.thread.label', { title })}</span>
         </a>
         <span className="shrink-0 text-xs text-muted-foreground">
-          {thread.state.unreadReplies} unread {thread.state.unreadReplies === 1 ? 'reply' : 'replies'}
+          {t('views.unreads.thread.unreadReplies', { count: thread.state.unreadReplies })}
         </span>
         <Button
           type="button"
@@ -150,21 +151,21 @@ function ThreadGroup({
           size="sm"
           className="ml-auto text-muted-foreground"
           disabled={markThreadRead.isPending}
-          onClick={() => markThreadRead.mutate(thread.root.id, { onError: () => void toast.error('Could not mark as read. Try again.') })}
+          onClick={() => markThreadRead.mutate(thread.root.id, { onError: () => void toast.error(t('views.unreads.markReadFailed')) })}
         >
-          Mark as read
+          {t('views.unreads.markAsRead')}
         </Button>
       </div>
       <MessagePreview message={thread.root} people={people} clamp className="max-w-[90ch]" />
       {replies.isError ? (
         <p className="text-[0.8125rem] text-muted-foreground" role="alert">
-          Could not load these replies.{' '}
+          {t('views.unreads.thread.repliesLoadFailed')}{' '}
           <Button type="button" variant="link" size="sm" className="h-auto p-0" onClick={() => void replies.refetch()}>
-            Try again
+            {t('views.tryAgain')}
           </Button>
         </p>
       ) : (
-        <ol className="flex max-w-[90ch] flex-col gap-3 border-l-2 pl-3" aria-label={`Unread replies in the thread in ${title}`}>
+        <ol className="flex max-w-[90ch] flex-col gap-3 border-l-2 pl-3" aria-label={t('views.unreads.thread.repliesLabel', { title })}>
           {shown.map((message) => (
             <li key={message.id}>
               <MessagePreview message={message} people={people} />
@@ -178,7 +179,7 @@ function ThreadGroup({
           onClick={open}
           className="self-start rounded-sm text-xs text-muted-foreground outline-none hover:text-foreground hover:underline focus-visible:ring-2 focus-visible:ring-ring/50"
         >
-          {more} more unread {more === 1 ? 'reply' : 'replies'}
+          {t('views.unreads.thread.moreReplies', { count: more })}
         </a>
       ) : null}
     </section>

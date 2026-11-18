@@ -70,6 +70,7 @@ export function SystemRow({ message }: { message: Message }) {
  * data attributes, so the arrow keys and jumps to the message still find it.
  */
 export function BlockedMessageRow({ message, active, onShow }: { message: Message; active: boolean; onShow: () => void }) {
+  const { t } = useTranslation('chat')
   return (
     <div
       role="listitem"
@@ -79,9 +80,9 @@ export function BlockedMessageRow({ message, active, onShow }: { message: Messag
       data-message-id={message.id}
       className="mt-1 flex items-center gap-2 px-4 py-1 text-xs text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-inset max-[899px]:px-3"
     >
-      <span>Message from a person you blocked</span>
+      <span>{t('messages.rows.blocked')}</span>
       <Button variant="link" size="xs" className="h-6 px-0 text-muted-foreground" onClick={onShow}>
-        Show
+        {t('messages.rows.showBlocked')}
       </Button>
     </div>
   )

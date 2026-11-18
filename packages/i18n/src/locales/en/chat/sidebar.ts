@@ -11,6 +11,11 @@ export default {
   newCategory: 'New category',
   browseChannels: 'Browse channels',
   customTheme: 'Custom theme',
+  theme: {
+    chatTitle: 'Chat colours',
+    chatDescription: 'Colours of chat pages. Orbit uses your Light, System or Dark theme. Only you see them.',
+    appDescription: 'Colours of the whole app, in place of Light, System or Dark. Only you see them, and text stays readable on every colour.',
+  },
   unreads: 'Unreads',
   threads: 'Threads',
   pinnedUnread_one: '{{label}}, {{count}} unread',

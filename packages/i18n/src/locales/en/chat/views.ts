@@ -33,5 +33,14 @@ export default {
     undo: 'Undo',
     undoFailed: 'Could not undo. Try again.',
     markAllReadFailed: 'Could not mark all as read. Try again.',
+    thread: {
+      label: 'Thread in {{title}}',
+      unreadReplies_one: '{{count}} unread reply',
+      unreadReplies_other: '{{count}} unread replies',
+      repliesLoadFailed: 'Could not load these replies.',
+      repliesLabel: 'Unread replies in the thread in {{title}}',
+      moreReplies_one: '{{count}} more unread reply',
+      moreReplies_other: '{{count}} more unread replies',
+    },
   },
 } as const

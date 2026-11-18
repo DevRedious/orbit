@@ -51,6 +51,10 @@ export default {
   },
   edit: {
     title: 'Edit channel',
+    tabs: {
+      settings: 'Settings',
+      integrations: 'Integrations',
+    },
     unavailable: 'This channel is not available.',
     private: 'Private channel',
     defaultChannel: '#{{name}} is the default channel. Everybody is in it, so it cannot be private.',
@@ -105,6 +109,21 @@ export default {
     selected_other: '{{count}} of {{limit}} selected',
     sending: 'Sending…',
     send: 'Send',
+  },
+  report: {
+    title: 'Report message',
+    reason: 'Reason',
+    reasons: {
+      spam: 'Spam',
+      harassment: 'Harassment',
+      inappropriate: 'Inappropriate content',
+      other: 'Other',
+    },
+    note: 'Note',
+    noteHint: 'Optional. Tell the workspace owners and admins more about the problem.',
+    submit: 'Report',
+    sent: 'Thank you. Workspace owners and admins will look at your report.',
+    failed: 'Could not send the report. Try again.',
   },
   memberPicker: {
     search: 'Search people…',

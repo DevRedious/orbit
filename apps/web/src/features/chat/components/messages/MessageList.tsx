@@ -452,7 +452,7 @@ export function MessageList({
       if (sentNow) virtualizer.scrollToEnd()
       else if (!state.atBottom && arrived.length > 0) setNewCount((count) => count + arrived.length)
       const newest = arrived[arrived.length - 1]
-      if (announce && newest && hidden(newest)) setAnnouncement('Message from a person you blocked')
+      if (announce && newest && hidden(newest)) setAnnouncement(t('messages.rows.blocked'))
       else if (announce && newest) {
         const text = firstLine(decodeMentions(newest.body, people.members, people.channels), 200)
         setAnnouncement(

@@ -3,6 +3,7 @@ import { apiClient } from '@/api/client'
 import { queryKeys } from '@/api/queryKeys'
 import { blockChatUser, deleteReportedChatMessage, listChatBlocks, listChatReports, reportChatMessage, unblockChatUser } from '@orbit/api/generated/sdk.gen'
 import type { BlockedUserRecord, ChatReportReason } from '@orbit/api/generated/types.gen'
+import { i18n } from '@/i18n'
 
 /** The people the user blocked belong to the account, not to a workspace: outside the `['workspace', id]` prefix. */
 export const chatBlocksKey = ['chat-blocks'] as const
@@ -44,11 +45,20 @@ export function useSetBlocked() {
 
 export const REPORT_NOTE_MAX = 500
 
-export const REPORT_REASONS: Record<ChatReportReason, string> = {
-  spam: 'Spam',
-  harassment: 'Harassment',
-  inappropriate: 'Inappropriate content',
-  other: 'Other',
+/** The label of each reason, in the UI language at the time it is read. */
+export const REPORT_REASONS: Readonly<Record<ChatReportReason, string>> = {
+  get spam() {
+    return i18n.t('chat:dialogs.report.reasons.spam')
+  },
+  get harassment() {
+    return i18n.t('chat:dialogs.report.reasons.harassment')
+  },
+  get inappropriate() {
+    return i18n.t('chat:dialogs.report.reasons.inappropriate')
+  },
+  get other() {
+    return i18n.t('chat:dialogs.report.reasons.other')
+  },
 }
 
 export function useReportMessage(workspaceId: string) {

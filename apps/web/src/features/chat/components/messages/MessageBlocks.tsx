@@ -3,8 +3,10 @@ import { createContext, useContext, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { buttonVariants } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
+import { i18n } from '@/i18n'
 import { useClickAction } from '../../api/mutations'
 import { ChatError } from '../../api/types'
+import { chatErrorReason } from '../dialogs/channelLib'
 import { Separator } from '@/components/ui/separator'
 import { renderMarkdownBlocks } from '@/lib/markdown'
 import { blockTextMarkdown, escapeMarkdown, richTextMarkdown } from '../../lib/blocks'
@@ -268,7 +270,7 @@ export function MessageBlocks({ blocks, messageId, interactive = false }: { bloc
     clickAction.mutate(
       { messageId, blockId, actionId },
       {
-        onError: (error) => toast.error(error instanceof ChatError && error.message ? error.message : 'The integration did not take the click.'),
+        onError: (error) => toast.error(error instanceof ChatError && error.message ? chatErrorReason(error) : i18n.t('chat:messages.blocks.clickFailed')),
         onSettled: () => setPending(null),
       },
     )

@@ -1,4 +1,5 @@
 import { useId, useState, type FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import type { ChatReportReason } from '@orbit/api/generated/types.gen'
 import { InfoTip } from '@/components/common/InfoTip'
@@ -15,6 +16,7 @@ import type { Message } from '../../api/types'
 
 /** Reports a message to the workspace owners and admins: a reason and an optional note. Mounted while open. */
 export function ReportDialog({ message, onClose }: { message: Message; onClose: () => void }) {
+  const { t } = useTranslation('chat')
   const { workspaceId } = useChatContext()
   const report = useReportMessage(workspaceId)
   const [reason, setReason] = useState<ChatReportReason | null>(null)
@@ -28,19 +30,19 @@ export function ReportDialog({ message, onClose }: { message: Message; onClose: 
       { messageId: message.id, reason, note },
       {
         onSuccess: () => {
-          toast.success('Thank you. Workspace owners and admins will look at your report.')
+          toast.success(t('dialogs.report.sent'))
           onClose()
         },
-        onError: () => toast.error('Could not send the report. Try again.'),
+        onError: () => toast.error(t('dialogs.report.failed')),
       },
     )
   }
 
   return (
-    <Modal title="Report message" onClose={onClose} className="sm:max-w-md" dismissible={!report.isPending}>
+    <Modal title={t('dialogs.report.title')} onClose={onClose} className="sm:max-w-md" dismissible={!report.isPending}>
       <form className="grid gap-4" onSubmit={submit}>
         <FieldSet>
-          <FieldLegend variant="label">Reason</FieldLegend>
+          <FieldLegend variant="label">{t('dialogs.report.reason')}</FieldLegend>
           <RadioGroup value={reason} onValueChange={(value) => setReason(value as ChatReportReason)}>
             {Object.entries(REPORT_REASONS).map(([value, label]) => (
               <Label key={value} className="font-normal">
@@ -52,14 +54,14 @@ export function ReportDialog({ message, onClose }: { message: Message; onClose: 
         </FieldSet>
         <Field>
           <FieldLabel htmlFor={noteId} className="items-center gap-1.5">
-            Note <InfoTip text="Optional. Tell the workspace owners and admins more about the problem." />
+            {t('dialogs.report.note')} <InfoTip text={t('dialogs.report.noteHint')} />
           </FieldLabel>
           <Textarea id={noteId} rows={3} maxLength={REPORT_NOTE_MAX} value={note} onChange={(event) => setNote(event.target.value)} />
         </Field>
         <DialogFooter>
-          <DialogClose render={<Button type="button" variant="outline" disabled={report.isPending} />}>Cancel</DialogClose>
+          <DialogClose render={<Button type="button" variant="outline" disabled={report.isPending} />}>{t('dialogs.cancel')}</DialogClose>
           <Button type="submit" disabled={!reason || report.isPending}>
-            Report
+            {t('dialogs.report.submit')}
           </Button>
         </DialogFooter>
       </form>

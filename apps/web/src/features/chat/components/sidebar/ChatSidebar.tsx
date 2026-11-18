@@ -453,12 +453,8 @@ export function ChatSidebar() {
         <CustomThemeDialog
           open={dialogOpen}
           onOpenChange={setDialogOpen}
-          title={perApp ? 'Chat colours' : 'Custom theme'}
-          description={
-            perApp
-              ? 'Colours of chat pages. Orbit uses your Light, System or Dark theme. Only you see them.'
-              : 'Colours of the whole app, in place of Light, System or Dark. Only you see them, and text stays readable on every colour.'
-          }
+          title={perApp ? t('sidebar.theme.chatTitle') : t('sidebar.customTheme')}
+          description={perApp ? t('sidebar.theme.chatDescription') : t('sidebar.theme.appDescription')}
           value={theme}
           onSave={(next) => (perApp ? setAppLook('chat', next) : setCustomTheme(next))}
         />

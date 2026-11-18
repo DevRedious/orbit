@@ -267,7 +267,7 @@ export function ChatPage() {
       <Pane>
         <div className="flex flex-1 flex-col p-6">
           {guest ? (
-            <EmptyState icon={Message} title={t('conversation.page.emptyTitle')} description="As a guest, you see only the channels that you are added to. Ask a channel manager to add you to a channel." />
+            <EmptyState icon={Message} title={t('conversation.page.emptyTitle')} description={t('conversation.page.emptyDescriptionGuest')} />
           ) : (
             <EmptyState icon={Message} title={t('conversation.page.emptyTitle')} description={t('conversation.page.emptyDescription')} action={browseAction} />
           )}
@@ -281,7 +281,7 @@ export function ChatPage() {
           <EmptyState
             icon={Lock}
             title={t('conversation.page.unavailableTitle')}
-            description={guest ? 'It is private or it does not exist. Select a conversation in the sidebar, or ask a channel manager to add you.' : t('conversation.page.unavailableDescription')}
+            description={guest ? t('conversation.page.unavailableDescriptionGuest') : t('conversation.page.unavailableDescription')}
             action={guest ? undefined : browseAction}
           />
         </div>

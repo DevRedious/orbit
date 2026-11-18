@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { useDismissEphemeral } from '../../api/mutations'
 import { useEphemeralMessages } from '../../api/queries'
@@ -9,6 +10,7 @@ import { MessageBody } from './MessageBody'
  * stored: a reload or Dismiss takes them away. Their buttons do nothing, as the message does not exist on the server.
  */
 export function EphemeralMessages({ conversationId }: { conversationId: string }) {
+  const { t } = useTranslation('chat')
   const messages = useEphemeralMessages(conversationId)
   const dismiss = useDismissEphemeral()
   if (messages.length === 0) return null
@@ -21,9 +23,9 @@ export function EphemeralMessages({ conversationId }: { conversationId: string }
             <div className="flex items-center gap-2">
               <span className="truncate font-medium text-foreground">{message.bot?.name}</span>
               <BotBadge />
-              <span className="shrink-0 text-xs text-muted-foreground">Only visible to you</span>
+              <span className="shrink-0 text-xs text-muted-foreground">{t('messages.ephemeral.onlyYou')}</span>
               <Button type="button" variant="ghost" size="xs" className="ml-auto text-muted-foreground" onClick={() => dismiss(message)}>
-                Dismiss
+                {t('messages.ephemeral.dismiss')}
               </Button>
             </div>
             <MessageBody message={{ ...message, bot: message.bot && { ...message.bot, interactive: false } }} />
